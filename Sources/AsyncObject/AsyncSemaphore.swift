@@ -1,9 +1,11 @@
 import Foundation
+import OrderedCollections
 
-public actor AsyncMutex {
+actor AsyncSemaphore {
     private typealias Continuation = UnsafeContinuation<Void, Error>
-    private var continuations: [UUID: Continuation] = [:]
-    private var locked: Bool
+    private var continuations: OrderedDictionary<UUID, Continuation> = [:]
+    private var limit: UInt
+    private var count: Int
 
     private func addContinuation(
         _ continuation: Continuation,
@@ -16,22 +18,22 @@ public actor AsyncMutex {
         continuations.removeValue(forKey: key)
     }
 
-    public init(lockedInitially locked: Bool = true) {
-        self.locked = locked
+    public init(value count: UInt = 0) {
+        self.limit = count + 1
+        self.count = Int(limit)
     }
 
-    public func lock() {
-        locked = true
-    }
-
-    public func release() {
-        continuations.forEach { $0.value.resume() }
-        continuations = [:]
-        locked = false
+    public func signal() {
+        guard count < limit else { return }
+        count += 1
+        guard !continuations.isEmpty else { return }
+        let (_, continuation) = continuations.removeFirst()
+        continuation.resume()
     }
 
     public func wait() async {
-        guard locked else { return }
+        count -= 1
+        if count > 0 { return }
         let key = UUID()
         do {
             try await withUnsafeThrowingContinuationCancellationHandler(
@@ -42,7 +44,7 @@ public actor AsyncMutex {
             )
         } catch {
             debugPrint(
-                "Wait on mutex for continuation task with key: \(key)"
+                "Wait on semaphore for continuation task with key: \(key)"
                 + " cancelled with error \(error)"
             )
         }
@@ -52,19 +54,26 @@ public actor AsyncMutex {
     public func wait(
         forNanoseconds duration: UInt64
     ) async -> TaskTimeoutResult {
-        guard locked else { return .success }
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask { [weak self] in await self?.wait() }
+        var timedOut = true
+        await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                [weak self] in await self?.wait()
+                return true
+            }
             group.addTask {
                 do {
                     try await Task.sleep(nanoseconds: duration)
-                } catch {}
+                    return false
+                } catch {
+                    return true
+                }
             }
 
-            for await _ in group.prefix(1) {
+            for await result in group.prefix(1) {
+                timedOut = !result
                 group.cancelAll()
             }
         }
-        return locked ? .timedOut : .success
+        return timedOut ? .timedOut : .success
     }
 }
