@@ -1,19 +1,6 @@
 import XCTest
 @testable import AsyncObject
 
-actor TaskTimeoutStore {
-    var successes: UInt = 0
-    var failures: UInt = 0
-
-    func addSuccess() {
-        successes += 1
-    }
-
-    func addFailure() {
-        failures += 1
-    }
-}
-
 class AsyncSemaphoreTests: XCTestCase {
 
     func checkSemaphoreWait(
@@ -121,5 +108,57 @@ class AsyncSemaphoreTests: XCTestCase {
             timeout: UInt64(3E9),
             durationInSeconds: 8
         )
+    }
+
+    func testUsageAsMutexWaitWithTimeout() async throws {
+        let mutex = AsyncSemaphore()
+        var result: TaskTimeoutResult = .success
+        await checkExecInterval(
+            for: {
+                result = await mutex.wait(forNanoseconds: UInt64(4E9))
+            },
+            durationInSeconds: 4
+        )
+        XCTAssertEqual(result, .timedOut)
+    }
+
+    func testUsageAsMutexWaitSuccessWithoutTimeout() async throws {
+        let mutex = AsyncSemaphore()
+        var result: TaskTimeoutResult = .timedOut
+        Task.detached {
+            try await Task.sleep(nanoseconds: UInt64(5E9))
+            await mutex.signal()
+        }
+        await checkExecInterval(
+            for: {
+                result = await mutex.wait(forNanoseconds: UInt64(10E9))
+            },
+            durationInSeconds: 5
+        )
+        XCTAssertEqual(result, .success)
+    }
+
+    func testDispatchSemaphore() async throws {
+        let semaphore = DispatchSemaphore(value: 3)
+        DispatchQueue.concurrentPerform(iterations: 10) { count in
+            print("Starting iteration: \(count)")
+            semaphore.wait()
+            sleep(5)
+            let sig = semaphore.signal()
+            print("Signal count: \(sig) for iteration: \(count)")
+        }
+    }
+}
+
+actor TaskTimeoutStore {
+    var successes: UInt = 0
+    var failures: UInt = 0
+
+    func addSuccess() {
+        successes += 1
+    }
+
+    func addFailure() {
+        failures += 1
     }
 }
