@@ -9,7 +9,8 @@ func withUnsafeThrowingContinuationCancellationHandler<T: Sendable>(
         wrapper.cancel(withError: CancellationError())
         handler(continuation)
     } operation: { () -> T in
-        let value = try await withUnsafeThrowingContinuation { (c: Continuation) in
+        let value = try await withUnsafeThrowingContinuation {
+            (c: Continuation) in
             wrapper.value = c
             fn(c)
         }
