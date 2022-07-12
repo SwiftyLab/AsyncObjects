@@ -1,0 +1,80 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Create release
+        required: false
+        type: boolean
+      version:
+        description: New version to release
+        required: false
+        type: string
+
+concurrency:
+  group: ci/cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze
+    if: github.event_name != 'workflow_dispatch'
+    uses: ./.github/workflows/codeql-analysis.yml
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+  # spell-check:
+  #   name: Run spell check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Checkout repository
+  #     uses: actions/checkout@v3
+
+  #   - name: Spellcheck Action
+  #     uses: rojopolis/spellcheck-github-actions@0.24.0
+  #     with:
+  #       config_path: .github/config/spellcheck.yml
+
+  swift-package-test:
+    name: Swift Package
+    uses: ./.github/workflows/swift-package.yml
+    secrets: inherit
+
+  # cocoapods-test:
+  #   name: CocoaPods
+  #   uses: ./.github/workflows/cocoapods.yml
+
+  xcode-test:
+    name: Xcode
+    uses: ./.github/workflows/xcode.yml
+
+  ci:
+    name: CI
+    if: github.event_name == 'push'
+    needs: [analyze, swift-package-test, xcode-test, cocoapods-test]
+    uses: ./.github/workflows/ci.yml
+
+  # cd:
+  #   name: CD
+  #   if: |
+  #     (github.event_name == 'push' && needs.ci.outputs.release == 'true') ||
+  #     (always() &&
+  #      github.event_name == 'workflow_dispatch' &&
+  #      github.event.inputs.release == 'true' &&
+  #      needs.swift-package-test.result == 'success' &&
+  #      needs.xcode-test.result == 'success' &&
+  #      needs.cocoapods-test.result == 'success' &&
+  #      (needs.analyze.result == 'success' || needs.analyze.result == 'skipped') &&
+  #      (needs.ci.result == 'success' || needs.ci.result == 'skipped'))
+  #   needs: [ci, analyze, swift-package-test, xcode-test, cocoapods-test]
+  #   uses: ./.github/workflows/cd.yml
+  #   with:
+  #     version: ${{ github.event.inputs.version }}
+  #   secrets: inherit

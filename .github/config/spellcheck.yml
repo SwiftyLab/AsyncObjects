@@ -1,0 +1,20 @@
+matrix:
+- name: Markdown
+  aspell:
+    lang: en
+    d: en_US
+  dictionary:
+    encoding: utf-8
+    # wordlists:
+    # - .github/config/custom-words.txt
+    # output: .build/dictionary/custom-words.dic
+  pipeline:
+  - pyspelling.filters.markdown:
+  - pyspelling.filters.html:
+      comments: false
+      ignores:
+      - code
+      - pre
+  sources:
+  - '**/*.md'
+  default_encoding: utf-8
