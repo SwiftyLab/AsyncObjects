@@ -43,7 +43,7 @@ public actor AsyncMutex {
         } catch {
             debugPrint(
                 "Wait on mutex for continuation task with key: \(key)"
-                + " cancelled with error \(error)"
+                    + " cancelled with error \(error)"
             )
         }
     }

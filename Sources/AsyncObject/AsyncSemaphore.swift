@@ -45,7 +45,7 @@ actor AsyncSemaphore {
         } catch {
             debugPrint(
                 "Wait on semaphore for continuation task with key: \(key)"
-                + " cancelled with error \(error)"
+                    + " cancelled with error \(error)"
             )
         }
     }

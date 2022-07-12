@@ -22,18 +22,19 @@ class AsyncSemaphoreTests: XCTestCase {
         withDelay delay: UInt64 = UInt64(5E9),
         durationInSeconds seconds: Int = 0
     ) async throws {
-        try await checkExecInterval(for: {
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                for _ in 0..<count {
-                    group.addTask {
-                        await semaphore.wait()
-                        try await Task.sleep(nanoseconds: delay)
-                        await semaphore.signal()
+        try await checkExecInterval(
+            for: {
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    for _ in 0..<count {
+                        group.addTask {
+                            await semaphore.wait()
+                            try await Task.sleep(nanoseconds: delay)
+                            await semaphore.signal()
+                        }
                     }
+                    try await group.waitForAll()
                 }
-                try await group.waitForAll()
-            }
-        }, durationInSeconds: seconds)
+            }, durationInSeconds: seconds)
     }
 
     func checkSemaphoreWaitWithTimeOut(
@@ -45,20 +46,26 @@ class AsyncSemaphoreTests: XCTestCase {
     ) async throws {
         let semaphore = AsyncSemaphore(value: value)
         let store = TaskTimeoutStore()
-        try await checkExecInterval(for: {
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                for _ in 0..<count {
-                    group.addTask {
-                        let result = await semaphore.wait(forNanoseconds: timeout)
-                        result == .success ? await store.addSuccess() : await store.addFailure()
-                        try await Task.sleep(nanoseconds: delay)
-                        await semaphore.signal()
+        try await checkExecInterval(
+            for: {
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    for _ in 0..<count {
+                        group.addTask {
+                            let result = await semaphore.wait(
+                                forNanoseconds: timeout)
+                            result == .success
+                                ? await store.addSuccess()
+                                : await store.addFailure()
+                            try await Task.sleep(nanoseconds: delay)
+                            await semaphore.signal()
+                        }
                     }
+                    try await group.waitForAll()
                 }
-                try await group.waitForAll()
-            }
-        }, durationInSeconds: seconds)
-        let (successes, failures) = (await store.successes, await store.failures)
+            }, durationInSeconds: seconds)
+        let (successes, failures) = (
+            await store.successes, await store.failures
+        )
         XCTAssertEqual(successes, value)
         XCTAssertEqual(failures, UInt(count) - value)
     }
@@ -115,5 +122,4 @@ class AsyncSemaphoreTests: XCTestCase {
             durationInSeconds: 8
         )
     }
-
 }

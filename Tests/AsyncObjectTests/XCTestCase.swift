@@ -12,11 +12,11 @@ extension XCTestCase {
         case .seconds(let value):
             XCTAssertEqual(seconds, value)
         case .microseconds(let value):
-            XCTAssertEqual(seconds, value/Int(1E6))
+            XCTAssertEqual(seconds, value / Int(1E6))
         case .milliseconds(let value):
-            XCTAssertEqual(seconds, value/Int(1E3))
+            XCTAssertEqual(seconds, value / Int(1E3))
         case .nanoseconds(let value):
-            XCTAssertEqual(seconds, value/Int(1E9))
+            XCTAssertEqual(seconds, value / Int(1E9))
         case .never: fallthrough
         @unknown default:
             NSException(
