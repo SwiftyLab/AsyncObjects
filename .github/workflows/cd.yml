@@ -54,7 +54,7 @@ jobs:
     - name: Release GitHub Pages
       if: steps.conventional_changelog.outputs.skipped == 'false'
       continue-on-error: true
-      uses: JamesIves/github-pages-deploy-action@v4.3.3
+      uses: JamesIves/github-pages-deploy-action@v4.3.4
       with:
           branch: gh-pages
           folder: .docc-build
