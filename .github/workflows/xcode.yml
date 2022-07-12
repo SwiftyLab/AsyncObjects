@@ -1,0 +1,35 @@
+name: "Run Xcode Build"
+
+on:
+  workflow_call:
+
+jobs:
+  # Test Xcode project with swift 5.1
+  xcode-test:
+    name: Run Xcode Build for platform ${{ matrix.platform }}
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        platform: [macOS, watchOS, tvOS, iOS, mac-catalyst]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Check should proceed running steps
+      id: precondition
+      uses: ./.github/actions/condition
+      with:
+        files: |
+          Sources/**/*.swift
+          Tests/**/*
+          *.xcodeproj/**/*
+          .github/workflows/xcode.yml
+
+    - name: Build with Xcode
+      if: steps.precondition.outputs.proceed == 'true'
+      uses: mxcl/xcodebuild@v1
+      with:
+        platform: ${{ matrix.platform }}
+        action: build
+        configuration: debug

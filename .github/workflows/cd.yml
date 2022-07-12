@@ -1,0 +1,87 @@
+name: "Check if release needed"
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: New version to release
+        required: false
+        type: string
+
+jobs:
+  cd:
+    name: Build and Publish
+    runs-on: macos-12
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 2.7
+
+    - name: Setup repository
+      uses: ./.github/actions/setup
+
+    - name: Conventional Changelog Action
+      id: conventional_changelog
+      uses: TriPSs/conventional-changelog-action@v3
+      with:
+        github-token: ${{ github.token }}
+        git-message: 'chore(CHANGELOG): update for {version}'
+        git-user-name: ${{ github.actor }}
+        git-user-email: soumya.mahunt@gmail.com
+        release-count: 0
+        version-file: './package.json'
+        version-path: version
+        fallback-version: '1.0.0'
+        config-file-path: '.github/config/config.js'
+        pre-commit: '.github/config/pre_commit_hook.js'
+        pre-changelog-generation: '.github/config/pre_changelog_hook.js'
+      env:
+        VERSION: ${{ inputs.version }}
+
+    - name: Build package products and documentation
+      if: steps.conventional_changelog.outputs.skipped == 'false'
+      run: |
+        npm run build
+        npm run build-doc
+        npm run serve-doc
+        npm run archive
+
+    - name: Release GitHub Pages
+      if: steps.conventional_changelog.outputs.skipped == 'false'
+      continue-on-error: true
+      uses: JamesIves/github-pages-deploy-action@v4.3.3
+      with:
+          branch: gh-pages
+          folder: .docc-build
+          target-folder: docs
+          clean: false
+          commit-message: 'chore(GitHub Pages): release site for tag ${{ steps.conventional_changelog.outputs.tag }}'
+
+    - name: Create GitHub Release
+      if: steps.conventional_changelog.outputs.skipped == 'false'
+      continue-on-error: true
+      uses: ncipollo/release-action@v1
+      with:
+        token: ${{ github.token }}
+        tag: ${{ steps.conventional_changelog.outputs.tag }}
+        body: ${{ steps.conventional_changelog.outputs.changelog }}
+        artifacts: '*.zip'
+
+    - name: Publish to CocoaPods trunk
+      if: steps.conventional_changelog.outputs.skipped == 'false'
+      continue-on-error: true
+      run: |
+        set -eo pipefail
+        pod trunk push --skip-import-validation --skip-tests --allow-warnings
+      env:
+        COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
+
+    - name: Publish to Swift Package Registry
+      if: steps.conventional_changelog.outputs.skipped == 'false'
+      continue-on-error: true
+      uses: twodayslate/swift-package-registry@v0.0.2
