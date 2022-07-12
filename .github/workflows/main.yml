@@ -58,7 +58,8 @@ jobs:
   ci:
     name: CI
     if: github.event_name == 'push'
-    needs: [analyze, swift-package-test, xcode-test, cocoapods-test]
+    needs: [analyze, swift-package-test, xcode-test]
+    # needs: [analyze, swift-package-test, xcode-test, cocoapods-test]
     uses: ./.github/workflows/ci.yml
 
   # cd:
