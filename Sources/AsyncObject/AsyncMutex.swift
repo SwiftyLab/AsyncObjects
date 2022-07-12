@@ -42,7 +42,7 @@ public actor AsyncMutex {
             )
         } catch {
             debugPrint(
-                "Wait for continuation task with key: \(key)"
+                "Wait on mutex for continuation task with key: \(key)"
                 + " cancelled with error \(error)"
             )
         }
@@ -52,18 +52,18 @@ public actor AsyncMutex {
         forNanoseconds duration: UInt64
     ) async -> TaskTimeoutResult {
         guard locked else { return .success }
-        do {
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask { try await Task.sleep(nanoseconds: duration) }
-                group.addTask { [weak self] in await self?.wait() }
-
-                for try await _ in group.prefix(1) {
-                    group.cancelAll()
-                }
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { [weak self] in await self?.wait() }
+            group.addTask {
+                do {
+                    try await Task.sleep(nanoseconds: duration)
+                } catch {}
             }
-            return locked ? .timedOut : .success
-        } catch {
-            return .timedOut
+
+            for await _ in group.prefix(1) {
+                group.cancelAll()
+            }
         }
+        return locked ? .timedOut : .success
     }
 }
