@@ -5,19 +5,10 @@ const readdirGlob = require('readdir-glob');
 const core = require('@actions/core');
 const plist = require('plist');
 
-core.startGroup(`Generating LinuxMain for swift package`);
-execSync(
-  `swift test --verbose --generate-linuxmain`, {
-    stdio: ['inherit', 'inherit', 'inherit'],
-    encoding: 'utf-8'
-  }
-);
-core.endGroup();
-
 core.startGroup(`Generating Xcode project for swift package`);
 execSync(
   `swift package --verbose generate-xcodeproj \
-    --xcconfig-overrides Helpers/AsyncObject.xcconfig \
+    --xcconfig-overrides Helpers/AsyncObjects.xcconfig \
     --skip-extra-files`, {
     stdio: ['inherit', 'inherit', 'inherit'],
     encoding: 'utf-8'
@@ -27,9 +18,9 @@ core.endGroup();
 
 core.startGroup(`Adding documentation catalogue to Xcode project`);
 const rubyCommand = `"require 'xcodeproj'
-project = Xcodeproj::Project.open('AsyncObject.xcodeproj')
+project = Xcodeproj::Project.open('AsyncObjects.xcodeproj')
 project_changed = false
-['AsyncObject'].each do |p_target|
+['AsyncObjects'].each do |p_target|
   target = project.native_targets.find { |target| target.display_name == p_target }
   group = project[\\"Sources/#{p_target}\\"]
 
@@ -49,7 +40,7 @@ core.endGroup();
 
 const package = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 core.startGroup(`Updating version to ${package.version} in plist`);
-const plistGlobberer = readdirGlob('.', { pattern: 'AsyncObject.xcodeproj/*.plist' });
+const plistGlobberer = readdirGlob('.', { pattern: 'AsyncObjects.xcodeproj/*.plist' });
 plistGlobberer.on(
   'match',
   m => {

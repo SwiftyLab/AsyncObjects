@@ -77,10 +77,10 @@ Package.resolved
 Carthage/Build/
 
 # Add Xcode project related files required by Carthage
-AsyncObject.xcodeproj/*
-!AsyncObject.xcodeproj/*.pbxproj
-!AsyncObject.xcodeproj/*.plist
-!AsyncObject.xcodeproj/xcshareddata
+AsyncObjects.xcodeproj/*
+!AsyncObjects.xcodeproj/*.pbxproj
+!AsyncObjects.xcodeproj/*.plist
+!AsyncObjects.xcodeproj/xcshareddata
 
 # Accio dependency management
 Dependencies/

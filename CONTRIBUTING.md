@@ -7,7 +7,7 @@ _See also: [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md)_
 
 ## Submitting Pull Requests
 
-You can contribute by fixing bugs or adding new features. For larger code changes, we first recommend discussing them in our [Github issues](https://github.com/SwiftyLab/AsyncObject/issues). When submitting a pull request, please add relevant tests and ensure your changes don't break any existing tests (see [Automated Tests](#automated-tests) below).
+You can contribute by fixing bugs or adding new features. For larger code changes, we first recommend discussing them in our [Github issues](https://github.com/SwiftyLab/AsyncObjects/issues). When submitting a pull request, please add relevant tests and ensure your changes don't break any existing tests (see [Automated Tests](#automated-tests) below).
 
 ### Things you will need
 

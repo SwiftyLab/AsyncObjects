@@ -11,7 +11,7 @@ inputs:
 outputs:
   proceed:
     description: Should proceed running steps
-    value: ${{ steps.changed_files.outputs.any_changed == 'true' || steps.last_status.outputs.result != 'true' }} 
+    value: ${{ steps.changed_files.outputs.any_changed == 'true' || steps.last_status.outputs.result != 'true' }}
 runs:
   using: composite
   steps:

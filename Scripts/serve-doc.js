@@ -7,14 +7,14 @@ const hostingDocGenCommandFormat = (basePath, outPath) =>
  `swift package --verbose \
    --allow-writing-to-directory .docc-build \
    generate-documentation \
-   --product AsyncObject \
+   --product AsyncObjects \
    --disable-indexing \
    --transform-for-static-hosting \
    --hosting-base-path ${basePath} \
    --output-path ${outPath}`;
 
 const hostingDocGenCommand = hostingDocGenCommandFormat(
-  'AsyncObject',
+  'AsyncObjects',
   '.docc-build'
 );
 
@@ -28,7 +28,7 @@ core.endGroup();
 
 const package = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const hostingVersionedDocGenCommand = hostingDocGenCommandFormat(
-  `AsyncObject/${package.version}`,
+  `AsyncObjects/${package.version}`,
   `.docc-build/${package.version}`
 );
 

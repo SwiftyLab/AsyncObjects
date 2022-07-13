@@ -1,5 +1,5 @@
 import XCTest
-@testable import AsyncObject
+@testable import AsyncObjects
 
 class AsyncSemaphoreTests: XCTestCase {
 
@@ -136,17 +136,6 @@ class AsyncSemaphoreTests: XCTestCase {
             durationInSeconds: 5
         )
         XCTAssertEqual(result, .success)
-    }
-
-    func testDispatchSemaphore() async throws {
-        let semaphore = DispatchSemaphore(value: 3)
-        DispatchQueue.concurrentPerform(iterations: 10) { count in
-            print("Starting iteration: \(count)")
-            semaphore.wait()
-            sleep(5)
-            let sig = semaphore.signal()
-            print("Signal count: \(sig) for iteration: \(count)")
-        }
     }
 }
 

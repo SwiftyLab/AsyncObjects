@@ -9,9 +9,9 @@ const core = require('@actions/core');
 
 const package = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const command = `swift package --verbose generate-documentation \
-  --product AsyncObject \
-  --fallback-display-name AsyncObject \
-  --fallback-bundle-identifier com.SwiftyLab.AsyncObject \
+  --product AsyncObjects \
+  --fallback-display-name AsyncObjects \
+  --fallback-bundle-identifier com.SwiftyLab.AsyncObjects \
   --fallback-bundle-version ${package.version} \
   --additional-symbol-graph-dir .build`;
 

@@ -17,7 +17,7 @@ dependencies = [
 #endif
 
 let package = Package(
-    name: "AsyncObject",
+    name: "AsyncObjects",
     platforms: [
         .macOS(.v10_15),
         .iOS(.v13),
@@ -26,21 +26,21 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "AsyncObject",
-            targets: ["AsyncObject"]
+            name: "AsyncObjects",
+            targets: ["AsyncObjects"]
         ),
     ],
     dependencies: dependencies,
     targets: [
         .target(
-            name: "AsyncObject",
+            name: "AsyncObjects",
             dependencies: [
                 .product(name: "OrderedCollections", package: "swift-collections"),
             ]
         ),
         .testTarget(
-            name: "AsyncObjectTests",
-            dependencies: ["AsyncObject"]
+            name: "AsyncObjectsTests",
+            dependencies: ["AsyncObjects"]
         ),
     ]
 )

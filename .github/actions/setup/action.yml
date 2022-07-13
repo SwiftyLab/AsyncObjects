@@ -1,5 +1,5 @@
 name: Setup action for Swift library
-description: Setup action for Swift library `AsyncObject`
+description: Setup action for Swift library `AsyncObjects`
 inputs:
   swift:
     description: Swift version to use

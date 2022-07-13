@@ -5,9 +5,9 @@ const open = require('open');
 const process = exec(
   'swift package \
     --disable-sandbox preview-documentation \
-    --product AsyncObject \
-    --fallback-display-name AsyncObject \
-    --fallback-bundle-identifier com.SwiftyLab.AsyncObject \
+    --product AsyncObjects \
+    --fallback-display-name AsyncObjects \
+    --fallback-bundle-identifier com.SwiftyLab.AsyncObjects \
     --fallback-bundle-version 1 \
     --additional-symbol-graph-dir .build', {
     encoding: 'utf-8'
