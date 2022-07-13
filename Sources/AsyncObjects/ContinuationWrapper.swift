@@ -1,14 +1,3 @@
-/// A result value indicating whether a task finished before a specified time.
-@frozen
-public enum TaskTimeoutResult: Hashable {
-    /// Indicates that a task successfully finished
-    /// before the specified time elapsed.
-    case success
-    /// Indicates that a task failed to finish
-    /// before the specified time elapsed.
-    case timedOut
-}
-
 /// Suspends the current task, then calls the given closure with an unsafe throwing continuation for the current task.
 /// Continuation is cancelled with error if current task is cancelled and cancellation handler is immediately invoked.
 ///
@@ -71,4 +60,10 @@ extension UnsafeContinuation {
             value?.resume(throwing: error)
         }
     }
+}
+
+extension UnsafeContinuation where E == Error {
+    /// Cancel continuation by resuming with cancellation error.
+    @inlinable
+    func cancel() { self.resume(throwing: CancellationError()) }
 }

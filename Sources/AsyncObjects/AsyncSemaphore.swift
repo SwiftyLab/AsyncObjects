@@ -9,7 +9,7 @@ import OrderedCollections
 /// You increment a semaphore count by calling the ``signal()`` method
 /// and decrement a semaphore count by calling ``wait()`` method
 /// or its timeout variation ``wait(forNanoseconds:)``.
-public actor AsyncSemaphore {
+public actor AsyncSemaphore: AsyncObject {
     /// The suspended tasks continuation type.
     private typealias Continuation = UnsafeContinuation<Void, Error>
     /// The continuations stored with an associated key for all the suspended task that are waitig for access to resource.
@@ -26,6 +26,7 @@ public actor AsyncSemaphore {
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
+    @inline(__always)
     private func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
@@ -37,8 +38,17 @@ public actor AsyncSemaphore {
     /// from `continuations` map.
     ///
     /// - Parameter key: The key in the map.
+    @inline(__always)
     private func removeContinuation(withKey key: UUID) {
         continuations.removeValue(forKey: key)
+        incrementCount()
+    }
+
+    /// Increments semaphore count within limit provided.
+    @inline(__always)
+    private func incrementCount() {
+        guard count < limit else { return }
+        count += 1
     }
 
     /// Creates new counting semaphore with an initial value.
@@ -54,14 +64,16 @@ public actor AsyncSemaphore {
         self.count = Int(limit)
     }
 
+    deinit { self.continuations.forEach { $0.value.cancel() } }
+
     /// Signals (increments) a semaphore.
     ///
     /// Increment the counting semaphore.
     /// If the previous value was less than zero,
     /// current task is resumed from suspension.
+    @Sendable
     public func signal() {
-        guard count < limit else { return }
-        count += 1
+        incrementCount()
         guard !continuations.isEmpty else { return }
         let (_, continuation) = continuations.removeFirst()
         continuation.resume()
@@ -71,56 +83,21 @@ public actor AsyncSemaphore {
     ///
     /// Decrement the counting semaphore. If the resulting value is less than zero,
     /// current task is suspended until a signal occurs.
+    @Sendable
     public func wait() async {
         count -= 1
         if count > 0 { return }
         let key = UUID()
-        do {
-            try await withUnsafeThrowingContinuationCancellationHandler(
-                handler: { (continuation: Continuation) in
-                    Task { await removeContinuation(withKey: key) }
-                },
-                { addContinuation($0, withKey: key) }
-            )
-        } catch {
-            debugPrint(
-                "Wait on semaphore for continuation task with key: \(key)"
-                    + " cancelled with error \(error)"
-            )
-        }
-    }
-
-    /// Waits for within the duration, or decrements, a semaphore.
-    ///
-    /// Decrement the counting semaphore. If the resulting value is less than zero,
-    /// current task is suspended until a signal occurs or timeout duration completes.
-    ///
-    /// - Parameter duration: The duration in nano seconds to wait until.
-    /// - Returns: The result indicating whether wait completed or timed out.
-    @discardableResult
-    public func wait(
-        forNanoseconds duration: UInt64
-    ) async -> TaskTimeoutResult {
-        var timedOut = true
-        await withTaskGroup(of: Bool.self) { group in
-            group.addTask {
-                [weak self] in await self?.wait()
-                return true
-            }
-            group.addTask {
-                do {
-                    try await Task.sleep(nanoseconds: duration)
-                    return false
-                } catch {
-                    return true
+        try? await withUnsafeThrowingContinuationCancellationHandler(
+            handler: { [weak self] (continuation: Continuation) in
+                Task { [weak self] in
+                    await self?.removeContinuation(withKey: key)
+                }
+            }, { [weak self] (continuation: Continuation) in
+                Task { [weak self] in
+                    await self?.addContinuation(continuation, withKey: key)
                 }
             }
-
-            for await result in group.prefix(1) {
-                timedOut = !result
-                group.cancelAll()
-            }
-        }
-        return timedOut ? .timedOut : .success
+        )
     }
 }

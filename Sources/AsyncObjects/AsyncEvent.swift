@@ -6,7 +6,7 @@ import Foundation
 ///
 /// You can signal event by calling the ``signal()`` method and reset signal by calling ``reset()``.
 /// Wait for event signal by calling ``wait()`` method or its timeout variation ``wait(forNanoseconds:)``.
-public actor AsyncEvent {
+public actor AsyncEvent: AsyncObject {
     /// The suspended tasks continuation type.
     private typealias Continuation = UnsafeContinuation<Void, Error>
     /// The continuations stored with an associated key for all the suspended task that are waitig for event signal.
@@ -19,6 +19,7 @@ public actor AsyncEvent {
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
+    @inline(__always)
     private func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
@@ -30,6 +31,7 @@ public actor AsyncEvent {
     /// from `continuations` map.
     ///
     /// - Parameter key: The key in the map.
+    @inline(__always)
     private func removeContinuation(withKey key: UUID) {
         continuations.removeValue(forKey: key)
     }
@@ -43,9 +45,12 @@ public actor AsyncEvent {
         self.signaled = signaled
     }
 
+    deinit { self.continuations.forEach { $0.value.cancel() } }
+
     /// Resets signal of event.
     ///
     /// After reset, tasks have to wait for event signal to complete.
+    @Sendable
     public func reset() {
         signaled = false
     }
@@ -53,6 +58,7 @@ public actor AsyncEvent {
     /// Signals the event.
     ///
     /// Resumes all the tasks suspended and waiting for signal.
+    @Sendable
     public func signal() {
         continuations.forEach { $0.value.resume() }
         continuations = [:]
@@ -63,47 +69,20 @@ public actor AsyncEvent {
     ///
     /// Only waits asynchronously, if event is in non-signaled state,
     /// until event is signaled.
+    @Sendable
     public func wait() async {
         guard !signaled else { return }
         let key = UUID()
-        do {
-            try await withUnsafeThrowingContinuationCancellationHandler(
-                handler: { (continuation: Continuation) in
-                    Task { await removeContinuation(withKey: key) }
-                },
-                { addContinuation($0, withKey: key) }
-            )
-        } catch {
-            debugPrint(
-                "Wait on event for continuation task with key: \(key)"
-                + " cancelled with error \(error)"
-            )
-        }
-    }
-
-    /// Waits for event signal within the duration, or proceeds if already signaled.
-    ///
-    /// Only waits asynchronously, if event is in non-signaled state,
-    /// until event is signaled or the provided timeout expires.
-    ///
-    /// - Parameter duration: The duration in nano seconds to wait until.
-    /// - Returns: The result indicating whether wait completed or timed out.
-    public func wait(
-        forNanoseconds duration: UInt64
-    ) async -> TaskTimeoutResult {
-        guard !signaled else { return .success }
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask { [weak self] in await self?.wait() }
-            group.addTask {
-                do {
-                    try await Task.sleep(nanoseconds: duration)
-                } catch {}
+        try? await withUnsafeThrowingContinuationCancellationHandler(
+            handler: { [weak self] (continuation: Continuation) in
+                Task { [weak self] in
+                    await self?.removeContinuation(withKey: key)
+                }
+            }, { [weak self] (continuation: Continuation) in
+                Task { [weak self] in
+                    await self?.addContinuation(continuation, withKey: key)
+                }
             }
-
-            for await _ in group.prefix(1) {
-                group.cancelAll()
-            }
-        }
-        return signaled ? .success : .timedOut
+        )
     }
 }
