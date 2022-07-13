@@ -9,6 +9,7 @@ const core = require('@actions/core');
 
 const package = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const command = `swift package --verbose generate-documentation \
+  --product AsyncObject \
   --fallback-display-name AsyncObject \
   --fallback-bundle-identifier com.SwiftyLab.AsyncObject \
   --fallback-bundle-version ${package.version} \

@@ -5,6 +5,7 @@ const open = require('open');
 const process = exec(
   'swift package \
     --disable-sandbox preview-documentation \
+    --product AsyncObject \
     --fallback-display-name AsyncObject \
     --fallback-bundle-identifier com.SwiftyLab.AsyncObject \
     --fallback-bundle-version 1 \

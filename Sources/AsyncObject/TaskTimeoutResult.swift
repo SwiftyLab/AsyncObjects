@@ -1,6 +1,6 @@
 /// A result value indicating whether a task finished before a specified time.
 @frozen
-public enum TaskTimeoutResult {
+public enum TaskTimeoutResult: Hashable {
     /// Indicates that a task successfully finished
     /// before the specified time elapsed.
     case success

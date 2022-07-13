@@ -7,6 +7,7 @@ const hostingDocGenCommandFormat = (basePath, outPath) =>
  `swift package --verbose \
    --allow-writing-to-directory .docc-build \
    generate-documentation \
+   --product AsyncObject \
    --disable-indexing \
    --transform-for-static-hosting \
    --hosting-base-path ${basePath} \
