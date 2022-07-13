@@ -1,20 +1,6 @@
-// swift-tools-version: 5.5
+// swift-tools-version: 5.6
 
 import PackageDescription
-
-let dependencies: [Package.Dependency]
-#if compiler(>=5.6) && swift(>=5.6)
-dependencies = [
-    .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.0"),
-    .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
-    .package(url: "https://github.com/apple/swift-format", from: "0.50600.1"),
-]
-#else
-dependencies = [
-    .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.0"),
-    .package(url: "https://github.com/apple/swift-format", from: "0.50600.1"),
-]
-#endif
 
 let package = Package(
     name: "AsyncObjects",
@@ -30,7 +16,11 @@ let package = Package(
             targets: ["AsyncObjects"]
         ),
     ],
-    dependencies: dependencies,
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-format", from: "0.50600.1"),
+    ],
     targets: [
         .target(
             name: "AsyncObjects",

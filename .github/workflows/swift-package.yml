@@ -4,14 +4,14 @@ on:
   workflow_call:
 
 jobs:
-  # Test package with swift 5.5 1nd 5.6 on linux and windows
+  # Test package with swift 5.6 on linux and windows
   swift-package:
     name: Run Swift Package Tests with swift version ${{ matrix.swift }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        swift: ['5.5', '5.6']
+        swift: ['5.6']
 
     steps:
     - name: Checkout repository
