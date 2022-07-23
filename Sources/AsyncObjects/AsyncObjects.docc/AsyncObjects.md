@@ -12,3 +12,7 @@ Several synchronization primitives introduced to aid in modern swift concurrency
 
 - ``AsyncSemaphore``
 - ``AsyncEvent``
+
+### Tasks Control
+
+- ``CancellationSource``

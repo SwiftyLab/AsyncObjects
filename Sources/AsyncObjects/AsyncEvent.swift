@@ -78,7 +78,8 @@ public actor AsyncEvent: AsyncObject {
                 Task { [weak self] in
                     await self?.removeContinuation(withKey: key)
                 }
-            }, { [weak self] (continuation: Continuation) in
+            },
+            { [weak self] (continuation: Continuation) in
                 Task { [weak self] in
                     await self?.addContinuation(continuation, withKey: key)
                 }
