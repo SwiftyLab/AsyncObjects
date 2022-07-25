@@ -9,7 +9,6 @@ class TaskOperationTests: XCTestCase {
         let operation = TaskOperation(queue: .global(qos: .background)) {
             (try? await Task.sleep(nanoseconds: UInt64(3E9))) != nil
         }
-        XCTAssertTrue(operation.isConcurrent)
         XCTAssertTrue(operation.isAsynchronous)
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
