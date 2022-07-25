@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-const process = require('node:process');
-const { execSync } = require('node:child_process');
+const process = require('process');
+const { execSync } = require('child_process');
 const core = require('@actions/core');
 
 const args = process.argv.slice(2).join(' ');

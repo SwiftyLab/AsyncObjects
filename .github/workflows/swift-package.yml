@@ -6,11 +6,11 @@ on:
 jobs:
   # Test package with swift 5.6 on linux and windows
   swift-package:
-    name: Run Swift Package Tests with swift version ${{ matrix.swift }}
-    runs-on: ubuntu-latest
+    name: Run Swift Package Tests on ${{ matrix.os }} with swift version ${{ matrix.swift }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [macos-12, ubuntu-latest, windows-latest]
         swift: ['5.6']
 
     steps:
@@ -33,6 +33,7 @@ jobs:
       uses: ./.github/actions/setup
       with:
         swift: ${{ matrix.swift }}
+        xcode: latest
 
     - name: Run tests
       if: steps.precondition.outputs.proceed == 'true'
@@ -42,6 +43,7 @@ jobs:
       if: |
         steps.precondition.outputs.proceed == 'true' &&
         matrix.swift == '5.6' &&
+        matrix.os == 'macos-latest' &&
         github.event_name == 'push'
       uses: maxep/spm-lcov-action@0.3.1
       with:
@@ -52,6 +54,7 @@ jobs:
       if: |
         steps.precondition.outputs.proceed == 'true' &&
         matrix.swift == '5.6' &&
+        matrix.os == 'macos-latest' &&
         github.event_name == 'push'
       uses: codecov/codecov-action@v3.1.0
       with:
