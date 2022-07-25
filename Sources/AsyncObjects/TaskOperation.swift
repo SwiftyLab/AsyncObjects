@@ -25,10 +25,6 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// A Boolean value indicating whether the operation executes its task asynchronously.
     ///
     /// Always returns true, since the operation always executes its task asynchronously.
-    public override var isConcurrent: Bool { true }
-    /// A Boolean value indicating whether the operation executes its task asynchronously.
-    ///
-    /// Always returns true, since the operation always executes its task asynchronously.
     public override var isAsynchronous: Bool { true }
     /// A Boolean value indicating whether the operation has been cancelled.
     ///
