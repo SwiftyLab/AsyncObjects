@@ -58,6 +58,7 @@ public actor AsyncSemaphore: AsyncObject {
     /// Passing a value greater than zero is useful for managing a finite pool of resources, where the pool size is equal to the value.
     ///
     /// - Parameter count: The starting value for the semaphore.
+    ///
     /// - Returns: The newly created semaphore.
     public init(value count: UInt = 0) {
         self.limit = count + 1

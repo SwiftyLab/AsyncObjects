@@ -12,10 +12,7 @@ class AsyncEventTests: XCTestCase {
             try await Task.sleep(nanoseconds: interval)
             await event.signal()
         }
-        await checkExecInterval(
-            for: { await event.wait() },
-            durationInSeconds: seconds
-        )
+        await checkExecInterval(durationInSeconds: seconds, for: event.wait)
     }
 
     func testEventWait() async throws {
@@ -37,12 +34,9 @@ class AsyncEventTests: XCTestCase {
     func testEventWaitWithTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         var result: TaskTimeoutResult = .success
-        await checkExecInterval(
-            for: {
-                result = await event.wait(forNanoseconds: UInt64(4E9))
-            },
-            durationInSeconds: 4
-        )
+        await checkExecInterval(durationInSeconds: 4) {
+            result = await event.wait(forNanoseconds: UInt64(4E9))
+        }
         XCTAssertEqual(result, .timedOut)
     }
 
@@ -53,24 +47,18 @@ class AsyncEventTests: XCTestCase {
             try await Task.sleep(nanoseconds: UInt64(5E9))
             await event.signal()
         }
-        await checkExecInterval(
-            for: {
-                result = await event.wait(forNanoseconds: UInt64(10E9))
-            },
-            durationInSeconds: 5
-        )
+        await checkExecInterval(durationInSeconds: 5) {
+            result = await event.wait(forNanoseconds: UInt64(10E9))
+        }
         XCTAssertEqual(result, .success)
     }
 
     func testReleasedEventWaitSuccessWithoutTimeout() async throws {
         let event = AsyncEvent()
         var result: TaskTimeoutResult = .timedOut
-        await checkExecInterval(
-            for: {
-                result = await event.wait(forNanoseconds: UInt64(10E9))
-            },
-            durationInSeconds: 0
-        )
+        await checkExecInterval(durationInSeconds: 0) {
+            result = await event.wait(forNanoseconds: UInt64(10E9))
+        }
         XCTAssertEqual(result, .success)
     }
 }

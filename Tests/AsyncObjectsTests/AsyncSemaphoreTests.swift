@@ -9,19 +9,18 @@ class AsyncSemaphoreTests: XCTestCase {
         withDelay delay: UInt64 = UInt64(5E9),
         durationInSeconds seconds: Int = 0
     ) async throws {
-        try await checkExecInterval(
-            for: {
-                try await withThrowingTaskGroup(of: Void.self) { group in
-                    for _ in 0..<count {
-                        group.addTask {
-                            await semaphore.wait()
-                            try await Task.sleep(nanoseconds: delay)
-                            await semaphore.signal()
-                        }
+        try await checkExecInterval(durationInSeconds: seconds) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                for _ in 0..<count {
+                    group.addTask {
+                        await semaphore.wait()
+                        try await Task.sleep(nanoseconds: delay)
+                        await semaphore.signal()
                     }
-                    try await group.waitForAll()
                 }
-            }, durationInSeconds: seconds)
+                try await group.waitForAll()
+            }
+        }
     }
 
     func checkSemaphoreWaitWithTimeOut(
@@ -33,23 +32,22 @@ class AsyncSemaphoreTests: XCTestCase {
     ) async throws {
         let semaphore = AsyncSemaphore(value: value)
         let store = TaskTimeoutStore()
-        try await checkExecInterval(
-            for: {
-                try await withThrowingTaskGroup(of: Void.self) { group in
-                    for _ in 0..<count {
-                        group.addTask {
-                            let result = await semaphore.wait(
-                                forNanoseconds: timeout)
-                            result == .success
-                                ? await store.addSuccess()
-                                : await store.addFailure()
-                            try await Task.sleep(nanoseconds: delay)
-                            await semaphore.signal()
-                        }
+        try await checkExecInterval(durationInSeconds: seconds) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                for _ in 0..<count {
+                    group.addTask {
+                        let result = await semaphore.wait(
+                            forNanoseconds: timeout)
+                        result == .success
+                            ? await store.addSuccess()
+                            : await store.addFailure()
+                        try await Task.sleep(nanoseconds: delay)
+                        await semaphore.signal()
                     }
-                    try await group.waitForAll()
                 }
-            }, durationInSeconds: seconds)
+                try await group.waitForAll()
+            }
+        }
         let (successes, failures) = (
             await store.successes, await store.failures
         )
@@ -113,12 +111,9 @@ class AsyncSemaphoreTests: XCTestCase {
     func testUsageAsMutexWaitWithTimeout() async throws {
         let mutex = AsyncSemaphore()
         var result: TaskTimeoutResult = .success
-        await checkExecInterval(
-            for: {
-                result = await mutex.wait(forNanoseconds: UInt64(4E9))
-            },
-            durationInSeconds: 4
-        )
+        await checkExecInterval(durationInSeconds: 4) {
+            result = await mutex.wait(forNanoseconds: UInt64(4E9))
+        }
         XCTAssertEqual(result, .timedOut)
     }
 
@@ -129,12 +124,9 @@ class AsyncSemaphoreTests: XCTestCase {
             try await Task.sleep(nanoseconds: UInt64(5E9))
             await mutex.signal()
         }
-        await checkExecInterval(
-            for: {
-                result = await mutex.wait(forNanoseconds: UInt64(10E9))
-            },
-            durationInSeconds: 5
-        )
+        await checkExecInterval(durationInSeconds: 5) {
+            result = await mutex.wait(forNanoseconds: UInt64(10E9))
+        }
         XCTAssertEqual(result, .success)
     }
 }

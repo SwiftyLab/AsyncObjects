@@ -40,6 +40,7 @@ public actor AsyncEvent: AsyncObject {
     /// By default, event is initially in signaled state.
     ///
     /// - Parameter signaled: The signal state for event.
+    ///
     /// - Returns: The newly created event.
     public init(signaledInitially signaled: Bool = true) {
         self.signaled = signaled

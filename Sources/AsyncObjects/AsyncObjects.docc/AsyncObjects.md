@@ -16,3 +16,4 @@ Several synchronization primitives introduced to aid in modern swift concurrency
 ### Tasks Control
 
 - ``CancellationSource``
+- ``TaskOperation``

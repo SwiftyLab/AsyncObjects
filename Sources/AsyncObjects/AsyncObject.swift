@@ -57,9 +57,10 @@ public extension AsyncObject where Self: AnyObject {
     @Sendable
     func wait(forNanoseconds duration: UInt64) async -> TaskTimeoutResult {
         return await waitForTaskCompletion(
-            task: { [weak self] in await self?.wait() },
             withTimeoutInNanoseconds: duration
-        )
+        ) { [weak self] in
+            await self?.wait()
+        }
     }
 }
 
@@ -101,10 +102,9 @@ public func waitForAll(
     _ objects: [any AsyncObject],
     forNanoseconds duration: UInt64
 ) async -> TaskTimeoutResult {
-    return await waitForTaskCompletion(
-        task: { await waitForAll(objects) },
-        withTimeoutInNanoseconds: duration
-    )
+    return await waitForTaskCompletion(withTimeoutInNanoseconds: duration) {
+        await waitForAll(objects)
+    }
 }
 
 /// Waits for multiple objects to green light task execution
@@ -165,10 +165,9 @@ public func waitForAny(
     _ objects: [any AsyncObject],
     forNanoseconds duration: UInt64
 ) async -> TaskTimeoutResult {
-    return await waitForTaskCompletion(
-        task: { await waitForAny(objects) },
-        withTimeoutInNanoseconds: duration
-    )
+    return await waitForTaskCompletion(withTimeoutInNanoseconds: duration) {
+        await waitForAny(objects)
+    }
 }
 
 /// Waits for multiple objects to green light task execution
@@ -201,8 +200,8 @@ public func waitForAny(
 ///            or timed out.
 @inlinable
 public func waitForTaskCompletion(
-    task: @escaping @Sendable () async -> Void,
-    withTimeoutInNanoseconds timeout: UInt64
+    withTimeoutInNanoseconds timeout: UInt64,
+    _ task: @escaping @Sendable () async -> Void
 ) async -> TaskTimeoutResult {
     var timedOut = true
     await withTaskGroup(of: Bool.self) { group in

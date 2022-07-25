@@ -72,6 +72,8 @@ public actor CancellationSource {
     /// will ensure newly created cancellation source recieve cancellation event.
     ///
     /// - Parameter sources: The cancellation sources the newly created object will be linked to.
+    ///
+    /// - Returns: The newly created cancellation source.
     public convenience init(linkedWith sources: CancellationSource...) async {
         await self.init(linkedWith: sources)
     }
@@ -80,6 +82,8 @@ public actor CancellationSource {
     /// and triggers cancellation event on this object after specified timeout.
     ///
     /// - Parameter nanoseconds: The delay after which cancellation event triggered.
+    ///
+    /// - Returns: The newly created cancellation source.
     public convenience init(cancelAfterNanoseconds nanoseconds: UInt64) {
         self.init()
         Task { [weak self] in
