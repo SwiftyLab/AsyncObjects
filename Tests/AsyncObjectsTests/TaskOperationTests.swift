@@ -2,6 +2,7 @@ import XCTest
 import Dispatch
 @testable import AsyncObjects
 
+#if canImport(Darwin)
 class TaskOperationTests: XCTestCase {
 
     func testTaskOperation() async throws {
@@ -124,3 +125,4 @@ class TaskOperationTests: XCTestCase {
         }
     }
 }
+#endif
