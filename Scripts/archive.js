@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-const fs = require('node:fs');
-const path = require('node:path');
-const process = require('node:process');
-const { execSync } = require('node:child_process');
+const fs = require('fs');
+const path = require('path');
+const process = require('process');
+const { execSync } = require('child_process');
 const archiver = require('archiver');
 const readdirGlob = require('readdir-glob');
 const core = require('@actions/core');

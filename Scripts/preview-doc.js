@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const { exec } = require('node:child_process');
+const { exec } = require('child_process');
 const open = require('open');
 
 const process = exec(

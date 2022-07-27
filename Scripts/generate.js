@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-const fs = require('node:fs');
-const { execSync } = require('node:child_process');
+const fs = require('fs');
+const { execSync } = require('child_process');
 const readdirGlob = require('readdir-glob');
 const core = require('@actions/core');
 const plist = require('plist');

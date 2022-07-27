@@ -24,13 +24,13 @@
     "semver": "^7.3.7"
   },
   "scripts": {
-    "build": "Scripts/build.js",
-    "test": "Scripts/test.js",
-    "archive": "Scripts/archive.js",
-    "pod-lint": "Scripts/pod-lint.js",
-    "generate": "Scripts/generate.js",
-    "preview-doc": "Scripts/preview-doc.js",
-    "build-doc": "Scripts/build-doc.js",
-    "serve-doc": "Scripts/serve-doc.js"
+    "build": "node Scripts/build.js",
+    "test": "node Scripts/test.js",
+    "archive": "node Scripts/archive.js",
+    "pod-lint": "node Scripts/pod-lint.js",
+    "generate": "node Scripts/generate.js",
+    "preview-doc": "node Scripts/preview-doc.js",
+    "build-doc": "node Scripts/build-doc.js",
+    "serve-doc": "node Scripts/serve-doc.js"
   }
 }

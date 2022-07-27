@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-const fs = require('node:fs');
-const path = require('node:path');
-const process = require('node:process');
+const fs = require('fs');
+const path = require('path');
+const process = require('process');
 const archiver = require('archiver');
 const readdirGlob = require('readdir-glob');
-const { execSync } = require('node:child_process');
+const { execSync } = require('child_process');
 const core = require('@actions/core');
 
 const package = JSON.parse(fs.readFileSync('package.json', 'utf8'));
