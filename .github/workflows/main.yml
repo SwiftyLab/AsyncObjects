@@ -69,37 +69,11 @@ jobs:
 
   # cocoapods-test:
   #   name: CocoaPods
-  #   uses: ./.github/workflows/cocoapods.yml
+  #   uses: SwiftyLab/ci/.github/workflows/cocoapods.yml@main
 
   xcode-test:
     name: Xcode
     uses: SwiftyLab/ci/.github/workflows/xcode.yml@main
-    with:
-      matrix: >
-        {
-          "include": [
-            {
-              "os": "macos-latest",
-              "platform": "macOS"
-            },
-            {
-              "os": "macos-latest",
-              "platform": "watchOS"
-            },
-            {
-              "os": "macos-latest",
-              "platform": "tvOS"
-            },
-            {
-              "os": "macos-latest",
-              "platform": "iOS"
-            },
-            {
-              "os": "macos-latest",
-              "platform": "mac-catalyst"
-            }
-          ]
-        }
 
   ci:
     name: CI
