@@ -16,7 +16,7 @@
   },
   "private": true,
   "dependencies": {
-    "ci": "github:SwiftyLab/ci"
+    "swiftylab-ci": "github:SwiftyLab/ci"
   },
   "scripts": {
     "build": "npm exec swiftylab-ci-build",
