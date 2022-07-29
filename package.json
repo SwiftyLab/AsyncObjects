@@ -16,21 +16,16 @@
   },
   "private": true,
   "dependencies": {
-    "@actions/core": "^1.2.6",
-    "archiver": "^5.3.1",
-    "conventional-changelog-conventionalcommits": "^5.0.0",
-    "open": "^8.4.0",
-    "plist": "^3.0.5",
-    "semver": "^7.3.7"
+    "ci": "github:SwiftyLab/ci"
   },
   "scripts": {
-    "build": "node Scripts/build.js",
-    "test": "node Scripts/test.js",
-    "archive": "node Scripts/archive.js",
-    "pod-lint": "node Scripts/pod-lint.js",
-    "generate": "node Scripts/generate.js",
-    "preview-doc": "node Scripts/preview-doc.js",
-    "build-doc": "node Scripts/build-doc.js",
-    "serve-doc": "node Scripts/serve-doc.js"
+    "build": "npm exec swiftylab-ci-build",
+    "test": "npm exec swiftylab-ci-test",
+    "archive": "npm exec swiftylab-ci-archive",
+    "pod-lint": "npm exec swiftylab-ci-pod-lint",
+    "generate": "npm exec swiftylab-ci-generate",
+    "preview-doc": "npm exec swiftylab-ci-preview-doc -- AsyncObjects",
+    "build-doc": "npm exec swiftylab-ci-build-doc -- AsyncObjects",
+    "serve-doc": "npm exec swiftylab-ci-serve-doc -- AsyncObjects"
   }
 }
