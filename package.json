@@ -20,6 +20,7 @@
   },
   "scripts": {
     "build": "npm exec --package=swiftylab-ci -- build.js",
+    "xcodebuild": "npm exec --package=swiftylab-ci -- xcodebuild.js",
     "test": "npm exec --package=swiftylab-ci -- test.js",
     "archive": "npm exec --package=swiftylab-ci -- archive.js",
     "pod-lint": "npm exec --package=swiftylab-ci -- pod-lint.js",
