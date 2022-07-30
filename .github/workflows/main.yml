@@ -23,14 +23,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  analyze:
-    name: Analyze
-    if: github.event_name != 'workflow_dispatch'
-    uses: SwiftyLab/ci/.github/workflows/codeql-analysis.yml@main
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+  # analyze:
+  #   name: Analyze
+  #   if: github.event_name != 'workflow_dispatch'
+  #   uses: SwiftyLab/ci/.github/workflows/codeql-analysis.yml@main
+  #   permissions:
+  #     actions: read
+  #     contents: read
+  #     security-events: write
 
   # spell-check:
   #   name: Run spell check
@@ -59,10 +59,6 @@ jobs:
             {
               "os": "ubuntu-latest",
               "swift": "5.6"
-            },
-            {
-              "os": "windows-latest",
-              "swift": "5.6"
             }
           ]
         }
@@ -78,7 +74,7 @@ jobs:
   ci:
     name: CI
     if: github.event_name == 'push'
-    needs: [analyze, swift-package-test, xcode-test]
+    needs: [swift-package-test, xcode-test]
     # needs: [analyze, swift-package-test, xcode-test, cocoapods-test]
     uses: SwiftyLab/ci/.github/workflows/ci.yml@main
 
@@ -92,8 +88,9 @@ jobs:
   #      needs.swift-package-test.result == 'success' &&
   #      needs.xcode-test.result == 'success' &&
   #      needs.cocoapods-test.result == 'success' &&
-  #      (needs.analyze.result == 'success' || needs.analyze.result == 'skipped') &&
   #      (needs.ci.result == 'success' || needs.ci.result == 'skipped'))
+  #   (needs.analyze.result == 'success' || needs.analyze.result == 'skipped')
+  #   needs: [ci, swift-package-test, xcode-test, cocoapods-test]
   #   needs: [ci, analyze, swift-package-test, xcode-test, cocoapods-test]
   #   uses: SwiftyLab/ci/.github/workflows/cd.yml@main
   #   with:
