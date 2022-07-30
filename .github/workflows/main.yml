@@ -49,6 +49,8 @@ jobs:
     uses: SwiftyLab/ci/.github/workflows/swift-package.yml@main
     secrets: inherit
     with:
+      codecov-swift: '5.6'
+      codecov-os: macos-12
       matrix: >
         {
           "include": [
