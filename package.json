@@ -16,21 +16,17 @@
   },
   "private": true,
   "dependencies": {
-    "@actions/core": "^1.2.6",
-    "archiver": "^5.3.1",
-    "conventional-changelog-conventionalcommits": "^5.0.0",
-    "open": "^8.4.0",
-    "plist": "^3.0.5",
-    "semver": "^7.3.7"
+    "swiftylab-ci": "github:SwiftyLab/ci"
   },
   "scripts": {
-    "build": "node Scripts/build.js",
-    "test": "node Scripts/test.js",
-    "archive": "node Scripts/archive.js",
-    "pod-lint": "node Scripts/pod-lint.js",
-    "generate": "node Scripts/generate.js",
-    "preview-doc": "node Scripts/preview-doc.js",
-    "build-doc": "node Scripts/build-doc.js",
-    "serve-doc": "node Scripts/serve-doc.js"
+    "build": "npm exec --package=swiftylab-ci -- build.js",
+    "xcodebuild": "npm exec --package=swiftylab-ci -- xcodebuild.js",
+    "test": "npm exec --package=swiftylab-ci -- test.js",
+    "archive": "npm exec --package=swiftylab-ci -- archive.js",
+    "pod-lint": "npm exec --package=swiftylab-ci -- pod-lint.js",
+    "generate": "npm exec --package=swiftylab-ci -- generate.js",
+    "preview-doc": "npm exec --package=swiftylab-ci -- preview-doc.js AsyncObjects",
+    "build-doc": "npm exec --package=swiftylab-ci -- build-doc.js AsyncObjects",
+    "serve-doc": "npm exec --package=swiftylab-ci -- serve-doc.js AsyncObjects"
   }
 }

@@ -220,3 +220,6 @@ dist
 
 # TernJS port file
 .tern-port
+
+# NPM package lock
+package-lock.json
