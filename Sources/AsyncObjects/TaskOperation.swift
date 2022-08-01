@@ -15,7 +15,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     @unchecked Sendable
 {
     /// The dispatch queue used to synchronize data access and modifications.
-    private weak var propQueue: DispatchQueue!
+    private unowned let propQueue: DispatchQueue
     /// The asynchronous action to perform as part of the operation..
     private let underlyingAction: @Sendable () async throws -> R
     /// The top-level task that executes asynchronous action provided

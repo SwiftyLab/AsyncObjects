@@ -49,6 +49,8 @@ public actor CancellationSource {
     }
 
     /// Creates a new cancellation source object.
+    ///
+    /// - Returns: The newly created cancellation source.
     public init() { }
 
     /// Creates a new cancellation source object linking to all the provided cancellation sources.
@@ -57,6 +59,8 @@ public actor CancellationSource {
     /// will ensure newly created cancellation source recieve cancellation event.
     ///
     /// - Parameter sources: The cancellation sources the newly created object will be linked to.
+    ///
+    /// - Returns: The newly created cancellation source.
     public init(linkedWith sources: [CancellationSource]) async {
         await withTaskGroup(of: Void.self) { group in
             sources.forEach { source in
@@ -141,6 +145,8 @@ public extension Task {
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
+    ///
+    /// - Returns: The newly created task.
     @discardableResult
     init(
         priority: TaskPriority? = nil,
@@ -165,6 +171,8 @@ public extension Task {
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
+    ///
+    /// - Returns: The newly created task.
     @discardableResult
     init(
         priority: TaskPriority? = nil,
@@ -189,6 +197,8 @@ public extension Task {
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
+    ///
+    /// - Returns: The newly created task.
     @discardableResult
     static func detached(
         priority: TaskPriority? = nil,
@@ -213,6 +223,8 @@ public extension Task {
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
+    ///
+    /// - Returns: The newly created task.
     @discardableResult
     static func detached(
         priority: TaskPriority? = nil,
@@ -235,6 +247,8 @@ public extension Task {
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
+    ///
+    /// - Returns: The newly created task.
     @discardableResult
     init(
         priority: TaskPriority? = nil,
@@ -254,6 +268,8 @@ public extension Task {
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
+    ///
+    /// - Returns: The newly created task.
     @discardableResult
     init(
         priority: TaskPriority? = nil,
@@ -273,6 +289,8 @@ public extension Task {
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
+    ///
+    /// - Returns: The newly created task.
     @discardableResult
     static func detached(
         priority: TaskPriority? = nil,
@@ -293,6 +311,8 @@ public extension Task {
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
+    ///
+    /// - Returns: The newly created task.
     @discardableResult
     static func detached(
         priority: TaskPriority? = nil,

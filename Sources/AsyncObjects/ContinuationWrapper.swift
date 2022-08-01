@@ -11,8 +11,10 @@
 ///              You must not resume the continuation in closure.
 ///   - fn: A closure that takes an `UnsafeContinuation` parameter.
 ///         You must resume the continuation exactly once.
+///
 /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
 /// - Returns: The value passed to the continuation.
+///
 /// - Important: The continuation provided in cancellation handler is already resumed with cancellation error.
 ///              Trying to resume the continuation here will cause runtime error/unexpected behavior.
 func withUnsafeThrowingContinuationCancellationHandler<T: Sendable>(
@@ -20,7 +22,7 @@ func withUnsafeThrowingContinuationCancellationHandler<T: Sendable>(
     _ fn: (UnsafeContinuation<T, Error>) -> Void
 ) async throws -> T {
     typealias Continuation = UnsafeContinuation<T, Error>
-    let wrapper = Continuation.Wrapper()
+    let wrapper = ContinuationWrapper<Continuation>()
     let value = try await withTaskCancellationHandler {
         guard let continuation = wrapper.value else { return }
         wrapper.cancel(withError: CancellationError())
@@ -36,31 +38,54 @@ func withUnsafeThrowingContinuationCancellationHandler<T: Sendable>(
     return value
 }
 
-extension UnsafeContinuation {
-    /// Wrapper type used to store `continuation` and
-    /// provide cancellation mechanism.
-    class Wrapper {
-        /// The underlying continuation referenced.
-        var value: UnsafeContinuation?
+/// Wrapper type used to store `continuation` and
+/// provide cancellation mechanism.
+final class ContinuationWrapper<Wrapped: Continuable> {
+    /// The underlying continuation referenced.
+    var value: Wrapped?
 
-        /// Creates a new instance with a continuation reference passed.
-        /// By default no continuation is stored.
-        ///
-        /// - Parameter value: A continuation reference to store.
-        /// - Returns: The newly created continuation wrapper.
-        init(value: UnsafeContinuation? = nil) {
-            self.value = value
-        }
+    /// Creates a new instance with a continuation reference passed.
+    /// By default no continuation is stored.
+    ///
+    /// - Parameter value: A continuation reference to store.
+    ///
+    /// - Returns: The newly created continuation wrapper.
+    init(value: Wrapped? = nil) {
+        self.value = value
+    }
 
-        /// Resume continuation with passed error,
-        /// without checking if continuation already resumed.
-        ///
-        /// - Parameter error: Error passed to continuation.
-        func cancel(withError error: E) {
-            value?.resume(throwing: error)
-        }
+    /// Resume continuation with passed error,
+    /// without checking if continuation already resumed.
+    ///
+    /// - Parameter error: Error passed to continuation.
+    func cancel(withError error: Wrapped.Failure) {
+        value?.resume(throwing: error)
     }
 }
+
+/// A type that allows to interface between synchronous and asynchronous code,
+/// by representing task state and allowing task resuming with some value or error.
+protocol Continuable: Sendable {
+    /// The type of value to resume the continuation with in case of success.
+    associatedtype Success
+    /// The type of error to resume the continuation with in case of failure.
+    associatedtype Failure: Error
+    /// Resume the task awaiting the continuation by having it return normally from its suspension point.
+    ///
+    /// - Parameter value: The value to return from the continuation.
+    func resume(returning value: Success)
+    /// Resume the task awaiting the continuation by having it throw an error from its suspension point.
+    ///
+    /// - Parameter error: The error to throw from the continuation.
+    func resume(throwing error: Failure)
+    /// Resume the task awaiting the continuation by having it either return normally
+    /// or throw an error based on the state of the given `Result` value.
+    ///
+    /// - Parameter result: A value to either return or throw from the continuation.
+    func resume(with result: Result<Success, Failure>)
+}
+
+extension UnsafeContinuation: Continuable {}
 
 extension UnsafeContinuation where E == Error {
     /// Cancel continuation by resuming with cancellation error.

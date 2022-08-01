@@ -1,10 +1,14 @@
 # ``AsyncObjects``
 
-Several synchronization primitives introduced to aid in modern swift concurrency. The primitives are very similar to those used in other operating systems including mutexes, condition variables, shared/exclusive locks, and semaphores.
+Several synchronization primitives and task synchronization mechanisms introduced to aid in modern swift concurrency.
 
 ## Overview
 
-Several synchronization primitives introduced to aid in modern swift concurrency. The primitives are very similar to those used in other operating systems including mutexes, condition variables, shared/exclusive locks, and semaphores.
+While Swift's modern structured concurrency provides safer way of managing concurrency, it lacks many synchronization and task management features in its current state. **AsyncObjects** aims to close the functionality gap by providing following features:
+
+- Easier task cancellation with ``CancellationSource``.
+- Introducing traditional synchronization primitives that work in non-blocking way with ``AsyncSemaphore`` and ``AsyncEvent``.
+- Bridging with Grand Central Dispatch and allowing usage of GCD specific patterns with ``TaskOperation`` and ``TaskQueue``.
 
 ## Topics
 
@@ -13,7 +17,8 @@ Several synchronization primitives introduced to aid in modern swift concurrency
 - ``AsyncSemaphore``
 - ``AsyncEvent``
 
-### Tasks Control
+### Tasks Synchronization
 
 - ``CancellationSource``
 - ``TaskOperation``
+- ``TaskQueue``

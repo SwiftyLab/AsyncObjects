@@ -75,12 +75,12 @@ public actor AsyncEvent: AsyncObject {
         guard !signaled else { return }
         let key = UUID()
         try? await withUnsafeThrowingContinuationCancellationHandler(
-            handler: { [weak self] (continuation: Continuation) in
+            handler: { [weak self] continuation in
                 Task { [weak self] in
                     await self?.removeContinuation(withKey: key)
                 }
             },
-            { [weak self] (continuation: Continuation) in
+            { [weak self] continuation in
                 Task { [weak self] in
                     await self?.addContinuation(continuation, withKey: key)
                 }
