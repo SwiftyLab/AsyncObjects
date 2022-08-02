@@ -147,7 +147,7 @@ public actor TaskQueue: AsyncObject {
 
         let key = UUID()
         do {
-            try await withOnceResumableThrowingContinuationCancellationHandler(
+            try await withThrowingContinuationCancellationHandler(
                 handler: { [weak self] continuation in
                     Task { [weak self] in
                         await self?.dequeueContinuation(withKey: key)
@@ -205,7 +205,7 @@ public actor TaskQueue: AsyncObject {
         guard barriered || !queue.isEmpty else { return await runTask() }
         let key = UUID()
         do {
-            try await withOnceResumableThrowingContinuationCancellationHandler(
+            try await withThrowingContinuationCancellationHandler(
                 handler: { [weak self] continuation in
                     Task { [weak self] in
                         await self?.dequeueContinuation(withKey: key)
@@ -237,49 +237,6 @@ public actor TaskQueue: AsyncObject {
     }
 }
 
-/// Suspends the current task, then calls the given closure with a safe throwing continuation for the current task.
-/// Continuation is cancelled with error if current task is cancelled and cancellation handler is immediately invoked.
-///
-/// This operation cooperatively checks for cancellation and reacting to it by cancelling the safe throwing continuation with an error
-/// and the cancellation handler is always and immediately invoked after that.
-/// For example, even if the operation is running code that never checks for cancellation,
-/// a cancellation handler still runs and provides a chance to run some cleanup code.
-///
-/// - Parameters:
-///   - handler: A closure that is called after cancelling continuation.
-///              Resuming the continuation in closure will not have any effect.
-///   - fn: A closure that takes an `SafeContinuation` parameter.
-///         Continuation can be resumed exactly once and subsequent resuming are ignored and has no effect..
-///
-/// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
-/// - Returns: The value passed to the continuation.
-///
-/// - Note: The continuation provided in cancellation handler is already resumed with cancellation error.
-///         Trying to resume the continuation here will have no effect.
-private func withOnceResumableThrowingContinuationCancellationHandler<
-    T: Sendable
->(
-    handler: @Sendable (SafeContinuation<T, Error>) -> Void,
-    _ fn: (SafeContinuation<T, Error>) -> Void
-) async throws -> T {
-    typealias Continuation = SafeContinuation<T, Error>
-    let wrapper = ContinuationWrapper<Continuation>()
-    let value = try await withTaskCancellationHandler {
-        guard let continuation = wrapper.value else { return }
-        wrapper.cancel(withError: CancellationError())
-        handler(continuation)
-    } operation: { () -> T in
-        let value = try await withUnsafeThrowingContinuation {
-            (c: UnsafeContinuation<T, Error>) in
-            let continuation = SafeContinuation(continuation: c)
-            wrapper.value = continuation
-            fn(continuation)
-        }
-        return value
-    }
-    return value
-}
-
 /// A mechanism to interface between synchronous and asynchronous code,
 /// ignoring correctness violations.
 ///
@@ -302,7 +259,7 @@ struct SafeContinuation<T: Sendable, E: Error>: Continuable {
     }
 
     /// The underlying continuation used.
-    private let wrappedValue: UnsafeContinuation<T, E>
+    private let wrappedValue: GlobalContinuation<T, E>
     /// Keeps track whether continuation can be resumed,
     /// to make sure continuation only resumes once.
     private let resumable: Flag = {
@@ -318,9 +275,7 @@ struct SafeContinuation<T: Sendable, E: Error>: Continuable {
     ///                           don’t use it outside of this object.
     ///
     /// - Returns: The newly created safe continuation.
-    init(
-        continuation: UnsafeContinuation<T, E>
-    ) {
+    init(continuation: GlobalContinuation<T, E>) {
         self.wrappedValue = continuation
     }
 
@@ -379,5 +334,24 @@ struct SafeContinuation<T: Sendable, E: Error>: Continuable {
         guard resumable.value else { return }
         wrappedValue.resume(with: result)
         resumable.off()
+    }
+}
+
+extension SafeContinuation: ThrowingContinuable where E == Error {
+    /// Suspends the current task, then calls the given closure
+    /// with a safe throwing continuation for the current task.
+    ///
+    /// The continuation can be resumed exactly once, subsequent resumes are ignored.
+    ///
+    /// - Parameter fn: A closure that takes the throwing continuation parameter.
+    ///                 You can resume the continuation exactly once.
+    ///
+    /// - Returns: The value passed to the continuation by the closure.
+    /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
+    @inlinable
+    static func with(_ fn: (SafeContinuation<T, E>) -> Void) async throws -> T {
+        return try await GlobalContinuation<T, E>.with { continuation in
+            fn(.init(continuation: continuation))
+        }
     }
 }

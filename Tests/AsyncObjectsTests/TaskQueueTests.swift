@@ -229,10 +229,10 @@ class TaskQueueTests: XCTestCase {
 }
 
 class SafeContinuationTests: XCTestCase {
+    typealias IntContinuation = GlobalContinuation<Int, Error>
 
-    func testSafeContinuationMultipleResumeReturningValues() async {
-        let value = await withUnsafeContinuation {
-            (continuation: UnsafeContinuation<Int, Never>) in
+    func testSafeContinuationMultipleResumeReturningValues() async throws {
+        let value = try await IntContinuation.with { continuation in
             let safeContinuation = SafeContinuation(continuation: continuation)
             safeContinuation.resume(returning: 5)
             safeContinuation.resume(returning: 10)
@@ -243,8 +243,7 @@ class SafeContinuationTests: XCTestCase {
     func testSafeContinuationMultipleResumeReturningValueThrowingError()
         async throws
     {
-        let value = try await withUnsafeThrowingContinuation {
-            (continuation: UnsafeContinuation<Int, Error>) in
+        let value = try await IntContinuation.with { continuation in
             let safeContinuation = SafeContinuation(continuation: continuation)
             safeContinuation.resume(returning: 5)
             safeContinuation.resume(throwing: CancellationError())
@@ -256,10 +255,10 @@ class SafeContinuationTests: XCTestCase {
         async throws
     {
         do {
-            let _ = try await withUnsafeThrowingContinuation {
-                (continuation: UnsafeContinuation<Int, Error>) in
+            let _ = try await IntContinuation.with { continuation in
                 let safeContinuation = SafeContinuation(
-                    continuation: continuation)
+                    continuation: continuation
+                )
                 safeContinuation.resume(throwing: CancellationError())
                 safeContinuation.resume(returning: 5)
             }
@@ -271,10 +270,10 @@ class SafeContinuationTests: XCTestCase {
 
     func testSafeContinuationMultipleResumeThrowingErrors() async throws {
         do {
-            let _ = try await withUnsafeThrowingContinuation {
-                (continuation: UnsafeContinuation<Int, Error>) in
+            let _ = try await IntContinuation.with { continuation in
                 let safeContinuation = SafeContinuation(
-                    continuation: continuation)
+                    continuation: continuation
+                )
                 safeContinuation.resume(throwing: CancellationError())
                 safeContinuation.resume(throwing: URLError(.cancelled))
             }
@@ -284,9 +283,9 @@ class SafeContinuationTests: XCTestCase {
         }
     }
 
-    func testSafeContinuationMultipleResultsResumeReturningValues() async {
-        let value = await withUnsafeContinuation {
-            (continuation: UnsafeContinuation<Int, Never>) in
+    func testSafeContinuationMultipleResultsResumeReturningValues() async throws
+    {
+        let value = try await IntContinuation.with { continuation in
             let safeContinuation = SafeContinuation(continuation: continuation)
             safeContinuation.resume(with: .success(5))
             safeContinuation.resume(with: .success(10))
@@ -297,8 +296,7 @@ class SafeContinuationTests: XCTestCase {
     func testSafeContinuationMultipleResultsResumeReturningValueThrowingError()
         async throws
     {
-        let value = try await withUnsafeThrowingContinuation {
-            (continuation: UnsafeContinuation<Int, Error>) in
+        let value = try await IntContinuation.with { continuation in
             let safeContinuation = SafeContinuation(continuation: continuation)
             safeContinuation.resume(with: .success(5))
             safeContinuation.resume(with: .failure(CancellationError()))
@@ -310,10 +308,10 @@ class SafeContinuationTests: XCTestCase {
         async throws
     {
         do {
-            let _ = try await withUnsafeThrowingContinuation {
-                (continuation: UnsafeContinuation<Int, Error>) in
+            let _ = try await IntContinuation.with { continuation in
                 let safeContinuation = SafeContinuation(
-                    continuation: continuation)
+                    continuation: continuation
+                )
                 safeContinuation.resume(with: .failure(CancellationError()))
                 safeContinuation.resume(with: .success(5))
             }
@@ -326,10 +324,10 @@ class SafeContinuationTests: XCTestCase {
     func testSafeContinuationMultipleResultsResumeThrowingErrors() async throws
     {
         do {
-            let _ = try await withUnsafeThrowingContinuation {
-                (continuation: UnsafeContinuation<Int, Error>) in
+            let _ = try await IntContinuation.with { continuation in
                 let safeContinuation = SafeContinuation(
-                    continuation: continuation)
+                    continuation: continuation
+                )
                 safeContinuation.resume(with: .failure(CancellationError()))
                 safeContinuation.resume(with: .failure(URLError(.cancelled)))
             }

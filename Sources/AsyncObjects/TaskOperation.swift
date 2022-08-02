@@ -164,7 +164,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
 
     // MARK: AsyncObject Impl
     /// The suspended tasks continuation type.
-    private typealias Continuation = UnsafeContinuation<Void, Error>
+    private typealias Continuation = GlobalContinuation<Void, Error>
     /// The continuations stored with an associated key for all the suspended task that are waitig for opearation completion.
     private var continuations: [UUID: Continuation] = [:]
 
@@ -205,7 +205,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     public func wait() async {
         guard !isFinished else { return }
         let key = UUID()
-        try? await withUnsafeThrowingContinuationCancellationHandler(
+        try? await withThrowingContinuationCancellationHandler(
             handler: { [weak self] (continuation: Continuation) in
                 Task { [weak self] in
                     self?.removeContinuation(withKey: key)

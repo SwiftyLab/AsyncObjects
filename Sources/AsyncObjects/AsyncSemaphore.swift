@@ -11,7 +11,7 @@ import OrderedCollections
 /// or its timeout variation ``wait(forNanoseconds:)``.
 public actor AsyncSemaphore: AsyncObject {
     /// The suspended tasks continuation type.
-    private typealias Continuation = UnsafeContinuation<Void, Error>
+    private typealias Continuation = GlobalContinuation<Void, Error>
     /// The continuations stored with an associated key for all the suspended task that are waitig for access to resource.
     private var continuations: OrderedDictionary<UUID, Continuation> = [:]
     /// Pool size for concurrent resource access.
@@ -89,7 +89,7 @@ public actor AsyncSemaphore: AsyncObject {
         count -= 1
         if count > 0 { return }
         let key = UUID()
-        try? await withUnsafeThrowingContinuationCancellationHandler(
+        try? await withThrowingContinuationCancellationHandler(
             handler: { [weak self] continuation in
                 Task { [weak self] in
                     await self?.removeContinuation(withKey: key)
