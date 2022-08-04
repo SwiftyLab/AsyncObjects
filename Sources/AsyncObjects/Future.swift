@@ -5,7 +5,7 @@ import Foundation
 /// Use a future to perform some work and then asynchronously publish a single element.
 /// You can initialize the future with a closure that takes a ``Future/Promise``;
 /// the closure calls the promise with a `Result` that indicates either success or failure.
-/// 
+///
 /// Otherwise, you can create future and fulfill it with a `Result` that indicates either success or failure
 /// by using ``fulfill(with:)`` method. In the success case,
 /// the future’s downstream subscriber receives the element prior to the publishing stream finishing normally.

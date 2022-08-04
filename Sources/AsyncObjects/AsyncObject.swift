@@ -132,70 +132,79 @@ public func waitForAll(
 }
 
 /// Waits for multiple objects to green light task execution
-/// by either of them.
+/// by some(provided by count) of them.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns when any of the invokation completes.
+/// and returns when some(provided by count) of the invokation completes.
 ///
-/// - Parameter objects: The objects to wait for.
+/// - Parameters:
+///   - objects: The objects to wait for.
+///   - count: The number of objects to wait for.
 @inlinable
-public func waitForAny(_ objects: [any AsyncObject]) async {
+public func waitForAny(_ objects: [any AsyncObject], count: Int = 1) async {
     await withTaskGroup(of: Void.self) { group in
         objects.forEach { group.addTask(operation: $0.wait) }
-        for await _ in group.prefix(1) { group.cancelAll() }
+        for _ in 0..<count { await group.next() }
+        group.cancelAll()
     }
 }
 
 /// Waits for multiple objects to green light task execution
-/// by either of them.
+/// by some(provided by count) of them.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns when any of the invokation completes.
+/// and returns when some(provided by count) of the invokation completes.
 ///
-/// - Parameter objects: The objects to wait for.
+/// - Parameters:
+///   - objects: The objects to wait for.
+///   - count: The number of objects to wait for.
 @inlinable
-public func waitForAny(_ objects: any AsyncObject...) async {
-    await waitForAny(objects)
+public func waitForAny(_ objects: any AsyncObject..., count: Int = 1) async {
+    await waitForAny(objects, count: count)
 }
 
 /// Waits for multiple objects to green light task execution
-/// by either of them within provided duration.
+/// by some(provided by count) of them within provided duration.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns when any of the invokation completes
+/// and returns when some(provided by count) of the invokation completes
 /// or the timeout expires.
 ///
 /// - Parameters:
 ///   - objects: The objects to wait for.
+///   - count: The number of objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether wait completed or timed out.
 @inlinable
 public func waitForAny(
     _ objects: [any AsyncObject],
+    count: Int = 1,
     forNanoseconds duration: UInt64
 ) async -> TaskTimeoutResult {
     return await waitForTaskCompletion(withTimeoutInNanoseconds: duration) {
-        await waitForAny(objects)
+        await waitForAny(objects, count: count)
     }
 }
 
 /// Waits for multiple objects to green light task execution
-/// by either of them within provided duration.
+/// by some(provided by count) of them within provided duration.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns when any of the invokation completes
+/// and returns when some(provided by count) of the invokation completes
 /// or the timeout expires.
 ///
 /// - Parameters:
 ///   - objects: The objects to wait for.
+///   - count: The number of objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether wait completed or timed out.
 @inlinable
 public func waitForAny(
     _ objects: any AsyncObject...,
+    count: Int = 1,
     forNanoseconds duration: UInt64
 ) async -> TaskTimeoutResult {
-    return await waitForAny(objects, forNanoseconds: duration)
+    return await waitForAny(objects, count: count, forNanoseconds: duration)
 }
 
 /// Waits for the provided task to be completed within the timeout duration.
