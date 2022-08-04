@@ -124,5 +124,15 @@ class TaskOperationTests: XCTestCase {
             await operation.wait(forNanoseconds: UInt64(3E9))
         }
     }
+
+    func testTaskOperationAsyncWaitWithZeroTimeout() async throws {
+        let operation = TaskOperation(queue: .global(qos: .background)) {
+            // Do nothing
+        }
+        operation.signal()
+        await checkExecInterval(durationInSeconds: 0) {
+            await operation.wait(forNanoseconds: 0)
+        }
+    }
 }
 #endif

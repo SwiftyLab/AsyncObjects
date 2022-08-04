@@ -15,7 +15,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     @unchecked Sendable
 {
     /// The dispatch queue used to synchronize data access and modifications.
-    private unowned let propQueue: DispatchQueue
+    private let propQueue: DispatchQueue
     /// The asynchronous action to perform as part of the operation..
     private let underlyingAction: @Sendable () async throws -> R
     /// The top-level task that executes asynchronous action provided
@@ -95,6 +95,8 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         super.init()
     }
 
+    deinit { self.continuations.forEach { $0.value.cancel() } }
+
     /// Creates a new operation that executes the provided nonthrowing asynchronous task.
     ///
     /// The provided dispatch queue is used to syncronize operation property access and modifications
@@ -134,8 +136,8 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         guard isExecuting, execTask == nil else { return }
         execTask = Task { [weak self] in
             guard let self = self else { throw CancellationError() }
+            defer { self.finish() }
             let result = try await underlyingAction()
-            self.finish()
             return result
         }
     }
@@ -165,7 +167,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     // MARK: AsyncObject Impl
     /// The suspended tasks continuation type.
     private typealias Continuation = GlobalContinuation<Void, Error>
-    /// The continuations stored with an associated key for all the suspended task that are waitig for opearation completion.
+    /// The continuations stored with an associated key for all the suspended task that are waiting for opearation completion.
     private var continuations: [UUID: Continuation] = [:]
 
     /// Add continuation with the provided key in `continuations` map.
@@ -178,7 +180,10 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         _ continuation: Continuation,
         withKey key: UUID
     ) {
-        continuations[key] = continuation
+        propQueue.sync(flags: [.barrier]) {
+            if isFinished { continuation.resume(); return }
+            continuations[key] = continuation
+        }
     }
 
     /// Remove continuation associated with provided key
@@ -187,7 +192,30 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// - Parameter key: The key in the map.
     @inline(__always)
     private func removeContinuation(withKey key: UUID) {
-        continuations.removeValue(forKey: key)
+        propQueue.sync(flags: [.barrier]) {
+            let continuation = continuations.removeValue(forKey: key)
+            continuation?.resume(throwing: CancellationError())
+        }
+    }
+
+    /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
+    /// Continuation can be cancelled with error if current task is cancelled, by invoking `removeContinuation`.
+    ///
+    /// Spins up a new continuation and requests to track it with key by invoking `addContinuation`.
+    /// This operation cooperatively checks for cancellation and reacting to it by invoking `removeContinuation`.
+    /// Continuation can be resumed with error and some cleanup code can be run here.
+    ///
+    /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
+    @inline(__always)
+    func withPromisedContinuation() async throws {
+        let key = UUID()
+        try await withTaskCancellationHandler { [weak self] in
+            self?.removeContinuation(withKey: key)
+        } operation: { () -> Continuation.Success in
+            try await Continuation.with { continuation in
+                self.addContinuation(continuation, withKey: key)
+            }
+        }
     }
 
     /// Starts operation asynchronously
@@ -204,18 +232,6 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     @Sendable
     public func wait() async {
         guard !isFinished else { return }
-        let key = UUID()
-        try? await withThrowingContinuationCancellationHandler(
-            handler: { [weak self] (continuation: Continuation) in
-                Task { [weak self] in
-                    self?.removeContinuation(withKey: key)
-                }
-            },
-            { [weak self] (continuation: Continuation) in
-                Task { [weak self] in
-                    self?.addContinuation(continuation, withKey: key)
-                }
-            }
-        )
+        try? await withPromisedContinuation()
     }
 }

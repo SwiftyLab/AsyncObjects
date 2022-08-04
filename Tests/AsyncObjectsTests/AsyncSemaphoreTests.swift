@@ -108,6 +108,15 @@ class AsyncSemaphoreTests: XCTestCase {
         )
     }
 
+    func testSemaphoreWaitWithZeroTimeout() async throws {
+        let semaphore = AsyncSemaphore(value: 1)
+        var result: TaskTimeoutResult = .success
+        await checkExecInterval(durationInSeconds: 0) {
+            result = await semaphore.wait(forNanoseconds: 0)
+        }
+        XCTAssertEqual(result, .success)
+    }
+
     func testUsageAsMutexWaitWithTimeout() async throws {
         let mutex = AsyncSemaphore()
         var result: TaskTimeoutResult = .success

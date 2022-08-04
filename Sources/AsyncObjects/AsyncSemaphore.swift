@@ -12,7 +12,7 @@ import OrderedCollections
 public actor AsyncSemaphore: AsyncObject {
     /// The suspended tasks continuation type.
     private typealias Continuation = GlobalContinuation<Void, Error>
-    /// The continuations stored with an associated key for all the suspended task that are waitig for access to resource.
+    /// The continuations stored with an associated key for all the suspended task that are waiting for access to resource.
     private var continuations: OrderedDictionary<UUID, Continuation> = [:]
     /// Pool size for concurrent resource access.
     /// Has value provided during initialization incremented by one.
@@ -35,12 +35,13 @@ public actor AsyncSemaphore: AsyncObject {
     }
 
     /// Remove continuation associated with provided key
-    /// from `continuations` map.
+    /// from `continuations` map and resumes with `CancellationError`.
     ///
     /// - Parameter key: The key in the map.
     @inline(__always)
     private func removeContinuation(withKey key: UUID) {
-        continuations.removeValue(forKey: key)
+        let continuation = continuations.removeValue(forKey: key)
+        continuation?.resume(throwing: CancellationError())
         incrementCount()
     }
 
@@ -49,6 +50,28 @@ public actor AsyncSemaphore: AsyncObject {
     private func incrementCount() {
         guard count < limit else { return }
         count += 1
+    }
+
+    /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
+    /// Continuation can be cancelled with error if current task is cancelled, by invoking `removeContinuation`.
+    ///
+    /// Spins up a new continuation and requests to track it with key by invoking `addContinuation`.
+    /// This operation cooperatively checks for cancellation and reacting to it by invoking `removeContinuation`.
+    /// Continuation can be resumed with error and some cleanup code can be run here.
+    ///
+    /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
+    @inline(__always)
+    private func withPromisedContinuation() async throws {
+        let key = UUID()
+        try await withTaskCancellationHandler { [weak self] in
+            Task { [weak self] in
+                await self?.removeContinuation(withKey: key)
+            }
+        } operation: { () -> Continuation.Success in
+            try await Continuation.with { continuation in
+                self.addContinuation(continuation, withKey: key)
+            }
+        }
     }
 
     /// Creates new counting semaphore with an initial value.
@@ -88,18 +111,6 @@ public actor AsyncSemaphore: AsyncObject {
     public func wait() async {
         count -= 1
         if count > 0 { return }
-        let key = UUID()
-        try? await withThrowingContinuationCancellationHandler(
-            handler: { [weak self] continuation in
-                Task { [weak self] in
-                    await self?.removeContinuation(withKey: key)
-                }
-            },
-            { [weak self] continuation in
-                Task { [weak self] in
-                    await self?.addContinuation(continuation, withKey: key)
-                }
-            }
-        )
+        try? await withPromisedContinuation()
     }
 }

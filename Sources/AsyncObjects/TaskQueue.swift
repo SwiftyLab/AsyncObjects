@@ -13,7 +13,7 @@ public actor TaskQueue: AsyncObject {
         /// Whether continuation is associated with any barrier task.
         fileprivate let barrier: Bool
         /// The queued continuation to be resumed later.
-        fileprivate let continuation: SafeContinuation<Void, Error>
+        fileprivate let continuation: Continuation
 
         /// Creates a new continuation for task queued in ``TaskQueue``.
         ///
@@ -24,7 +24,7 @@ public actor TaskQueue: AsyncObject {
         /// - Returns: The newly created queued continuation.
         fileprivate init(
             barrier: Bool = false,
-            continuation: SafeContinuation<Void, Error>
+            continuation: Continuation
         ) {
             self.barrier = barrier
             self.continuation = continuation
@@ -34,10 +34,17 @@ public actor TaskQueue: AsyncObject {
         ///
         /// Multiple invocations are ignored and only first invocation accepted.
         fileprivate func resume() { continuation.resume() }
+
+        /// Resume the provided continuation if not done already.
+        ///
+        /// Multiple invocations are ignored and only first invocation accepted.
+        fileprivate func cancel() {
+            continuation.resume(throwing: CancellationError())
+        }
     }
 
     /// The suspended tasks continuation type.
-    private typealias Continuation = SafeContinuation<Void, Error>
+    fileprivate typealias Continuation = GlobalContinuation<Void, Error>
     /// The list of tasks currently queued and would be resumed one by one when current barrier task ends.
     private var queue: OrderedDictionary<UUID, QueuedContinuation> = [:]
     /// Indicates whether queue is locked by a barrier task currently running.
@@ -67,7 +74,8 @@ public actor TaskQueue: AsyncObject {
     /// - Parameter key: The key in the continuation queue.
     @inline(__always)
     private func dequeueContinuation(withKey key: UUID) async {
-        queue.removeValue(forKey: key)
+        let continuation = queue.removeValue(forKey: key)
+        continuation?.cancel()
     }
 
     /// Release barrier allowing other queued tasks to run
@@ -86,6 +94,34 @@ public actor TaskQueue: AsyncObject {
         }
     }
 
+    /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
+    /// Continuation can be cancelled with error if current task is cancelled, by invoking `dequeueContinuation`.
+    ///
+    /// Spins up a new continuation and requests to track it on queue with key by invoking `queueContinuation`.
+    /// This operation cooperatively checks for cancellation and reacting to it by invoking `dequeueContinuation`.
+    /// Continuation can be resumed with error and some cleanup code can be run here.
+    ///
+    /// - Parameter barrier: If the task should run as a barrier blocking queue.
+    ///
+    /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
+    @inline(__always)
+    private func withPromisedContinuation(barrier: Bool = false) async throws {
+        let key = UUID()
+        try await withTaskCancellationHandler { [weak self] in
+            Task { [weak self] in
+                await self?.dequeueContinuation(withKey: key)
+            }
+        } operation: { () -> Continuation.Success in
+            try await Continuation.with { continuation in
+                self.queueContinuation(
+                    barrier: barrier,
+                    atKey: key,
+                    continuation
+                )
+            }
+        }
+    }
+
     /// Creates a new concurrent task queue for running submitted tasks concurrently
     /// with the priority of the submitted tasks.
     ///
@@ -96,6 +132,8 @@ public actor TaskQueue: AsyncObject {
     public init(priority: TaskPriority? = nil) {
         self.priority = priority
     }
+
+    deinit { self.queue.forEach { $0.value.cancel() } }
 
     /// Executes the given throwing operation asynchronously.
     ///
@@ -145,19 +183,8 @@ public actor TaskQueue: AsyncObject {
             }
         }
 
-        let key = UUID()
         do {
-            try await withThrowingContinuationCancellationHandler(
-                handler: { [weak self] continuation in
-                    Task { [weak self] in
-                        await self?.dequeueContinuation(withKey: key)
-                    }
-                },
-                { continuation in
-                    queueContinuation(
-                        barrier: barrier, atKey: key, continuation)
-                }
-            )
+            try await withPromisedContinuation(barrier: barrier)
             return barrier ? try await runTaskAsBarrier() : try await task()
         } catch {
             if barrier { await releaseBarrier() }
@@ -203,19 +230,8 @@ public actor TaskQueue: AsyncObject {
         }
 
         guard barriered || !queue.isEmpty else { return await runTask() }
-        let key = UUID()
         do {
-            try await withThrowingContinuationCancellationHandler(
-                handler: { [weak self] continuation in
-                    Task { [weak self] in
-                        await self?.dequeueContinuation(withKey: key)
-                    }
-                },
-                { continuation in
-                    queueContinuation(
-                        barrier: barrier, atKey: key, continuation)
-                }
-            )
+            try await withPromisedContinuation(barrier: barrier)
         } catch {
             withUnsafeCurrentTask { $0?.cancel() }
         }
@@ -234,124 +250,5 @@ public actor TaskQueue: AsyncObject {
     /// until the suspended task's turn comes to be resumed.
     public func wait() async {
         await exec { /*Do nothing*/  }
-    }
-}
-
-/// A mechanism to interface between synchronous and asynchronous code,
-/// ignoring correctness violations.
-///
-/// A continuation is an opaque representation of program state.
-/// Resuming from standard library continuations more than once is undefined behavior and causes runtime error,
-/// while `SafeContinuation` only resumes once and subsequent resuming are ignored and has no effect.
-/// Never resuming leaves the task in a suspended state indefinitely, and leaks any associated resources.
-/// `SafeContinuation` doesn't notify if this invariant is violated.
-struct SafeContinuation<T: Sendable, E: Error>: Continuable {
-    /// A reference type wrabber for boolean value.
-    private final class Flag: Sendable {
-        /// The state of the flag, on state represented by `true`
-        /// while off represented by `false`.
-        fileprivate private(set) var value: Bool = true
-
-        /// Turn on the flag by changing `value` to `true`.
-        fileprivate func on() { value = true }
-        /// Turn off the flag by changing `value` to `false`.
-        fileprivate func off() { value = false }
-    }
-
-    /// The underlying continuation used.
-    private let wrappedValue: GlobalContinuation<T, E>
-    /// Keeps track whether continuation can be resumed,
-    /// to make sure continuation only resumes once.
-    private let resumable: Flag = {
-        let flag = Flag()
-        flag.on()
-        return flag
-    }()
-
-    /// Creates a safe continuation from provided continuation.
-    ///
-    /// - Parameter continuation: A continuation that hasn’t yet been resumed.
-    ///                           After passing the continuation to this initializer,
-    ///                           don’t use it outside of this object.
-    ///
-    /// - Returns: The newly created safe continuation.
-    init(continuation: GlobalContinuation<T, E>) {
-        self.wrappedValue = continuation
-    }
-
-    /// Resume the task awaiting the continuation by having it return normally from its suspension point.
-    ///
-    /// Continuation is resumed exactly once.
-    /// If the continuation has already been resumed through this object,
-    /// then the attempt to resume the continuation will have no effect.
-    /// After resume enqueues the task, control immediately returns to the caller.
-    /// The task continues executing when its executor is able to reschedule it.
-    func resume() where T == Void {
-        resume(returning: ())
-    }
-
-    /// Resume the task awaiting the continuation by having it return normally from its suspension point.
-    ///
-    /// Continuation is resumed exactly once.
-    /// If the continuation has already been resumed through this object,
-    /// then the attempt to resume the continuation will have no effect.
-    /// After resume enqueues the task, control immediately returns to the caller.
-    /// The task continues executing when its executor is able to reschedule it.
-    ///
-    /// - Parameter value: The value to return from the continuation.
-    func resume(returning value: T) {
-        guard resumable.value else { return }
-        wrappedValue.resume(returning: value)
-        resumable.off()
-    }
-
-    /// Resume the task awaiting the continuation by having it throw an error from its suspension point.
-    ///
-    /// Continuation is resumed exactly once.
-    /// If the continuation has already been resumed through this object,
-    /// then the attempt to resume the continuation will have no effect.
-    /// After resume enqueues the task, control immediately returns to the caller.
-    /// The task continues executing when its executor is able to reschedule it.
-    ///
-    /// - Parameter error: The error to throw from the continuation.
-    func resume(throwing error: E) {
-        guard resumable.value else { return }
-        wrappedValue.resume(throwing: error)
-        resumable.off()
-    }
-
-    /// Resume the task awaiting the continuation by having it either return normally
-    /// or throw an error based on the state of the given `Result` value.
-    ///
-    /// Continuation is resumed exactly once.
-    /// If the continuation has already been resumed through this object,
-    /// then the attempt to resume the continuation will have no effect.
-    /// After resume enqueues the task, control immediately returns to the caller.
-    /// The task continues executing when its executor is able to reschedule it.
-    ///
-    /// - Parameter result: A value to either return or throw from the continuation.
-    func resume(with result: Result<T, E>) {
-        guard resumable.value else { return }
-        wrappedValue.resume(with: result)
-        resumable.off()
-    }
-}
-
-extension SafeContinuation: ThrowingContinuable where E == Error {
-    /// Suspends the current task, then calls the given closure
-    /// with a safe throwing continuation for the current task.
-    ///
-    /// The continuation can be resumed exactly once, subsequent resumes are ignored.
-    ///
-    /// - Parameter fn: A closure that takes the throwing continuation parameter.
-    ///                 You can resume the continuation exactly once.
-    ///
-    /// - Returns: The value passed to the continuation by the closure.
-    /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
-    @inlinable
-    static func with(_ fn: (SafeContinuation<T, E>) -> Void) async throws -> T {
-        return try await GlobalContinuation<T, E>.with { continuation in
-            fn(.init(continuation: continuation))
-        }
     }
 }

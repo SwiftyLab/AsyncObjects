@@ -40,6 +40,15 @@ class AsyncEventTests: XCTestCase {
         XCTAssertEqual(result, .timedOut)
     }
 
+    func testEventWaitWithZeroTimeout() async throws {
+        let event = AsyncEvent(signaledInitially: true)
+        var result: TaskTimeoutResult = .success
+        await checkExecInterval(durationInSeconds: 0) {
+            result = await event.wait(forNanoseconds: 0)
+        }
+        XCTAssertEqual(result, .success)
+    }
+
     func testEventWaitSuccessWithoutTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         var result: TaskTimeoutResult = .timedOut

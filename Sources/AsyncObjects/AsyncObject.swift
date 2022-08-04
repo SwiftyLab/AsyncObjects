@@ -1,3 +1,5 @@
+import Foundation
+
 /// A result value indicating whether a task finished before a specified time.
 @frozen
 public enum TaskTimeoutResult: Hashable {
@@ -70,6 +72,7 @@ public extension AsyncObject where Self: AnyObject {
 /// and returns only when all the invokation completes.
 ///
 /// - Parameter objects: The objects to wait for.
+@inlinable
 public func waitForAll(_ objects: [any AsyncObject]) async {
     await withTaskGroup(of: Void.self) { group in
         objects.forEach { group.addTask(operation: $0.wait) }
@@ -83,6 +86,7 @@ public func waitForAll(_ objects: [any AsyncObject]) async {
 /// and returns only when all the invokation completes.
 ///
 /// - Parameter objects: The objects to wait for.
+@inlinable
 public func waitForAll(_ objects: any AsyncObject...) async {
     await waitForAll(objects)
 }
@@ -98,6 +102,7 @@ public func waitForAll(_ objects: any AsyncObject...) async {
 ///   - objects: The objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether wait completed or timed out.
+@inlinable
 public func waitForAll(
     _ objects: [any AsyncObject],
     forNanoseconds duration: UInt64
@@ -118,6 +123,7 @@ public func waitForAll(
 ///   - objects: The objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether wait completed or timed out.
+@inlinable
 public func waitForAll(
     _ objects: any AsyncObject...,
     forNanoseconds duration: UInt64
@@ -132,6 +138,7 @@ public func waitForAll(
 /// and returns when any of the invokation completes.
 ///
 /// - Parameter objects: The objects to wait for.
+@inlinable
 public func waitForAny(_ objects: [any AsyncObject]) async {
     await withTaskGroup(of: Void.self) { group in
         objects.forEach { group.addTask(operation: $0.wait) }
@@ -146,6 +153,7 @@ public func waitForAny(_ objects: [any AsyncObject]) async {
 /// and returns when any of the invokation completes.
 ///
 /// - Parameter objects: The objects to wait for.
+@inlinable
 public func waitForAny(_ objects: any AsyncObject...) async {
     await waitForAny(objects)
 }
@@ -161,6 +169,7 @@ public func waitForAny(_ objects: any AsyncObject...) async {
 ///   - objects: The objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether wait completed or timed out.
+@inlinable
 public func waitForAny(
     _ objects: [any AsyncObject],
     forNanoseconds duration: UInt64
@@ -181,6 +190,7 @@ public func waitForAny(
 ///   - objects: The objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether wait completed or timed out.
+@inlinable
 public func waitForAny(
     _ objects: any AsyncObject...,
     forNanoseconds duration: UInt64
@@ -205,11 +215,11 @@ public func waitForTaskCompletion(
 ) async -> TaskTimeoutResult {
     var timedOut = true
     await withTaskGroup(of: Bool.self) { group in
-        group.addTask {
+        group.addTask(priority: .high) {
             await task()
             return !Task.isCancelled
         }
-        group.addTask {
+        group.addTask(priority: .high) {
             (try? await Task.sleep(nanoseconds: timeout)) == nil
         }
         for await result in group.prefix(1) {
