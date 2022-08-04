@@ -18,7 +18,7 @@ public actor AsyncSemaphore: AsyncObject {
     /// Has value provided during initialization incremented by one.
     private var limit: UInt
     /// Current count of semaphore.
-    /// Can have maximum value upto `limit`.
+    /// Can have maximum value up to `limit`.
     private var count: Int
 
     /// Add continuation with the provided key in `continuations` map.

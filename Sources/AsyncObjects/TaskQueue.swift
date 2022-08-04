@@ -3,7 +3,7 @@ import OrderedCollections
 
 /// An object that acts as a concurrent queue executing submitted tasks concurrently.
 ///
-/// You can use the ``exec(barrier:priority:task:)-3a9s9`` or its nonthrowing version
+/// You can use the ``exec(barrier:priority:task:)-3a9s9`` or its non-throwing version
 /// to run tasks concurrently. Optionally, you can enable the `barrier` flag for submitted task to block the queue until the provided task
 /// completes execution.
 public actor TaskQueue: AsyncObject {
@@ -54,7 +54,7 @@ public actor TaskQueue: AsyncObject {
     /// TODO: Implement priority based task invocations.
     private let priority: TaskPriority?
 
-    /// Add continuation (both throwing and nonthrowing) with the provided key in queue.
+    /// Add continuation (both throwing and non-throwing) with the provided key in queue.
     ///
     /// - Parameters:
     ///   - barrier: Whether the continuation is associated with a barrier or blocking task.
@@ -128,7 +128,7 @@ public actor TaskQueue: AsyncObject {
     /// - Parameter priority: The priority of the tasks submitted to queue.
     ///                       Pass nil to use the priority from `Task.currentPriority`.
     ///
-    /// - Returns: The newly created cocurrent task queue.
+    /// - Returns: The newly created concurrent task queue.
     public init(priority: TaskPriority? = nil) {
         self.priority = priority
     }
@@ -192,7 +192,7 @@ public actor TaskQueue: AsyncObject {
         }
     }
 
-    /// Executes the given nonthrowing operation asynchronously.
+    /// Executes the given non-throwing operation asynchronously.
     ///
     /// Immediately runs the provided operation if queue isn't locked by barrier task,
     /// otherwise adds operation to queue to be executed later.
@@ -209,7 +209,7 @@ public actor TaskQueue: AsyncObject {
     ///   - barrier: If the task should run as a barrier blocking queue.
     ///   - priority: The priority of the task.
     ///               Pass nil to use the priority from `Task.currentPriority`.
-    ///   - task: The nonthrowing operation to perform.
+    ///   - task: The non-throwing operation to perform.
     ///
     /// - Returns: The result from provided operation.
     @discardableResult
@@ -239,7 +239,7 @@ public actor TaskQueue: AsyncObject {
     }
 
     /// Signalling on queue does nothing.
-    /// Only added to satisfy ``AsyncObject`` reuirements.
+    /// Only added to satisfy ``AsyncObject`` requirements.
     public func signal() async {
         // Do nothing
     }

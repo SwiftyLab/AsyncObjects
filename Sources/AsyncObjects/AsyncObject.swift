@@ -11,11 +11,11 @@ public enum TaskTimeoutResult: Hashable {
     case timedOut
 }
 
-/// An object type that can provide synchonization accross multiple task contexts
+/// An object type that can provide synchronization across multiple task contexts
 ///
 /// Waiting asynchronously can be done by calling ``wait()`` method,
 /// while object decides when to resume task. Similarly, ``signal()`` can be used
-/// to indicate resuming of suspended tasks.
+/// to indicate resuming suspended tasks.
 public protocol AsyncObject: Sendable {
     /// Signals the object for task synchronization.
     ///
@@ -69,7 +69,7 @@ public extension AsyncObject where Self: AnyObject {
 /// Waits for multiple objects to green light task execution.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns only when all the invokation completes.
+/// and returns only when all the invocation completes.
 ///
 /// - Parameter objects: The objects to wait for.
 @inlinable
@@ -83,7 +83,7 @@ public func waitForAll(_ objects: [any AsyncObject]) async {
 /// Waits for multiple objects to green light task execution.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns only when all the invokation completes.
+/// and returns only when all the invocation completes.
 ///
 /// - Parameter objects: The objects to wait for.
 @inlinable
@@ -95,7 +95,7 @@ public func waitForAll(_ objects: any AsyncObject...) async {
 /// within provided duration.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns either when all the invokation completes
+/// and returns either when all the invocation completes
 /// or the timeout expires.
 ///
 /// - Parameters:
@@ -116,7 +116,7 @@ public func waitForAll(
 /// within provided duration.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns either when all the invokation completes
+/// and returns either when all the invocation completes
 /// or the timeout expires.
 ///
 /// - Parameters:
@@ -135,7 +135,7 @@ public func waitForAll(
 /// by some(provided by count) of them.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns when some(provided by count) of the invokation completes.
+/// and returns when some(provided by count) of the invocation completes.
 ///
 /// - Parameters:
 ///   - objects: The objects to wait for.
@@ -153,7 +153,7 @@ public func waitForAny(_ objects: [any AsyncObject], count: Int = 1) async {
 /// by some(provided by count) of them.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns when some(provided by count) of the invokation completes.
+/// and returns when some(provided by count) of the invocation completes.
 ///
 /// - Parameters:
 ///   - objects: The objects to wait for.
@@ -167,7 +167,7 @@ public func waitForAny(_ objects: any AsyncObject..., count: Int = 1) async {
 /// by some(provided by count) of them within provided duration.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns when some(provided by count) of the invokation completes
+/// and returns when some(provided by count) of the invocation completes
 /// or the timeout expires.
 ///
 /// - Parameters:
@@ -190,7 +190,7 @@ public func waitForAny(
 /// by some(provided by count) of them within provided duration.
 ///
 /// Invokes ``AsyncObject/wait()`` for all objects
-/// and returns when some(provided by count) of the invokation completes
+/// and returns when some(provided by count) of the invocation completes
 /// or the timeout expires.
 ///
 /// - Parameters:

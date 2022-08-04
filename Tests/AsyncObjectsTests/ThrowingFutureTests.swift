@@ -4,13 +4,13 @@ import Dispatch
 
 class ThrowingFutureTests: XCTestCase {
 
-    func testFutureFullfilledInitialization() async throws {
+    func testFutureFulfilledInitialization() async throws {
         let future = await Future<Int, Error>(with: .success(5))
         let value = try await future.value
         XCTAssertEqual(value, 5)
     }
 
-    func testFutureFullfillWithSuccess() async throws {
+    func testFutureFulfillWithSuccess() async throws {
         let future = Future<Int, Error>()
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask {
@@ -25,7 +25,7 @@ class ThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testFutureFullfillWithError() async throws {
+    func testFutureFulfillWithError() async throws {
         let future = Future<Int, Error>()
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask {
@@ -44,12 +44,12 @@ class ThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testFutureFullfillWaitCancellation() async throws {
+    func testFutureFulfillWaitCancellation() async throws {
         let future = Future<Int, Error>()
         let waitTask = Task {
             do {
                 let _ = try await future.value
-                XCTFail("Future fulfillment wait not cancelled")
+                XCTFail("Future fulfillments wait not cancelled")
             } catch {
                 XCTAssertTrue(type(of: error) == CancellationError.self)
             }
@@ -78,7 +78,7 @@ class ThrowingFutureTests: XCTestCase {
                     let value = try await allFuture.value
                     XCTAssertEqual(value, [1, 2, 3])
                 }
-                // To make sure allfuture task started
+                // To make sure all future task started
                 // before adding future fulfill tasks
                 try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
@@ -117,7 +117,7 @@ class ThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
-                // To make sure allfuture task started
+                // To make sure all future task started
                 // before adding future fulfill tasks
                 try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
@@ -155,7 +155,7 @@ class ThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
-                // To make sure allfuture task started
+                // To make sure all future task started
                 // before adding future fulfill tasks
                 try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
@@ -198,7 +198,7 @@ class ThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
-                // To make sure allfuture task started
+                // To make sure all future task started
                 // before adding future fulfill tasks
                 try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
@@ -231,7 +231,7 @@ class ThrowingFutureTests: XCTestCase {
                         XCTAssertEqual(value, 1)
                     }
                 }
-                // To make sure allfuture task started
+                // To make sure all future task started
                 // before adding future fulfill tasks
                 try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
@@ -270,7 +270,7 @@ class ThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
-                // To make sure allfuture task started
+                // To make sure all future task started
                 // before adding future fulfill tasks
                 try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
@@ -303,7 +303,7 @@ class ThrowingFutureTests: XCTestCase {
                         XCTAssertEqual(value, 1)
                     }
                 }
-                // To make sure allfuture task started
+                // To make sure all future task started
                 // before adding future fulfill tasks
                 try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
@@ -336,7 +336,7 @@ class ThrowingFutureTests: XCTestCase {
                         XCTAssertEqual(value, 2)
                     }
                 }
-                // To make sure allfuture task started
+                // To make sure all future task started
                 // before adding future fulfill tasks
                 try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
@@ -375,7 +375,7 @@ class ThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
-                // To make sure allfuture task started
+                // To make sure all future task started
                 // before adding future fulfill tasks
                 try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {

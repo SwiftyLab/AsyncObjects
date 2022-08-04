@@ -2,7 +2,7 @@ import Foundation
 
 /// An object that controls execution of tasks depending on the signal state.
 ///
-/// An async event suspends tasks if current state is non-signaled and resumes execution when event is signaled.
+/// An async event suspends tasks if current state is non-signaled and resumes execution when event is signalled.
 ///
 /// You can signal event by calling the ``signal()`` method and reset signal by calling ``reset()``.
 /// Wait for event signal by calling ``wait()`` method or its timeout variation ``wait(forNanoseconds:)``.
@@ -11,8 +11,8 @@ public actor AsyncEvent: AsyncObject {
     private typealias Continuation = GlobalContinuation<Void, Error>
     /// The continuations stored with an associated key for all the suspended task that are waiting for event signal.
     private var continuations: [UUID: Continuation] = [:]
-    /// Indicates whether current stateof event is signaled.
-    private var signaled: Bool
+    /// Indicates whether current state of event is signalled.
+    private var signalled: Bool
 
     /// Add continuation with the provided key in `continuations` map.
     ///
@@ -60,13 +60,13 @@ public actor AsyncEvent: AsyncObject {
     }
 
     /// Creates a new event with signal state provided.
-    /// By default, event is initially in signaled state.
+    /// By default, event is initially in signalled state.
     ///
-    /// - Parameter signaled: The signal state for event.
+    /// - Parameter signalled: The signal state for event.
     ///
     /// - Returns: The newly created event.
-    public init(signaledInitially signaled: Bool = true) {
-        self.signaled = signaled
+    public init(signaledInitially signalled: Bool = true) {
+        self.signalled = signalled
     }
 
     deinit { self.continuations.forEach { $0.value.cancel() } }
@@ -76,7 +76,7 @@ public actor AsyncEvent: AsyncObject {
     /// After reset, tasks have to wait for event signal to complete.
     @Sendable
     public func reset() {
-        signaled = false
+        signalled = false
     }
 
     /// Signals the event.
@@ -86,16 +86,16 @@ public actor AsyncEvent: AsyncObject {
     public func signal() {
         continuations.forEach { $0.value.resume() }
         continuations = [:]
-        signaled = true
+        signalled = true
     }
 
-    /// Waits for event signal, or proceeds if already signaled.
+    /// Waits for event signal, or proceeds if already signalled.
     ///
     /// Only waits asynchronously, if event is in non-signaled state,
-    /// until event is signaled.
+    /// until event is signalled.
     @Sendable
     public func wait() async {
-        guard !signaled else { return }
+        guard !signalled else { return }
         try? await withPromisedContinuation()
     }
 }

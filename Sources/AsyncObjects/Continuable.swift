@@ -36,7 +36,7 @@ protocol ThrowingContinuable: Continuable {
     /// with a throwing continuation for the current task.
     ///
     /// The continuation can be resumed exactly once,
-    /// subsequent resumes have different behavior depending on type implemeting.
+    /// subsequent resumes have different behaviors depending on type implementing.
     ///
     /// - Parameter fn: A closure that takes the throwing continuation parameter.
     ///                 You can resume the continuation exactly once.
@@ -92,12 +92,12 @@ protocol NonThrowingContinuable: Continuable {
     /// The type of error to resume the continuation with in case of failure.
     associatedtype Failure = Never
     /// Suspends the current task, then calls the given closure
-    /// with a nonthrowing continuation for the current task.
+    /// with a non-throwing continuation for the current task.
     ///
     /// The continuation can be resumed exactly once,
-    /// subsequent resumes have different behavior depending on type implemeting.
+    /// subsequent resumes have different behavior depending on type implementing.
     ///
-    /// - Parameter fn: A closure that takes the nonthrowing continuation parameter.
+    /// - Parameter fn: A closure that takes the non-throwing continuation parameter.
     ///                 You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
@@ -107,7 +107,7 @@ protocol NonThrowingContinuable: Continuable {
 
 extension UnsafeContinuation: NonThrowingContinuable where E == Never {
     /// Suspends the current task, then calls the given closure
-    /// with an unsafe nonthrowing continuation for the current task.
+    /// with an unsafe non-throwing continuation for the current task.
     ///
     /// The continuation must be resumed exactly once, subsequent resumes will cause runtime error.
     /// Use `CheckedContinuation` to capture relevant data in case of runtime errors.
@@ -124,7 +124,7 @@ extension UnsafeContinuation: NonThrowingContinuable where E == Never {
 
 extension CheckedContinuation: NonThrowingContinuable where E == Never {
     /// Suspends the current task, then calls the given closure
-    /// with a checked nonthrowing continuation for the current task.
+    /// with a checked non-throwing continuation for the current task.
     ///
     /// The continuation must be resumed exactly once, subsequent resumes will cause runtime error.
     /// `CheckedContinuation` logs messages proving additional info on these errors.

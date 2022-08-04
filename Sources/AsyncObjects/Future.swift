@@ -40,7 +40,7 @@ public actor Future<Output, Failure: Error> {
     }
 
     /// Creates a future that can be fulfilled later by ``fulfill(with:)`` or
-    /// any other variation of this methos.
+    /// any other variation of this methods.
     ///
     /// - Returns: The newly created future.
     public init() { }
@@ -115,7 +115,7 @@ extension Future where Failure == Never {
     /// The published value of the future, delivered asynchronously.
     ///
     /// This property exposes the fulfilled value for the `Future` asynchronously.
-    /// Immidiately returns if `Future` is fulfilled otherwise waits asynchronously
+    /// Immediately returns if `Future` is fulfilled otherwise waits asynchronously
     /// for `Future` to be fulfilled.
     public var value: Output {
         get async {
@@ -329,7 +329,7 @@ extension Future where Failure == Error {
     /// The published value of the future or an error, delivered asynchronously.
     ///
     /// This property exposes the fulfilled value for the `Future` asynchronously.
-    /// Immidiately returns if `Future` is fulfilled otherwise waits asynchronously
+    /// Immediately returns if `Future` is fulfilled otherwise waits asynchronously
     /// for `Future` to be fulfilled. If the Future terminates with an error,
     /// the awaiting caller receives the error instead.
     public var value: Output {

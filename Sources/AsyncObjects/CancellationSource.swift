@@ -2,18 +2,18 @@ import Foundation
 
 /// An object that controls cooperative cancellation of multiple registered tasks and linked object registered tasks.
 ///
-/// An async event suspends tasks if current state is non-signaled and resumes execution when event is signaled.
+/// An async event suspends tasks if current state is non-signaled and resumes execution when event is signalled.
 ///
 /// You can register tasks for cancellation using the ``register(task:)`` method
 /// and link with additional sources by creating object with ``init(linkedWith:)`` method.
-/// By calling the ``cancel()`` method all the reigistered tasks will be cancelled
+/// By calling the ``cancel()`` method all the registered tasks will be cancelled
 /// and the cancellation event will be propagated to linked cancellation sources,
-/// which in turn cancels their rigistered tasks and further propagates cancellation.
+/// which in turn cancels their registered tasks and further propagates cancellation.
 ///
 /// - Warning: Cancellation sources propagate cancellation event to other linked cancellation sources.
 ///            In case of circular dependency between cancellation sources, app will go into infinite recursion.
 public actor CancellationSource {
-    /// All the rigistered tasks for cooperative cancellation.
+    /// All the registered tasks for cooperative cancellation.
     private var registeredTasks: [AnyHashable: () -> Void] = [:]
     /// All the linked cancellation sources that cancellation event will be propagated.
     ///
@@ -27,7 +27,7 @@ public actor CancellationSource {
     ///
     /// - Parameter task: The task to register.
     @inline(__always)
-    private func add<Success, Faliure>(task: Task<Success, Faliure>) {
+    private func add<Success, Failure>(task: Task<Success, Failure>) {
         guard !task.isCancelled else { return }
         registeredTasks[task] = { task.cancel() }
     }
@@ -36,7 +36,7 @@ public actor CancellationSource {
     ///
     /// - Parameter task: The task to remove.
     @inline(__always)
-    private func remove<Success, Faliure>(task: Task<Success, Faliure>) {
+    private func remove<Success, Failure>(task: Task<Success, Failure>) {
         registeredTasks.removeValue(forKey: task)
     }
 
@@ -56,7 +56,7 @@ public actor CancellationSource {
     /// Creates a new cancellation source object linking to all the provided cancellation sources.
     ///
     /// Initiating cancellation in any of the provided cancellation sources
-    /// will ensure newly created cancellation source recieve cancellation event.
+    /// will ensure newly created cancellation source receive cancellation event.
     ///
     /// - Parameter sources: The cancellation sources the newly created object will be linked to.
     ///
@@ -73,7 +73,7 @@ public actor CancellationSource {
     /// Creates a new cancellation source object linking to all the provided cancellation sources.
     ///
     /// Initiating cancellation in any of the provided cancellation sources
-    /// will ensure newly created cancellation source recieve cancellation event.
+    /// will ensure newly created cancellation source receive cancellation event.
     ///
     /// - Parameter sources: The cancellation sources the newly created object will be linked to.
     ///
@@ -95,13 +95,13 @@ public actor CancellationSource {
         }
     }
 
-    /// Register task for cooperative cancellation when cancellation event recieved on cancellation source.
+    /// Register task for cooperative cancellation when cancellation event received on cancellation source.
     ///
     /// If task completes before cancellation event is triggered, it is automatically unregistered.
     ///
     /// - Parameter task: The task to register.
     @Sendable
-    public func register<Success, Faliure>(task: Task<Success, Faliure>) {
+    public func register<Success, Failure>(task: Task<Success, Failure>) {
         add(task: task)
         Task { [weak self] in
             let _ = await task.result
@@ -134,7 +134,7 @@ public actor CancellationSource {
 }
 
 public extension Task {
-    /// Runs the given nonthrowing operation asynchronously as part of a new task on behalf of the current actor,
+    /// Runs the given non-throwing operation asynchronously as part of a new task on behalf of the current actor,
     /// with the provided cancellation source controlling cooperative cancellation.
     ///
     /// A child task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
@@ -186,7 +186,7 @@ public extension Task {
         }
     }
 
-    /// Runs the given nonthrowing operation asynchronously as part of a new task,
+    /// Runs the given non-throwing operation asynchronously as part of a new task,
     /// with the provided cancellation source controlling cooperative cancellation.
     ///
     /// A child task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
@@ -238,7 +238,7 @@ public extension Task {
         }
     }
 
-    /// Runs the given nonthrowing operation asynchronously as part of a new top-level task on behalf of the current actor,
+    /// Runs the given non-throwing operation asynchronously as part of a new top-level task on behalf of the current actor,
     /// with the provided cancellation source controlling cooperative cancellation.
     ///
     /// The created task will be cancelled when cancellation event triggered on the provided cancellation source.
@@ -280,7 +280,7 @@ public extension Task {
         await cancellationSource.register(task: self)
     }
 
-    /// Runs the given nonthrowing operation asynchronously as part of a new top-level task,
+    /// Runs the given non-throwing operation asynchronously as part of a new top-level task,
     /// with the provided cancellation source controlling cooperative cancellation.
     ///
     /// The created task will be cancelled when cancellation event triggered on the provided cancellation source.

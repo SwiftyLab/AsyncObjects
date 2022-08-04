@@ -78,7 +78,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
 
     /// Creates a new operation that executes the provided throwing asynchronous task.
     ///
-    /// The provided dispatch queue is used to syncronize operation property access and modifications
+    /// The provided dispatch queue is used to synchronize operation property access and modifications
     /// and prevent data races.
     ///
     /// - Parameters:
@@ -97,14 +97,14 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
 
     deinit { self.continuations.forEach { $0.value.cancel() } }
 
-    /// Creates a new operation that executes the provided nonthrowing asynchronous task.
+    /// Creates a new operation that executes the provided non-throwing asynchronous task.
     ///
-    /// The provided dispatch queue is used to syncronize operation property access and modifications
+    /// The provided dispatch queue is used to synchronize operation property access and modifications
     /// and prevent data races.
     ///
     /// - Parameters:
     ///   - queue: The dispatch queue to be used to synchronize data access and modifications.
-    ///   - operation: The nonthrowing asynchronous operation to execute.
+    ///   - operation: The non-throwing asynchronous operation to execute.
     ///
     /// - Returns: The newly created asynchronous operation.
     public init(
@@ -145,7 +145,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// Advises the operation object that it should stop executing its task.
     ///
     /// Initiates cooperative cancellation for provided asynchronous operation
-    /// and moves to finshed state.
+    /// and moves to finished state.
     ///
     /// Calling this method on a task that doesn’t support cancellation has no effect.
     /// Likewise, if the task has already run past the last point where it would stop early,
@@ -167,7 +167,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     // MARK: AsyncObject Impl
     /// The suspended tasks continuation type.
     private typealias Continuation = GlobalContinuation<Void, Error>
-    /// The continuations stored with an associated key for all the suspended task that are waiting for opearation completion.
+    /// The continuations stored with an associated key for all the suspended task that are waiting for operation completion.
     private var continuations: [UUID: Continuation] = [:]
 
     /// Add continuation with the provided key in `continuations` map.
@@ -225,9 +225,9 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         self.start()
     }
 
-    /// Waits for opearation to complete successfully or cancelled.
+    /// Waits for operation to complete successfully or cancelled.
     ///
-    /// Only waits asynchronously, if opearation is executing,
+    /// Only waits asynchronously, if operation is executing,
     /// until it is completed or cancelled.
     @Sendable
     public func wait() async {
