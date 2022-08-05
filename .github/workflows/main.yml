@@ -89,8 +89,8 @@ jobs:
        github.event.inputs.release == 'true' &&
        needs.swift-package-test.result == 'success' &&
        needs.xcode-test.result == 'success' &&
-       needs.cocoapods-test.result == 'success' &&
        (needs.ci.result == 'success' || needs.ci.result == 'skipped'))
+    # needs.cocoapods-test.result == 'success' &&
     # (needs.analyze.result == 'success' || needs.analyze.result == 'skipped')
     needs: [ci, swift-package-test, xcode-test]
     # needs: [ci, analyze, swift-package-test, xcode-test, cocoapods-test]
@@ -98,4 +98,5 @@ jobs:
     with:
       version: ${{ github.event.inputs.version }}
       cocoapods: false
-    secrets: inherit
+    secrets:
+      COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}

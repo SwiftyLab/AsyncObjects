@@ -20,4 +20,4 @@ While Swift's modern structured concurrency provides safer way of managing concu
 - Easier task cancellation with ``CancellationSource``.
 - Introducing traditional synchronization primitives that work in non-blocking way with ``AsyncSemaphore`` and ``AsyncEvent``.
 - Bridging with Grand Central Dispatch and allowing usage of GCD specific patterns with ``TaskOperation`` and ``TaskQueue``.
-- Transfering data between multiple task boundaries with ``Future``.
+- Transferring data between multiple task boundaries with ``Future``.

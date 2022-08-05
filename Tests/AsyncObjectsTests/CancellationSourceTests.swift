@@ -53,7 +53,7 @@ class CancellationSourceTests: XCTestCase {
         let task = await Task(cancellationSource: source) {
             do {
                 try await Task.sleep(nanoseconds: UInt64(10E9))
-                XCTFail()
+                XCTFail("Unexpected task progression")
             } catch {}
         }
         await source.cancel()
@@ -67,7 +67,7 @@ class CancellationSourceTests: XCTestCase {
         let task = await Task.detached(cancellationSource: source) {
             do {
                 try await Task.sleep(nanoseconds: UInt64(10E9))
-                XCTFail()
+                XCTFail("Unexpected task progression")
             } catch {}
         }
         await source.cancel()
@@ -102,8 +102,9 @@ class CancellationSourceTests: XCTestCase {
         return Task(cancellationSource: source) {
             do {
                 try await Task.sleep(nanoseconds: UInt64(10E9))
+            } catch {
                 XCTAssertTrue(Task.isCancelled)
-            } catch {}
+            }
         }
     }
 
@@ -124,7 +125,7 @@ class CancellationSourceTests: XCTestCase {
         return Task.detached(cancellationSource: source) {
             do {
                 try await Task.sleep(nanoseconds: UInt64(10E9))
-                XCTFail()
+                XCTFail("Unexpected task progression")
             } catch {}
         }
     }
@@ -146,7 +147,7 @@ class CancellationSourceTests: XCTestCase {
     ) throws -> Task<Void, Error> {
         return try Task(cancellationSource: source) {
             try await Task.sleep(nanoseconds: UInt64(10E9))
-            XCTFail()
+            XCTFail("Unexpected task progression")
         }
     }
 
@@ -168,7 +169,7 @@ class CancellationSourceTests: XCTestCase {
     ) throws -> Task<Void, Error> {
         return try Task.detached(cancellationSource: source) {
             try await Task.sleep(nanoseconds: UInt64(10E9))
-            XCTFail()
+            XCTFail("Unexpected task progression")
         }
     }
 

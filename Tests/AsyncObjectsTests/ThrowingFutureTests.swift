@@ -31,7 +31,7 @@ class ThrowingFutureTests: XCTestCase {
             group.addTask {
                 do {
                     let _ = try await future.value
-                    XCTFail()
+                    XCTFail("Unexpected task progression")
                 } catch {
                     XCTAssertTrue(type(of: error) == CancellationError.self)
                 }

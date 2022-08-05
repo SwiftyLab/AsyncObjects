@@ -34,7 +34,7 @@ class TaskOperationTests: XCTestCase {
         XCTAssertFalse(operation.isCancelled)
         switch await operation.result {
         case .success(true): break
-        default: XCTFail()
+        default: XCTFail("Unexpected operation result")
         }
     }
 
@@ -59,7 +59,7 @@ class TaskOperationTests: XCTestCase {
         XCTAssertFalse(operation.isExecuting)
         XCTAssertTrue(operation.isCancelled)
         switch await operation.result {
-        case .success(true): XCTFail()
+        case .success(true): XCTFail("Unexpected operation result")
         default: break
         }
     }
