@@ -3,9 +3,9 @@ import OrderedCollections
 
 /// An object that acts as a concurrent queue executing submitted tasks concurrently.
 ///
-/// You can use the ``exec(barrier:priority:task:)-3a9s9`` or its non-throwing version
-/// to run tasks concurrently. Optionally, you can enable the `barrier` flag for submitted task to block the queue until the provided task
-/// completes execution.
+/// You can use the ``exec(barrier:priority:operation:)-33gla`` or its non-throwing version
+/// to run tasks concurrently. Optionally, you can enable the `barrier` flag for submitted task
+/// to block the queue until the provided task completes execution.
 public actor TaskQueue: AsyncObject {
     /// A mechanism to queue tasks in ``TaskQueue`` as a concurrent task or as a barrier task,
     /// to be resumed when queue is freed from existing barrier task.
@@ -43,16 +43,43 @@ public actor TaskQueue: AsyncObject {
         }
     }
 
+    /// The execution priority of operations added to queue.
+    ///
+    /// The ``TaskQueue`` determines how priority information affects
+    /// the way operations added to queue are started. Typically, queue just
+    /// starts the operation as a new top-level task with the task priority provided.
+    public enum Priority {
+        /// Indicates to run the operation directly without creating as a new top-level task.
+        ///
+        /// Operation is executed asynchronously on behalf of the queue actor,
+        /// with the current task priority.
+        case none
+        /// Indicates to run the operation as a new task using `Task.currentPriority`.
+        ///
+        /// Operation is executed asynchronously as part of a new top-level task on behalf of the current actor,
+        /// with the current task priority.
+        case inherit
+        /// Indicates to run the operation as a new task using the provided priority.
+        ///
+        /// Operation is executed asynchronously as part of a new top-level task on behalf of the current actor,
+        /// with the provided task priority enforced.
+        case enforce(TaskPriority)
+        /// Indicates to run the operation as a new detached task using the provided priority.
+        ///
+        /// Operation is executed asynchronously as part of a new top-level task,
+        /// with the provided task priority enforced. Pass the priority `nil`
+        /// to use from `Task.currentPriority`.
+        case detached(TaskPriority? = nil)
+    }
+
     /// The suspended tasks continuation type.
     fileprivate typealias Continuation = GlobalContinuation<Void, Error>
     /// The list of tasks currently queued and would be resumed one by one when current barrier task ends.
     private var queue: OrderedDictionary<UUID, QueuedContinuation> = [:]
     /// Indicates whether queue is locked by a barrier task currently running.
-    internal private(set) var barriered: Bool = false
+    public private(set) var barriered: Bool = false
     /// The default priority with which new tasks on the queue are started.
-    ///
-    /// TODO: Implement priority based task invocations.
-    private let priority: TaskPriority?
+    public let priority: Priority
 
     /// Add continuation (both throwing and non-throwing) with the provided key in queue.
     ///
@@ -122,20 +149,89 @@ public actor TaskQueue: AsyncObject {
         }
     }
 
+    /// Executes the given operation asynchronously based on the priority.
+    ///
+    /// - Parameters:
+    ///   - priority: The priority with which operation executed.
+    ///   - operation: The operation to perform.
+    ///
+    /// - Returns: The result from provided operation.
+    /// - Throws: `CancellationError` if cancelled, or error from provided operation.
+    @inline(__always)
+    private func run<T>(
+        with priority: Priority,
+        operation: @Sendable @escaping () async throws -> T
+    ) async rethrows -> T {
+        let taskPriority: TaskPriority?
+        let taskInitializer:
+            (
+                TaskPriority?,
+                @Sendable @escaping () async throws -> T
+            ) -> Task<T, Error>
+
+        switch priority {
+        case .none:
+            return try await operation()
+        case .inherit:
+            taskPriority = nil
+            taskInitializer = Task.init
+        case .enforce(let priority):
+            taskPriority = priority
+            taskInitializer = Task.init
+        case .detached(let priority):
+            taskPriority = priority
+            taskInitializer = Task.detached
+        }
+
+        let task = taskInitializer(taskPriority, operation)
+        return try await withTaskCancellationHandler(
+            handler: {
+                task.cancel()
+            },
+            operation: {
+                return try await task.value
+            })
+    }
+
+    /// Executes the given operation asynchronously as a barrier based on the priority.
+    ///
+    /// - Parameters:
+    ///   - priority: The priority with which operation executed.
+    ///   - operation: The operation to perform.
+    ///
+    /// - Returns: The result from provided operation.
+    /// - Throws: `CancellationError` if cancelled, or error from provided operation.
+    @inline(__always)
+    private func runAsBarrier<T>(
+        with priority: Priority,
+        operation: @Sendable @escaping () async throws -> T
+    ) async rethrows -> T {
+        barriered = true
+        do {
+            let result = try await run(with: priority, operation: operation)
+            await releaseBarrier()
+            return result
+        } catch {
+            await releaseBarrier()
+            throw error
+        }
+    }
+
     /// Creates a new concurrent task queue for running submitted tasks concurrently
     /// with the priority of the submitted tasks.
     ///
-    /// - Parameter priority: The priority of the tasks submitted to queue.
-    ///                       Pass nil to use the priority from `Task.currentPriority`.
+    /// - Parameter priority: The default priority of the tasks submitted to queue.
+    ///                       By default ``Priority-swift.enum/none`` is used
+    ///                       to execute tasks directly without creating as a new top-level task.
     ///
     /// - Returns: The newly created concurrent task queue.
-    public init(priority: TaskPriority? = nil) {
+    public init(priority: Priority = .none) {
         self.priority = priority
     }
 
     deinit { self.queue.forEach { $0.value.cancel() } }
 
-    /// Executes the given throwing operation asynchronously.
+    /// Executes the given throwing operation asynchronously based on the priority.
     ///
     /// Immediately runs the provided operation if queue isn't locked by barrier task,
     /// otherwise adds operation to queue to be executed later.
@@ -150,9 +246,10 @@ public actor TaskQueue: AsyncObject {
     ///
     /// - Parameters:
     ///   - barrier: If the task should run as a barrier blocking queue.
-    ///   - priority: The priority of the task.
-    ///               Pass nil to use the priority from `Task.currentPriority`.
-    ///   - task: The throwing operation to perform.
+    ///   - priority: The priority with which operation executed.
+    ///               By default ``Priority-swift.enum/none`` is used
+    ///               to execute tasks directly without creating as a new top-level task.
+    ///   - operation: The throwing operation to perform.
     ///
     /// - Returns: The result from provided operation.
     /// - Throws: `CancellationError` if cancelled, or error from provided operation.
@@ -163,36 +260,27 @@ public actor TaskQueue: AsyncObject {
     @discardableResult
     public func exec<T>(
         barrier: Bool = false,
-        priority: TaskPriority? = nil,
-        task: @Sendable @escaping () async throws -> T
+        priority: Priority? = nil,
+        operation: @Sendable @escaping () async throws -> T
     ) async throws -> T {
-        func runTaskAsBarrier() async throws -> T {
-            barriered = true
-            let result = try await task()
-            await releaseBarrier()
-            return result
+        func runTask() async throws -> T {
+            return barrier
+                ? try await runAsBarrier(
+                    with: priority ?? self.priority,
+                    operation: operation
+                )
+                : try await run(
+                    with: priority ?? self.priority,
+                    operation: operation
+                )
         }
 
-        guard barriered || !queue.isEmpty else {
-            if !barrier { return try await task() }
-            do {
-                return try await runTaskAsBarrier()
-            } catch {
-                await releaseBarrier()
-                throw error
-            }
-        }
-
-        do {
-            try await withPromisedContinuation(barrier: barrier)
-            return barrier ? try await runTaskAsBarrier() : try await task()
-        } catch {
-            if barrier { await releaseBarrier() }
-            throw error
-        }
+        guard barriered || !queue.isEmpty else { return try await runTask() }
+        try await withPromisedContinuation(barrier: barrier)
+        return try await runTask()
     }
 
-    /// Executes the given non-throwing operation asynchronously.
+    /// Executes the given non-throwing operation asynchronously based on the priority.
     ///
     /// Immediately runs the provided operation if queue isn't locked by barrier task,
     /// otherwise adds operation to queue to be executed later.
@@ -207,26 +295,28 @@ public actor TaskQueue: AsyncObject {
     ///
     /// - Parameters:
     ///   - barrier: If the task should run as a barrier blocking queue.
-    ///   - priority: The priority of the task.
-    ///               Pass nil to use the priority from `Task.currentPriority`.
-    ///   - task: The non-throwing operation to perform.
+    ///   - priority: The priority with which operation executed.
+    ///               By default ``Priority-swift.enum/none`` is used
+    ///               to execute tasks directly without creating as a new top-level task.
+    ///   - operation: The non-throwing operation to perform.
     ///
     /// - Returns: The result from provided operation.
     @discardableResult
     public func exec<T>(
         barrier: Bool = false,
-        priority: TaskPriority? = nil,
-        task: @Sendable @escaping () async -> T
+        priority: Priority? = nil,
+        operation: @Sendable @escaping () async -> T
     ) async -> T {
-        func runTaskAsBarrier() async -> T {
-            barriered = true
-            let result = await task()
-            await releaseBarrier()
-            return result
-        }
-
         func runTask() async -> T {
-            return barrier ? await runTaskAsBarrier() : await task()
+            return barrier
+                ? await runAsBarrier(
+                    with: priority ?? self.priority,
+                    operation: operation
+                )
+                : await run(
+                    with: priority ?? self.priority,
+                    operation: operation
+                )
         }
 
         guard barriered || !queue.isEmpty else { return await runTask() }

@@ -37,7 +37,8 @@ class AsyncSemaphoreTests: XCTestCase {
                 for _ in 0..<count {
                     group.addTask {
                         let result = await semaphore.wait(
-                            forNanoseconds: timeout)
+                            forNanoseconds: timeout
+                        )
                         result == .success
                             ? await store.addSuccess()
                             : await store.addFailure()
@@ -138,6 +139,45 @@ class AsyncSemaphoreTests: XCTestCase {
         }
         XCTAssertEqual(result, .success)
     }
+
+    func testSemaphoreWaitCancellationWithTasksGreaterThanCount() async throws {
+        let semaphore = AsyncSemaphore(value: 3)
+        try await checkExecInterval(durationInSeconds: 10) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                for index in 0..<8 {
+                    group.addTask {
+                        if index <= 3 || index.isMultiple(of: 2) {
+                            await semaphore.wait()
+                            try await Task.sleep(nanoseconds: UInt64(5E9))
+                            await semaphore.signal()
+                        } else {
+                            let result = await semaphore.wait(
+                                forNanoseconds: UInt64(3E9)
+                            )
+                            XCTAssertEqual(result, .timedOut)
+                        }
+                    }
+                }
+                try await group.waitForAll()
+            }
+        }
+    }
+
+    func testConcurrentMutation() async throws {
+        let semaphore = AsyncSemaphore(value: 1)
+        let data = ArrayDataStore()
+        await withTaskGroup(of: Void.self) { group in
+            for index in 0..<10 {
+                group.addTask {
+                    await semaphore.wait()
+                    data.add(index)
+                    await semaphore.signal()
+                }
+            }
+            await group.waitForAll()
+        }
+        XCTAssertEqual(data.items.count, 10)
+    }
 }
 
 actor TaskTimeoutStore {
@@ -151,4 +191,9 @@ actor TaskTimeoutStore {
     func addFailure() {
         failures += 1
     }
+}
+
+class ArrayDataStore {
+    var items: [Int] = []
+    func add(_ item: Int) { items.append(item) }
 }

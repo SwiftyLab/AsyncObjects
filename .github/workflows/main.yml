@@ -80,21 +80,22 @@ jobs:
     # needs: [analyze, swift-package-test, xcode-test, cocoapods-test]
     uses: SwiftyLab/ci/.github/workflows/ci.yml@main
 
-  # cd:
-  #   name: CD
-  #   if: |
-  #     (github.event_name == 'push' && needs.ci.outputs.release == 'true') ||
-  #     (always() &&
-  #      github.event_name == 'workflow_dispatch' &&
-  #      github.event.inputs.release == 'true' &&
-  #      needs.swift-package-test.result == 'success' &&
-  #      needs.xcode-test.result == 'success' &&
-  #      needs.cocoapods-test.result == 'success' &&
-  #      (needs.ci.result == 'success' || needs.ci.result == 'skipped'))
-  #   (needs.analyze.result == 'success' || needs.analyze.result == 'skipped')
-  #   needs: [ci, swift-package-test, xcode-test, cocoapods-test]
-  #   needs: [ci, analyze, swift-package-test, xcode-test, cocoapods-test]
-  #   uses: SwiftyLab/ci/.github/workflows/cd.yml@main
-  #   with:
-  #     version: ${{ github.event.inputs.version }}
-  #   secrets: inherit
+  cd:
+    name: CD
+    if: |
+      (github.event_name == 'push' && needs.ci.outputs.release == 'true') ||
+      (always() &&
+       github.event_name == 'workflow_dispatch' &&
+       github.event.inputs.release == 'true' &&
+       needs.swift-package-test.result == 'success' &&
+       needs.xcode-test.result == 'success' &&
+       needs.cocoapods-test.result == 'success' &&
+       (needs.ci.result == 'success' || needs.ci.result == 'skipped'))
+    # (needs.analyze.result == 'success' || needs.analyze.result == 'skipped')
+    needs: [ci, swift-package-test, xcode-test]
+    # needs: [ci, analyze, swift-package-test, xcode-test, cocoapods-test]
+    uses: SwiftyLab/ci/.github/workflows/cd.yml@main
+    with:
+      version: ${{ github.event.inputs.version }}
+      cocoapods: false
+    secrets: inherit

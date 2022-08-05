@@ -23,12 +23,15 @@ class TaskQueueTests: XCTestCase {
         XCTAssertTrue(barriered)
     }
 
-    func testWaitOnQueue() async throws {
-        let queue = TaskQueue()
+    func checkWaitOnQueue(priorities: [TaskQueue.Priority]) async throws {
+        let queue = TaskQueue(priority: priorities[0])
         try await checkExecInterval(durationInSeconds: 5) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask {
-                    try await queue.exec(barrier: true) {
+                    try await queue.exec(
+                        barrier: true,
+                        priority: priorities[1]
+                    ) {
                         try await Task.sleep(nanoseconds: UInt64(5E9))
                     }
                 }
@@ -40,12 +43,55 @@ class TaskQueueTests: XCTestCase {
         }
     }
 
-    func testWaitTimeoutOnQueue() async throws {
-        let queue = TaskQueue()
+    func testWaitOnQueue() async throws {
+        let prioritiesMatrix: [[TaskQueue.Priority]] = [
+            [.none, .none],
+            [.none, .inherit],
+            [.none, .enforce(.high)],
+            [.none, .detached()],
+            [.none, .detached(.high)],
+            [.inherit, .none],
+            [.inherit, .inherit],
+            [.inherit, .enforce(.high)],
+            [.inherit, .detached()],
+            [.inherit, .detached(.high)],
+            [.enforce(.high), .none],
+            [.enforce(.high), .inherit],
+            [.enforce(.high), .enforce(.high)],
+            [.enforce(.high), .detached()],
+            [.enforce(.high), .detached(.high)],
+            [.detached(), .none],
+            [.detached(), .inherit],
+            [.detached(), .enforce(.high)],
+            [.detached(), .detached()],
+            [.detached(), .detached(.high)],
+            [.detached(.high), .none],
+            [.detached(.high), .inherit],
+            [.detached(.high), .enforce(.high)],
+            [.detached(.high), .detached()],
+            [.detached(.high), .detached(.high)],
+        ]
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            prioritiesMatrix.forEach { priorities in
+                group.addTask {
+                    try await self.checkWaitOnQueue(priorities: priorities)
+                }
+            }
+            try await group.waitForAll()
+        }
+    }
+
+    func checkWaitTimeoutOnQueue(
+        priorities: [TaskQueue.Priority]
+    ) async throws {
+        let queue = TaskQueue(priority: priorities[0])
         try await checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask {
-                    try await queue.exec(barrier: true) {
+                    try await queue.exec(
+                        barrier: true,
+                        priority: priorities[1]
+                    ) {
                         try await Task.sleep(nanoseconds: UInt64(5E9))
                     }
                 }
@@ -56,6 +102,46 @@ class TaskQueueTests: XCTestCase {
                     group.cancelAll()
                 }
             }
+        }
+    }
+
+    func testWaitTimeoutOnQueue() async throws {
+        let prioritiesMatrix: [[TaskQueue.Priority]] = [
+            [.none, .none],
+            [.none, .inherit],
+            [.none, .enforce(.high)],
+            [.none, .detached()],
+            [.none, .detached(.high)],
+            [.inherit, .none],
+            [.inherit, .inherit],
+            [.inherit, .enforce(.high)],
+            [.inherit, .detached()],
+            [.inherit, .detached(.high)],
+            [.enforce(.high), .none],
+            [.enforce(.high), .inherit],
+            [.enforce(.high), .enforce(.high)],
+            [.enforce(.high), .detached()],
+            [.enforce(.high), .detached(.high)],
+            [.detached(), .none],
+            [.detached(), .inherit],
+            [.detached(), .enforce(.high)],
+            [.detached(), .detached()],
+            [.detached(), .detached(.high)],
+            [.detached(.high), .none],
+            [.detached(.high), .inherit],
+            [.detached(.high), .enforce(.high)],
+            [.detached(.high), .detached()],
+            [.detached(.high), .detached(.high)],
+        ]
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            prioritiesMatrix.forEach { priorities in
+                group.addTask {
+                    try await self.checkWaitTimeoutOnQueue(
+                        priorities: priorities
+                    )
+                }
+            }
+            try await group.waitForAll()
         }
     }
 

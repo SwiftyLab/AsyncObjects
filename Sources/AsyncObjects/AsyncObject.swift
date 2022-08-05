@@ -217,24 +217,28 @@ public func waitForAny(
 ///   - timeout: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether task execution completed
 ///            or timed out.
-@inlinable
 public func waitForTaskCompletion(
     withTimeoutInNanoseconds timeout: UInt64,
     _ task: @escaping @Sendable () async -> Void
 ) async -> TaskTimeoutResult {
     var timedOut = true
     await withTaskGroup(of: Bool.self) { group in
-        group.addTask(priority: .high) {
-            await task()
-            return !Task.isCancelled
+        await GlobalContinuation<Void, Never>.with { continuation in
+            group.addTask {
+                continuation.resume()
+                await task()
+                return !Task.isCancelled
+            }
         }
-        group.addTask(priority: .high) {
+        group.addTask {
             (try? await Task.sleep(nanoseconds: timeout)) == nil
         }
-        for await result in group.prefix(1) {
+        if let result = await group.next() {
             timedOut = !result
-            group.cancelAll()
+        } else {
+            timedOut = true
         }
+        group.cancelAll()
     }
     return timedOut ? .timedOut : .success
 }

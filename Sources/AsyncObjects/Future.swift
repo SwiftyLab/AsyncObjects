@@ -20,11 +20,13 @@ public actor Future<Output, Failure: Error> {
     public typealias FutureResult = Result<Output, Failure>
     /// The suspended tasks continuation type.
     private typealias Continuation = GlobalContinuation<Output, Failure>
-    /// The underlying value that future is fulfilled with.
-    private var wrappedValue: FutureResult?
     /// The continuations stored with an associated key for all the suspended task
     /// that are waiting for future to be fulfilled.
     private var continuations: [UUID: Continuation] = [:]
+    /// The underlying `Result` that indicates either future fulfilled or rejected.
+    ///
+    /// If future isn't fulfilled or rejected, the value is `nil`.
+    public private(set) var result: FutureResult?
 
     /// Add continuation with the provided key in `continuations` map.
     ///
@@ -104,7 +106,8 @@ public actor Future<Output, Failure: Error> {
     ///                     that value delivered asynchronously to callers;
     ///                     otherwise, the awaiting caller receives the `.error` instead.
     public func fulfill(with result: FutureResult) {
-        wrappedValue = result
+        guard self.result == nil else { return }
+        self.result = result
         continuations.forEach { $0.value.resume(with: result) }
         continuations = [:]
     }
@@ -119,7 +122,7 @@ extension Future where Failure == Never {
     /// for `Future` to be fulfilled.
     public var value: Output {
         get async {
-            if let value = wrappedValue { return try! value.get() }
+            if let result = result { return try! result.get() }
             return await Continuation.with { self.addContinuation($0) }
         }
     }
@@ -334,7 +337,7 @@ extension Future where Failure == Error {
     /// the awaiting caller receives the error instead.
     public var value: Output {
         get async throws {
-            if let value = wrappedValue { return try value.get() }
+            if let result = result { return try result.get() }
             return try await withPromisedContinuation()
         }
     }
