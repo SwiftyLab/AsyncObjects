@@ -73,6 +73,7 @@ public extension AsyncObject where Self: AnyObject {
 ///
 /// - Parameter objects: The objects to wait for.
 @inlinable
+@Sendable
 public func waitForAll(_ objects: [any AsyncObject]) async {
     await withTaskGroup(of: Void.self) { group in
         objects.forEach { group.addTask(operation: $0.wait) }
@@ -87,6 +88,7 @@ public func waitForAll(_ objects: [any AsyncObject]) async {
 ///
 /// - Parameter objects: The objects to wait for.
 @inlinable
+@Sendable
 public func waitForAll(_ objects: any AsyncObject...) async {
     await waitForAll(objects)
 }
@@ -103,6 +105,7 @@ public func waitForAll(_ objects: any AsyncObject...) async {
 ///   - duration: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether wait completed or timed out.
 @inlinable
+@Sendable
 public func waitForAll(
     _ objects: [any AsyncObject],
     forNanoseconds duration: UInt64
@@ -124,6 +127,7 @@ public func waitForAll(
 ///   - duration: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether wait completed or timed out.
 @inlinable
+@Sendable
 public func waitForAll(
     _ objects: any AsyncObject...,
     forNanoseconds duration: UInt64
@@ -141,6 +145,7 @@ public func waitForAll(
 ///   - objects: The objects to wait for.
 ///   - count: The number of objects to wait for.
 @inlinable
+@Sendable
 public func waitForAny(_ objects: [any AsyncObject], count: Int = 1) async {
     await withTaskGroup(of: Void.self) { group in
         objects.forEach { group.addTask(operation: $0.wait) }
@@ -159,6 +164,7 @@ public func waitForAny(_ objects: [any AsyncObject], count: Int = 1) async {
 ///   - objects: The objects to wait for.
 ///   - count: The number of objects to wait for.
 @inlinable
+@Sendable
 public func waitForAny(_ objects: any AsyncObject..., count: Int = 1) async {
     await waitForAny(objects, count: count)
 }
@@ -176,6 +182,7 @@ public func waitForAny(_ objects: any AsyncObject..., count: Int = 1) async {
 ///   - duration: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether wait completed or timed out.
 @inlinable
+@Sendable
 public func waitForAny(
     _ objects: [any AsyncObject],
     count: Int = 1,
@@ -199,6 +206,7 @@ public func waitForAny(
 ///   - duration: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether wait completed or timed out.
 @inlinable
+@Sendable
 public func waitForAny(
     _ objects: any AsyncObject...,
     count: Int = 1,
@@ -217,6 +225,7 @@ public func waitForAny(
 ///   - timeout: The duration in nano seconds to wait until.
 /// - Returns: The result indicating whether task execution completed
 ///            or timed out.
+@Sendable
 public func waitForTaskCompletion(
     withTimeoutInNanoseconds timeout: UInt64,
     _ task: @escaping @Sendable () async -> Void
@@ -231,7 +240,7 @@ public func waitForTaskCompletion(
             }
         }
         group.addTask {
-            (try? await Task.sleep(nanoseconds: timeout)) == nil
+            (try? await Task.sleep(nanoseconds: timeout + 1_000)) == nil
         }
         if let result = await group.next() {
             timedOut = !result

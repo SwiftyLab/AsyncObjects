@@ -100,7 +100,6 @@ public actor CancellationSource {
     /// If task completes before cancellation event is triggered, it is automatically unregistered.
     ///
     /// - Parameter task: The task to register.
-    @Sendable
     public func register<Success, Failure>(task: Task<Success, Failure>) {
         add(task: task)
         Task { [weak self] in

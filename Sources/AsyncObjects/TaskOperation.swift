@@ -194,7 +194,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     private func removeContinuation(withKey key: UUID) {
         propQueue.sync(flags: [.barrier]) {
             let continuation = continuations.removeValue(forKey: key)
-            continuation?.resume(throwing: CancellationError())
+            continuation?.cancel()
         }
     }
 

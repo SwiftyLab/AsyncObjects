@@ -39,7 +39,7 @@ public actor TaskQueue: AsyncObject {
         ///
         /// Multiple invocations are ignored and only first invocation accepted.
         fileprivate func cancel() {
-            continuation.resume(throwing: CancellationError())
+            continuation.cancel()
         }
     }
 
@@ -113,8 +113,7 @@ public actor TaskQueue: AsyncObject {
     @inline(__always)
     private func releaseBarrier() async {
         barriered = false
-        while true {
-            guard !queue.isEmpty else { break }
+        while !queue.isEmpty {
             let (_, continuation) = queue.removeFirst()
             continuation.resume()
             if continuation.barrier { break }
@@ -330,7 +329,7 @@ public actor TaskQueue: AsyncObject {
 
     /// Signalling on queue does nothing.
     /// Only added to satisfy ``AsyncObject`` requirements.
-    public func signal() async {
+    public func signal() {
         // Do nothing
     }
 
@@ -338,6 +337,7 @@ public actor TaskQueue: AsyncObject {
     ///
     /// Only waits asynchronously, if queue is locked by a barrier task,
     /// until the suspended task's turn comes to be resumed.
+    @Sendable
     public func wait() async {
         await exec { /*Do nothing*/  }
     }

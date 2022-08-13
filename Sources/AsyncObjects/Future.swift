@@ -300,7 +300,7 @@ extension Future where Failure == Error {
     @inline(__always)
     private func removeContinuation(withKey key: UUID) {
         let continuation = continuations.removeValue(forKey: key)
-        continuation?.resume(throwing: CancellationError())
+        continuation?.cancel()
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.

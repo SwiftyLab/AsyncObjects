@@ -34,7 +34,7 @@ public actor AsyncEvent: AsyncObject {
     @inline(__always)
     private func removeContinuation(withKey key: UUID) {
         let continuation = continuations.removeValue(forKey: key)
-        continuation?.resume(throwing: CancellationError())
+        continuation?.cancel()
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
@@ -74,7 +74,6 @@ public actor AsyncEvent: AsyncObject {
     /// Resets signal of event.
     ///
     /// After reset, tasks have to wait for event signal to complete.
-    @Sendable
     public func reset() {
         signalled = false
     }
@@ -82,7 +81,6 @@ public actor AsyncEvent: AsyncObject {
     /// Signals the event.
     ///
     /// Resumes all the tasks suspended and waiting for signal.
-    @Sendable
     public func signal() {
         continuations.forEach { $0.value.resume() }
         continuations = [:]

@@ -41,7 +41,7 @@ public actor AsyncSemaphore: AsyncObject {
     @inline(__always)
     private func removeContinuation(withKey key: UUID) {
         let continuation = continuations.removeValue(forKey: key)
-        continuation?.resume(throwing: CancellationError())
+        continuation?.cancel()
         incrementCount()
     }
 
@@ -95,7 +95,6 @@ public actor AsyncSemaphore: AsyncObject {
     /// Increment the counting semaphore.
     /// If the previous value was less than zero,
     /// current task is resumed from suspension.
-    @Sendable
     public func signal() {
         incrementCount()
         guard !continuations.isEmpty else { return }
