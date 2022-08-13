@@ -9,11 +9,11 @@
 /* Begin PBXAggregateTarget section */
 		asyncobjects::AsyncObjectsPackageTests::ProductTarget /* AsyncObjectsPackageTests */ = {
 			isa = PBXAggregateTarget;
-			buildConfigurationList = OBJ_119 /* Build configuration list for PBXAggregateTarget "AsyncObjectsPackageTests" */;
+			buildConfigurationList = OBJ_122 /* Build configuration list for PBXAggregateTarget "AsyncObjectsPackageTests" */;
 			buildPhases = (
 			);
 			dependencies = (
-				OBJ_122 /* PBXTargetDependency */,
+				OBJ_125 /* PBXTargetDependency */,
 			);
 			name = AsyncObjectsPackageTests;
 			productName = AsyncObjectsPackageTests;
@@ -21,175 +21,179 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		56F443B3BA5CF7EBA759FCD7 /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = 53371338F2D4577DAE73DF63 /* AsyncObjects.docc */; };
-		OBJ_100 /* AsyncEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AsyncEvent.swift */; };
-		OBJ_101 /* AsyncObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AsyncObject.swift */; };
-		OBJ_102 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* AsyncSemaphore.swift */; };
-		OBJ_103 /* CancellationSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_14 /* CancellationSource.swift */; };
-		OBJ_104 /* Continuable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* Continuable.swift */; };
-		OBJ_105 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* Future.swift */; };
-		OBJ_106 /* TaskOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* TaskOperation.swift */; };
-		OBJ_107 /* TaskQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* TaskQueue.swift */; };
-		OBJ_109 /* OrderedCollections.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = swift-collections::OrderedCollections::Product /* OrderedCollections.framework */; };
-		OBJ_117 /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_6 /* Package.swift */; };
-		OBJ_128 /* AsyncEventTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* AsyncEventTests.swift */; };
-		OBJ_129 /* AsyncObjectTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* AsyncObjectTests.swift */; };
-		OBJ_130 /* AsyncSemaphoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_23 /* AsyncSemaphoreTests.swift */; };
-		OBJ_131 /* CancellationSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_24 /* CancellationSourceTests.swift */; };
-		OBJ_132 /* NonThrowingFutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_25 /* NonThrowingFutureTests.swift */; };
-		OBJ_133 /* StandardLibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* StandardLibraryTests.swift */; };
-		OBJ_134 /* TaskOperationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* TaskOperationTests.swift */; };
-		OBJ_135 /* TaskQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* TaskQueueTests.swift */; };
-		OBJ_136 /* ThrowingFutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_29 /* ThrowingFutureTests.swift */; };
-		OBJ_137 /* XCTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_30 /* XCTestCase.swift */; };
-		OBJ_139 /* AsyncObjects.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = asyncobjects::AsyncObjects::Product /* AsyncObjects.framework */; };
-		OBJ_140 /* OrderedCollections.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = swift-collections::OrderedCollections::Product /* OrderedCollections.framework */; };
-		OBJ_147 /* _HashTable+Bucket.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_37 /* _HashTable+Bucket.swift */; };
-		OBJ_148 /* _HashTable+BucketIterator.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_38 /* _HashTable+BucketIterator.swift */; };
-		OBJ_149 /* _HashTable+Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_39 /* _HashTable+Constants.swift */; };
-		OBJ_150 /* _HashTable+CustomStringConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_40 /* _HashTable+CustomStringConvertible.swift */; };
-		OBJ_151 /* _HashTable+Testing.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_41 /* _HashTable+Testing.swift */; };
-		OBJ_152 /* _HashTable+UnsafeHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_42 /* _HashTable+UnsafeHandle.swift */; };
-		OBJ_153 /* _HashTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_43 /* _HashTable.swift */; };
-		OBJ_154 /* _Hashtable+Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_44 /* _Hashtable+Header.swift */; };
-		OBJ_155 /* OrderedDictionary+Codable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_46 /* OrderedDictionary+Codable.swift */; };
-		OBJ_156 /* OrderedDictionary+CustomDebugStringConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_47 /* OrderedDictionary+CustomDebugStringConvertible.swift */; };
-		OBJ_157 /* OrderedDictionary+CustomReflectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_48 /* OrderedDictionary+CustomReflectable.swift */; };
-		OBJ_158 /* OrderedDictionary+CustomStringConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_49 /* OrderedDictionary+CustomStringConvertible.swift */; };
-		OBJ_159 /* OrderedDictionary+Deprecations.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* OrderedDictionary+Deprecations.swift */; };
-		OBJ_160 /* OrderedDictionary+Elements+SubSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* OrderedDictionary+Elements+SubSequence.swift */; };
-		OBJ_161 /* OrderedDictionary+Elements.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_52 /* OrderedDictionary+Elements.swift */; };
-		OBJ_162 /* OrderedDictionary+Equatable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_53 /* OrderedDictionary+Equatable.swift */; };
-		OBJ_163 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_54 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift */; };
-		OBJ_164 /* OrderedDictionary+Hashable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* OrderedDictionary+Hashable.swift */; };
-		OBJ_165 /* OrderedDictionary+Initializers.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* OrderedDictionary+Initializers.swift */; };
-		OBJ_166 /* OrderedDictionary+Invariants.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_57 /* OrderedDictionary+Invariants.swift */; };
-		OBJ_167 /* OrderedDictionary+Partial MutableCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_58 /* OrderedDictionary+Partial MutableCollection.swift */; };
-		OBJ_168 /* OrderedDictionary+Partial RangeReplaceableCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_59 /* OrderedDictionary+Partial RangeReplaceableCollection.swift */; };
-		OBJ_169 /* OrderedDictionary+Sequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_60 /* OrderedDictionary+Sequence.swift */; };
-		OBJ_170 /* OrderedDictionary+Values.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_61 /* OrderedDictionary+Values.swift */; };
-		OBJ_171 /* OrderedDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_62 /* OrderedDictionary.swift */; };
-		OBJ_172 /* OrderedSet+Codable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_64 /* OrderedSet+Codable.swift */; };
-		OBJ_173 /* OrderedSet+CustomDebugStringConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_65 /* OrderedSet+CustomDebugStringConvertible.swift */; };
-		OBJ_174 /* OrderedSet+CustomReflectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_66 /* OrderedSet+CustomReflectable.swift */; };
-		OBJ_175 /* OrderedSet+CustomStringConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_67 /* OrderedSet+CustomStringConvertible.swift */; };
-		OBJ_176 /* OrderedSet+Diffing.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_68 /* OrderedSet+Diffing.swift */; };
-		OBJ_177 /* OrderedSet+Equatable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_69 /* OrderedSet+Equatable.swift */; };
-		OBJ_178 /* OrderedSet+ExpressibleByArrayLiteral.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_70 /* OrderedSet+ExpressibleByArrayLiteral.swift */; };
-		OBJ_179 /* OrderedSet+Hashable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_71 /* OrderedSet+Hashable.swift */; };
-		OBJ_180 /* OrderedSet+Initializers.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_72 /* OrderedSet+Initializers.swift */; };
-		OBJ_181 /* OrderedSet+Insertions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_73 /* OrderedSet+Insertions.swift */; };
-		OBJ_182 /* OrderedSet+Invariants.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_74 /* OrderedSet+Invariants.swift */; };
-		OBJ_183 /* OrderedSet+Partial MutableCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_75 /* OrderedSet+Partial MutableCollection.swift */; };
-		OBJ_184 /* OrderedSet+Partial RangeReplaceableCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_76 /* OrderedSet+Partial RangeReplaceableCollection.swift */; };
-		OBJ_185 /* OrderedSet+Partial SetAlgebra+Basics.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_77 /* OrderedSet+Partial SetAlgebra+Basics.swift */; };
-		OBJ_186 /* OrderedSet+Partial SetAlgebra+Operations.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_78 /* OrderedSet+Partial SetAlgebra+Operations.swift */; };
-		OBJ_187 /* OrderedSet+Partial SetAlgebra+Predicates.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_79 /* OrderedSet+Partial SetAlgebra+Predicates.swift */; };
-		OBJ_188 /* OrderedSet+RandomAccessCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_80 /* OrderedSet+RandomAccessCollection.swift */; };
-		OBJ_189 /* OrderedSet+ReserveCapacity.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_81 /* OrderedSet+ReserveCapacity.swift */; };
-		OBJ_190 /* OrderedSet+SubSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_82 /* OrderedSet+SubSequence.swift */; };
-		OBJ_191 /* OrderedSet+Testing.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_83 /* OrderedSet+Testing.swift */; };
-		OBJ_192 /* OrderedSet+UnorderedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_84 /* OrderedSet+UnorderedView.swift */; };
-		OBJ_193 /* OrderedSet+UnstableInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_85 /* OrderedSet+UnstableInternals.swift */; };
-		OBJ_194 /* OrderedSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_86 /* OrderedSet.swift */; };
-		OBJ_195 /* RandomAccessCollection+Offsets.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_88 /* RandomAccessCollection+Offsets.swift */; };
-		OBJ_196 /* _UnsafeBitset.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_89 /* _UnsafeBitset.swift */; };
-		OBJ_203 /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_90 /* Package.swift */; };
+		A0CAD561B98384E1A7187731 /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = E9FB843106F08791F27034B6 /* AsyncObjects.docc */; };
+		OBJ_102 /* AsyncCountdownEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AsyncCountdownEvent.swift */; };
+		OBJ_103 /* AsyncEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AsyncEvent.swift */; };
+		OBJ_104 /* AsyncObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* AsyncObject.swift */; };
+		OBJ_105 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_14 /* AsyncSemaphore.swift */; };
+		OBJ_106 /* CancellationSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* CancellationSource.swift */; };
+		OBJ_107 /* Continuable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* Continuable.swift */; };
+		OBJ_108 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* Future.swift */; };
+		OBJ_109 /* TaskOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* TaskOperation.swift */; };
+		OBJ_110 /* TaskQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_19 /* TaskQueue.swift */; };
+		OBJ_112 /* OrderedCollections.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = swift-collections::OrderedCollections::Product /* OrderedCollections.framework */; };
+		OBJ_120 /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_6 /* Package.swift */; };
+		OBJ_131 /* AsyncCountdownEventTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* AsyncCountdownEventTests.swift */; };
+		OBJ_132 /* AsyncEventTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_23 /* AsyncEventTests.swift */; };
+		OBJ_133 /* AsyncObjectTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_24 /* AsyncObjectTests.swift */; };
+		OBJ_134 /* AsyncSemaphoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_25 /* AsyncSemaphoreTests.swift */; };
+		OBJ_135 /* CancellationSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* CancellationSourceTests.swift */; };
+		OBJ_136 /* NonThrowingFutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* NonThrowingFutureTests.swift */; };
+		OBJ_137 /* StandardLibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* StandardLibraryTests.swift */; };
+		OBJ_138 /* TaskOperationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_29 /* TaskOperationTests.swift */; };
+		OBJ_139 /* TaskQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_30 /* TaskQueueTests.swift */; };
+		OBJ_140 /* ThrowingFutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_31 /* ThrowingFutureTests.swift */; };
+		OBJ_141 /* XCTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_32 /* XCTestCase.swift */; };
+		OBJ_143 /* AsyncObjects.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = asyncobjects::AsyncObjects::Product /* AsyncObjects.framework */; };
+		OBJ_144 /* OrderedCollections.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = swift-collections::OrderedCollections::Product /* OrderedCollections.framework */; };
+		OBJ_151 /* _HashTable+Bucket.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_39 /* _HashTable+Bucket.swift */; };
+		OBJ_152 /* _HashTable+BucketIterator.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_40 /* _HashTable+BucketIterator.swift */; };
+		OBJ_153 /* _HashTable+Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_41 /* _HashTable+Constants.swift */; };
+		OBJ_154 /* _HashTable+CustomStringConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_42 /* _HashTable+CustomStringConvertible.swift */; };
+		OBJ_155 /* _HashTable+Testing.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_43 /* _HashTable+Testing.swift */; };
+		OBJ_156 /* _HashTable+UnsafeHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_44 /* _HashTable+UnsafeHandle.swift */; };
+		OBJ_157 /* _HashTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_45 /* _HashTable.swift */; };
+		OBJ_158 /* _Hashtable+Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_46 /* _Hashtable+Header.swift */; };
+		OBJ_159 /* OrderedDictionary+Codable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_48 /* OrderedDictionary+Codable.swift */; };
+		OBJ_160 /* OrderedDictionary+CustomDebugStringConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_49 /* OrderedDictionary+CustomDebugStringConvertible.swift */; };
+		OBJ_161 /* OrderedDictionary+CustomReflectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* OrderedDictionary+CustomReflectable.swift */; };
+		OBJ_162 /* OrderedDictionary+CustomStringConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* OrderedDictionary+CustomStringConvertible.swift */; };
+		OBJ_163 /* OrderedDictionary+Deprecations.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_52 /* OrderedDictionary+Deprecations.swift */; };
+		OBJ_164 /* OrderedDictionary+Elements+SubSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_53 /* OrderedDictionary+Elements+SubSequence.swift */; };
+		OBJ_165 /* OrderedDictionary+Elements.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_54 /* OrderedDictionary+Elements.swift */; };
+		OBJ_166 /* OrderedDictionary+Equatable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* OrderedDictionary+Equatable.swift */; };
+		OBJ_167 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift */; };
+		OBJ_168 /* OrderedDictionary+Hashable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_57 /* OrderedDictionary+Hashable.swift */; };
+		OBJ_169 /* OrderedDictionary+Initializers.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_58 /* OrderedDictionary+Initializers.swift */; };
+		OBJ_170 /* OrderedDictionary+Invariants.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_59 /* OrderedDictionary+Invariants.swift */; };
+		OBJ_171 /* OrderedDictionary+Partial MutableCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_60 /* OrderedDictionary+Partial MutableCollection.swift */; };
+		OBJ_172 /* OrderedDictionary+Partial RangeReplaceableCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_61 /* OrderedDictionary+Partial RangeReplaceableCollection.swift */; };
+		OBJ_173 /* OrderedDictionary+Sequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_62 /* OrderedDictionary+Sequence.swift */; };
+		OBJ_174 /* OrderedDictionary+Values.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_63 /* OrderedDictionary+Values.swift */; };
+		OBJ_175 /* OrderedDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_64 /* OrderedDictionary.swift */; };
+		OBJ_176 /* OrderedSet+Codable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_66 /* OrderedSet+Codable.swift */; };
+		OBJ_177 /* OrderedSet+CustomDebugStringConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_67 /* OrderedSet+CustomDebugStringConvertible.swift */; };
+		OBJ_178 /* OrderedSet+CustomReflectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_68 /* OrderedSet+CustomReflectable.swift */; };
+		OBJ_179 /* OrderedSet+CustomStringConvertible.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_69 /* OrderedSet+CustomStringConvertible.swift */; };
+		OBJ_180 /* OrderedSet+Diffing.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_70 /* OrderedSet+Diffing.swift */; };
+		OBJ_181 /* OrderedSet+Equatable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_71 /* OrderedSet+Equatable.swift */; };
+		OBJ_182 /* OrderedSet+ExpressibleByArrayLiteral.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_72 /* OrderedSet+ExpressibleByArrayLiteral.swift */; };
+		OBJ_183 /* OrderedSet+Hashable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_73 /* OrderedSet+Hashable.swift */; };
+		OBJ_184 /* OrderedSet+Initializers.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_74 /* OrderedSet+Initializers.swift */; };
+		OBJ_185 /* OrderedSet+Insertions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_75 /* OrderedSet+Insertions.swift */; };
+		OBJ_186 /* OrderedSet+Invariants.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_76 /* OrderedSet+Invariants.swift */; };
+		OBJ_187 /* OrderedSet+Partial MutableCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_77 /* OrderedSet+Partial MutableCollection.swift */; };
+		OBJ_188 /* OrderedSet+Partial RangeReplaceableCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_78 /* OrderedSet+Partial RangeReplaceableCollection.swift */; };
+		OBJ_189 /* OrderedSet+Partial SetAlgebra+Basics.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_79 /* OrderedSet+Partial SetAlgebra+Basics.swift */; };
+		OBJ_190 /* OrderedSet+Partial SetAlgebra+Operations.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_80 /* OrderedSet+Partial SetAlgebra+Operations.swift */; };
+		OBJ_191 /* OrderedSet+Partial SetAlgebra+Predicates.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_81 /* OrderedSet+Partial SetAlgebra+Predicates.swift */; };
+		OBJ_192 /* OrderedSet+RandomAccessCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_82 /* OrderedSet+RandomAccessCollection.swift */; };
+		OBJ_193 /* OrderedSet+ReserveCapacity.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_83 /* OrderedSet+ReserveCapacity.swift */; };
+		OBJ_194 /* OrderedSet+SubSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_84 /* OrderedSet+SubSequence.swift */; };
+		OBJ_195 /* OrderedSet+Testing.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_85 /* OrderedSet+Testing.swift */; };
+		OBJ_196 /* OrderedSet+UnorderedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_86 /* OrderedSet+UnorderedView.swift */; };
+		OBJ_197 /* OrderedSet+UnstableInternals.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_87 /* OrderedSet+UnstableInternals.swift */; };
+		OBJ_198 /* OrderedSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_88 /* OrderedSet.swift */; };
+		OBJ_199 /* RandomAccessCollection+Offsets.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_90 /* RandomAccessCollection+Offsets.swift */; };
+		OBJ_200 /* _UnsafeBitset.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_91 /* _UnsafeBitset.swift */; };
+		OBJ_207 /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_92 /* Package.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		53371338F2D4577DAE73DF63 /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
-		OBJ_11 /* AsyncEvent.swift */ = {isa = PBXFileReference; path = AsyncEvent.swift; sourceTree = "<group>"; };
-		OBJ_12 /* AsyncObject.swift */ = {isa = PBXFileReference; path = AsyncObject.swift; sourceTree = "<group>"; };
-		OBJ_13 /* AsyncSemaphore.swift */ = {isa = PBXFileReference; path = AsyncSemaphore.swift; sourceTree = "<group>"; };
-		OBJ_14 /* CancellationSource.swift */ = {isa = PBXFileReference; path = CancellationSource.swift; sourceTree = "<group>"; };
-		OBJ_15 /* Continuable.swift */ = {isa = PBXFileReference; path = Continuable.swift; sourceTree = "<group>"; };
-		OBJ_16 /* Future.swift */ = {isa = PBXFileReference; path = Future.swift; sourceTree = "<group>"; };
-		OBJ_17 /* TaskOperation.swift */ = {isa = PBXFileReference; path = TaskOperation.swift; sourceTree = "<group>"; };
-		OBJ_18 /* TaskQueue.swift */ = {isa = PBXFileReference; path = TaskQueue.swift; sourceTree = "<group>"; };
-		OBJ_21 /* AsyncEventTests.swift */ = {isa = PBXFileReference; path = AsyncEventTests.swift; sourceTree = "<group>"; };
-		OBJ_22 /* AsyncObjectTests.swift */ = {isa = PBXFileReference; path = AsyncObjectTests.swift; sourceTree = "<group>"; };
-		OBJ_23 /* AsyncSemaphoreTests.swift */ = {isa = PBXFileReference; path = AsyncSemaphoreTests.swift; sourceTree = "<group>"; };
-		OBJ_24 /* CancellationSourceTests.swift */ = {isa = PBXFileReference; path = CancellationSourceTests.swift; sourceTree = "<group>"; };
-		OBJ_25 /* NonThrowingFutureTests.swift */ = {isa = PBXFileReference; path = NonThrowingFutureTests.swift; sourceTree = "<group>"; };
-		OBJ_26 /* StandardLibraryTests.swift */ = {isa = PBXFileReference; path = StandardLibraryTests.swift; sourceTree = "<group>"; };
-		OBJ_27 /* TaskOperationTests.swift */ = {isa = PBXFileReference; path = TaskOperationTests.swift; sourceTree = "<group>"; };
-		OBJ_28 /* TaskQueueTests.swift */ = {isa = PBXFileReference; path = TaskQueueTests.swift; sourceTree = "<group>"; };
-		OBJ_29 /* ThrowingFutureTests.swift */ = {isa = PBXFileReference; path = ThrowingFutureTests.swift; sourceTree = "<group>"; };
-		OBJ_30 /* XCTestCase.swift */ = {isa = PBXFileReference; path = XCTestCase.swift; sourceTree = "<group>"; };
-		OBJ_37 /* _HashTable+Bucket.swift */ = {isa = PBXFileReference; path = "_HashTable+Bucket.swift"; sourceTree = "<group>"; };
-		OBJ_38 /* _HashTable+BucketIterator.swift */ = {isa = PBXFileReference; path = "_HashTable+BucketIterator.swift"; sourceTree = "<group>"; };
-		OBJ_39 /* _HashTable+Constants.swift */ = {isa = PBXFileReference; path = "_HashTable+Constants.swift"; sourceTree = "<group>"; };
-		OBJ_40 /* _HashTable+CustomStringConvertible.swift */ = {isa = PBXFileReference; path = "_HashTable+CustomStringConvertible.swift"; sourceTree = "<group>"; };
-		OBJ_41 /* _HashTable+Testing.swift */ = {isa = PBXFileReference; path = "_HashTable+Testing.swift"; sourceTree = "<group>"; };
-		OBJ_42 /* _HashTable+UnsafeHandle.swift */ = {isa = PBXFileReference; path = "_HashTable+UnsafeHandle.swift"; sourceTree = "<group>"; };
-		OBJ_43 /* _HashTable.swift */ = {isa = PBXFileReference; path = _HashTable.swift; sourceTree = "<group>"; };
-		OBJ_44 /* _Hashtable+Header.swift */ = {isa = PBXFileReference; path = "_Hashtable+Header.swift"; sourceTree = "<group>"; };
-		OBJ_46 /* OrderedDictionary+Codable.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Codable.swift"; sourceTree = "<group>"; };
-		OBJ_47 /* OrderedDictionary+CustomDebugStringConvertible.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+CustomDebugStringConvertible.swift"; sourceTree = "<group>"; };
-		OBJ_48 /* OrderedDictionary+CustomReflectable.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+CustomReflectable.swift"; sourceTree = "<group>"; };
-		OBJ_49 /* OrderedDictionary+CustomStringConvertible.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+CustomStringConvertible.swift"; sourceTree = "<group>"; };
-		OBJ_50 /* OrderedDictionary+Deprecations.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Deprecations.swift"; sourceTree = "<group>"; };
-		OBJ_51 /* OrderedDictionary+Elements+SubSequence.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Elements+SubSequence.swift"; sourceTree = "<group>"; };
-		OBJ_52 /* OrderedDictionary+Elements.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Elements.swift"; sourceTree = "<group>"; };
-		OBJ_53 /* OrderedDictionary+Equatable.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Equatable.swift"; sourceTree = "<group>"; };
-		OBJ_54 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+ExpressibleByDictionaryLiteral.swift"; sourceTree = "<group>"; };
-		OBJ_55 /* OrderedDictionary+Hashable.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Hashable.swift"; sourceTree = "<group>"; };
-		OBJ_56 /* OrderedDictionary+Initializers.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Initializers.swift"; sourceTree = "<group>"; };
-		OBJ_57 /* OrderedDictionary+Invariants.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Invariants.swift"; sourceTree = "<group>"; };
-		OBJ_58 /* OrderedDictionary+Partial MutableCollection.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Partial MutableCollection.swift"; sourceTree = "<group>"; };
-		OBJ_59 /* OrderedDictionary+Partial RangeReplaceableCollection.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Partial RangeReplaceableCollection.swift"; sourceTree = "<group>"; };
+		E9FB843106F08791F27034B6 /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
+		OBJ_11 /* AsyncCountdownEvent.swift */ = {isa = PBXFileReference; path = AsyncCountdownEvent.swift; sourceTree = "<group>"; };
+		OBJ_12 /* AsyncEvent.swift */ = {isa = PBXFileReference; path = AsyncEvent.swift; sourceTree = "<group>"; };
+		OBJ_13 /* AsyncObject.swift */ = {isa = PBXFileReference; path = AsyncObject.swift; sourceTree = "<group>"; };
+		OBJ_14 /* AsyncSemaphore.swift */ = {isa = PBXFileReference; path = AsyncSemaphore.swift; sourceTree = "<group>"; };
+		OBJ_15 /* CancellationSource.swift */ = {isa = PBXFileReference; path = CancellationSource.swift; sourceTree = "<group>"; };
+		OBJ_16 /* Continuable.swift */ = {isa = PBXFileReference; path = Continuable.swift; sourceTree = "<group>"; };
+		OBJ_17 /* Future.swift */ = {isa = PBXFileReference; path = Future.swift; sourceTree = "<group>"; };
+		OBJ_18 /* TaskOperation.swift */ = {isa = PBXFileReference; path = TaskOperation.swift; sourceTree = "<group>"; };
+		OBJ_19 /* TaskQueue.swift */ = {isa = PBXFileReference; path = TaskQueue.swift; sourceTree = "<group>"; };
+		OBJ_22 /* AsyncCountdownEventTests.swift */ = {isa = PBXFileReference; path = AsyncCountdownEventTests.swift; sourceTree = "<group>"; };
+		OBJ_23 /* AsyncEventTests.swift */ = {isa = PBXFileReference; path = AsyncEventTests.swift; sourceTree = "<group>"; };
+		OBJ_24 /* AsyncObjectTests.swift */ = {isa = PBXFileReference; path = AsyncObjectTests.swift; sourceTree = "<group>"; };
+		OBJ_25 /* AsyncSemaphoreTests.swift */ = {isa = PBXFileReference; path = AsyncSemaphoreTests.swift; sourceTree = "<group>"; };
+		OBJ_26 /* CancellationSourceTests.swift */ = {isa = PBXFileReference; path = CancellationSourceTests.swift; sourceTree = "<group>"; };
+		OBJ_27 /* NonThrowingFutureTests.swift */ = {isa = PBXFileReference; path = NonThrowingFutureTests.swift; sourceTree = "<group>"; };
+		OBJ_28 /* StandardLibraryTests.swift */ = {isa = PBXFileReference; path = StandardLibraryTests.swift; sourceTree = "<group>"; };
+		OBJ_29 /* TaskOperationTests.swift */ = {isa = PBXFileReference; path = TaskOperationTests.swift; sourceTree = "<group>"; };
+		OBJ_30 /* TaskQueueTests.swift */ = {isa = PBXFileReference; path = TaskQueueTests.swift; sourceTree = "<group>"; };
+		OBJ_31 /* ThrowingFutureTests.swift */ = {isa = PBXFileReference; path = ThrowingFutureTests.swift; sourceTree = "<group>"; };
+		OBJ_32 /* XCTestCase.swift */ = {isa = PBXFileReference; path = XCTestCase.swift; sourceTree = "<group>"; };
+		OBJ_39 /* _HashTable+Bucket.swift */ = {isa = PBXFileReference; path = "_HashTable+Bucket.swift"; sourceTree = "<group>"; };
+		OBJ_40 /* _HashTable+BucketIterator.swift */ = {isa = PBXFileReference; path = "_HashTable+BucketIterator.swift"; sourceTree = "<group>"; };
+		OBJ_41 /* _HashTable+Constants.swift */ = {isa = PBXFileReference; path = "_HashTable+Constants.swift"; sourceTree = "<group>"; };
+		OBJ_42 /* _HashTable+CustomStringConvertible.swift */ = {isa = PBXFileReference; path = "_HashTable+CustomStringConvertible.swift"; sourceTree = "<group>"; };
+		OBJ_43 /* _HashTable+Testing.swift */ = {isa = PBXFileReference; path = "_HashTable+Testing.swift"; sourceTree = "<group>"; };
+		OBJ_44 /* _HashTable+UnsafeHandle.swift */ = {isa = PBXFileReference; path = "_HashTable+UnsafeHandle.swift"; sourceTree = "<group>"; };
+		OBJ_45 /* _HashTable.swift */ = {isa = PBXFileReference; path = _HashTable.swift; sourceTree = "<group>"; };
+		OBJ_46 /* _Hashtable+Header.swift */ = {isa = PBXFileReference; path = "_Hashtable+Header.swift"; sourceTree = "<group>"; };
+		OBJ_48 /* OrderedDictionary+Codable.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Codable.swift"; sourceTree = "<group>"; };
+		OBJ_49 /* OrderedDictionary+CustomDebugStringConvertible.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+CustomDebugStringConvertible.swift"; sourceTree = "<group>"; };
+		OBJ_50 /* OrderedDictionary+CustomReflectable.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+CustomReflectable.swift"; sourceTree = "<group>"; };
+		OBJ_51 /* OrderedDictionary+CustomStringConvertible.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+CustomStringConvertible.swift"; sourceTree = "<group>"; };
+		OBJ_52 /* OrderedDictionary+Deprecations.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Deprecations.swift"; sourceTree = "<group>"; };
+		OBJ_53 /* OrderedDictionary+Elements+SubSequence.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Elements+SubSequence.swift"; sourceTree = "<group>"; };
+		OBJ_54 /* OrderedDictionary+Elements.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Elements.swift"; sourceTree = "<group>"; };
+		OBJ_55 /* OrderedDictionary+Equatable.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Equatable.swift"; sourceTree = "<group>"; };
+		OBJ_56 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+ExpressibleByDictionaryLiteral.swift"; sourceTree = "<group>"; };
+		OBJ_57 /* OrderedDictionary+Hashable.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Hashable.swift"; sourceTree = "<group>"; };
+		OBJ_58 /* OrderedDictionary+Initializers.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Initializers.swift"; sourceTree = "<group>"; };
+		OBJ_59 /* OrderedDictionary+Invariants.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Invariants.swift"; sourceTree = "<group>"; };
 		OBJ_6 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
-		OBJ_60 /* OrderedDictionary+Sequence.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Sequence.swift"; sourceTree = "<group>"; };
-		OBJ_61 /* OrderedDictionary+Values.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Values.swift"; sourceTree = "<group>"; };
-		OBJ_62 /* OrderedDictionary.swift */ = {isa = PBXFileReference; path = OrderedDictionary.swift; sourceTree = "<group>"; };
-		OBJ_64 /* OrderedSet+Codable.swift */ = {isa = PBXFileReference; path = "OrderedSet+Codable.swift"; sourceTree = "<group>"; };
-		OBJ_65 /* OrderedSet+CustomDebugStringConvertible.swift */ = {isa = PBXFileReference; path = "OrderedSet+CustomDebugStringConvertible.swift"; sourceTree = "<group>"; };
-		OBJ_66 /* OrderedSet+CustomReflectable.swift */ = {isa = PBXFileReference; path = "OrderedSet+CustomReflectable.swift"; sourceTree = "<group>"; };
-		OBJ_67 /* OrderedSet+CustomStringConvertible.swift */ = {isa = PBXFileReference; path = "OrderedSet+CustomStringConvertible.swift"; sourceTree = "<group>"; };
-		OBJ_68 /* OrderedSet+Diffing.swift */ = {isa = PBXFileReference; path = "OrderedSet+Diffing.swift"; sourceTree = "<group>"; };
-		OBJ_69 /* OrderedSet+Equatable.swift */ = {isa = PBXFileReference; path = "OrderedSet+Equatable.swift"; sourceTree = "<group>"; };
-		OBJ_70 /* OrderedSet+ExpressibleByArrayLiteral.swift */ = {isa = PBXFileReference; path = "OrderedSet+ExpressibleByArrayLiteral.swift"; sourceTree = "<group>"; };
-		OBJ_71 /* OrderedSet+Hashable.swift */ = {isa = PBXFileReference; path = "OrderedSet+Hashable.swift"; sourceTree = "<group>"; };
-		OBJ_72 /* OrderedSet+Initializers.swift */ = {isa = PBXFileReference; path = "OrderedSet+Initializers.swift"; sourceTree = "<group>"; };
-		OBJ_73 /* OrderedSet+Insertions.swift */ = {isa = PBXFileReference; path = "OrderedSet+Insertions.swift"; sourceTree = "<group>"; };
-		OBJ_74 /* OrderedSet+Invariants.swift */ = {isa = PBXFileReference; path = "OrderedSet+Invariants.swift"; sourceTree = "<group>"; };
-		OBJ_75 /* OrderedSet+Partial MutableCollection.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial MutableCollection.swift"; sourceTree = "<group>"; };
-		OBJ_76 /* OrderedSet+Partial RangeReplaceableCollection.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial RangeReplaceableCollection.swift"; sourceTree = "<group>"; };
-		OBJ_77 /* OrderedSet+Partial SetAlgebra+Basics.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial SetAlgebra+Basics.swift"; sourceTree = "<group>"; };
-		OBJ_78 /* OrderedSet+Partial SetAlgebra+Operations.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial SetAlgebra+Operations.swift"; sourceTree = "<group>"; };
-		OBJ_79 /* OrderedSet+Partial SetAlgebra+Predicates.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial SetAlgebra+Predicates.swift"; sourceTree = "<group>"; };
+		OBJ_60 /* OrderedDictionary+Partial MutableCollection.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Partial MutableCollection.swift"; sourceTree = "<group>"; };
+		OBJ_61 /* OrderedDictionary+Partial RangeReplaceableCollection.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Partial RangeReplaceableCollection.swift"; sourceTree = "<group>"; };
+		OBJ_62 /* OrderedDictionary+Sequence.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Sequence.swift"; sourceTree = "<group>"; };
+		OBJ_63 /* OrderedDictionary+Values.swift */ = {isa = PBXFileReference; path = "OrderedDictionary+Values.swift"; sourceTree = "<group>"; };
+		OBJ_64 /* OrderedDictionary.swift */ = {isa = PBXFileReference; path = OrderedDictionary.swift; sourceTree = "<group>"; };
+		OBJ_66 /* OrderedSet+Codable.swift */ = {isa = PBXFileReference; path = "OrderedSet+Codable.swift"; sourceTree = "<group>"; };
+		OBJ_67 /* OrderedSet+CustomDebugStringConvertible.swift */ = {isa = PBXFileReference; path = "OrderedSet+CustomDebugStringConvertible.swift"; sourceTree = "<group>"; };
+		OBJ_68 /* OrderedSet+CustomReflectable.swift */ = {isa = PBXFileReference; path = "OrderedSet+CustomReflectable.swift"; sourceTree = "<group>"; };
+		OBJ_69 /* OrderedSet+CustomStringConvertible.swift */ = {isa = PBXFileReference; path = "OrderedSet+CustomStringConvertible.swift"; sourceTree = "<group>"; };
+		OBJ_70 /* OrderedSet+Diffing.swift */ = {isa = PBXFileReference; path = "OrderedSet+Diffing.swift"; sourceTree = "<group>"; };
+		OBJ_71 /* OrderedSet+Equatable.swift */ = {isa = PBXFileReference; path = "OrderedSet+Equatable.swift"; sourceTree = "<group>"; };
+		OBJ_72 /* OrderedSet+ExpressibleByArrayLiteral.swift */ = {isa = PBXFileReference; path = "OrderedSet+ExpressibleByArrayLiteral.swift"; sourceTree = "<group>"; };
+		OBJ_73 /* OrderedSet+Hashable.swift */ = {isa = PBXFileReference; path = "OrderedSet+Hashable.swift"; sourceTree = "<group>"; };
+		OBJ_74 /* OrderedSet+Initializers.swift */ = {isa = PBXFileReference; path = "OrderedSet+Initializers.swift"; sourceTree = "<group>"; };
+		OBJ_75 /* OrderedSet+Insertions.swift */ = {isa = PBXFileReference; path = "OrderedSet+Insertions.swift"; sourceTree = "<group>"; };
+		OBJ_76 /* OrderedSet+Invariants.swift */ = {isa = PBXFileReference; path = "OrderedSet+Invariants.swift"; sourceTree = "<group>"; };
+		OBJ_77 /* OrderedSet+Partial MutableCollection.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial MutableCollection.swift"; sourceTree = "<group>"; };
+		OBJ_78 /* OrderedSet+Partial RangeReplaceableCollection.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial RangeReplaceableCollection.swift"; sourceTree = "<group>"; };
+		OBJ_79 /* OrderedSet+Partial SetAlgebra+Basics.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial SetAlgebra+Basics.swift"; sourceTree = "<group>"; };
 		OBJ_8 /* AsyncObjects.xcconfig */ = {isa = PBXFileReference; name = AsyncObjects.xcconfig; path = Helpers/AsyncObjects.xcconfig; sourceTree = "<group>"; };
-		OBJ_80 /* OrderedSet+RandomAccessCollection.swift */ = {isa = PBXFileReference; path = "OrderedSet+RandomAccessCollection.swift"; sourceTree = "<group>"; };
-		OBJ_81 /* OrderedSet+ReserveCapacity.swift */ = {isa = PBXFileReference; path = "OrderedSet+ReserveCapacity.swift"; sourceTree = "<group>"; };
-		OBJ_82 /* OrderedSet+SubSequence.swift */ = {isa = PBXFileReference; path = "OrderedSet+SubSequence.swift"; sourceTree = "<group>"; };
-		OBJ_83 /* OrderedSet+Testing.swift */ = {isa = PBXFileReference; path = "OrderedSet+Testing.swift"; sourceTree = "<group>"; };
-		OBJ_84 /* OrderedSet+UnorderedView.swift */ = {isa = PBXFileReference; path = "OrderedSet+UnorderedView.swift"; sourceTree = "<group>"; };
-		OBJ_85 /* OrderedSet+UnstableInternals.swift */ = {isa = PBXFileReference; path = "OrderedSet+UnstableInternals.swift"; sourceTree = "<group>"; };
-		OBJ_86 /* OrderedSet.swift */ = {isa = PBXFileReference; path = OrderedSet.swift; sourceTree = "<group>"; };
-		OBJ_88 /* RandomAccessCollection+Offsets.swift */ = {isa = PBXFileReference; path = "RandomAccessCollection+Offsets.swift"; sourceTree = "<group>"; };
-		OBJ_89 /* _UnsafeBitset.swift */ = {isa = PBXFileReference; path = _UnsafeBitset.swift; sourceTree = "<group>"; };
-		OBJ_90 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/Users/soumyaranjanmahunt/Documents/personal_projs/AsyncObjects/.build/checkouts/swift-collections/Package.swift"; sourceTree = "<group>"; };
+		OBJ_80 /* OrderedSet+Partial SetAlgebra+Operations.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial SetAlgebra+Operations.swift"; sourceTree = "<group>"; };
+		OBJ_81 /* OrderedSet+Partial SetAlgebra+Predicates.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial SetAlgebra+Predicates.swift"; sourceTree = "<group>"; };
+		OBJ_82 /* OrderedSet+RandomAccessCollection.swift */ = {isa = PBXFileReference; path = "OrderedSet+RandomAccessCollection.swift"; sourceTree = "<group>"; };
+		OBJ_83 /* OrderedSet+ReserveCapacity.swift */ = {isa = PBXFileReference; path = "OrderedSet+ReserveCapacity.swift"; sourceTree = "<group>"; };
+		OBJ_84 /* OrderedSet+SubSequence.swift */ = {isa = PBXFileReference; path = "OrderedSet+SubSequence.swift"; sourceTree = "<group>"; };
+		OBJ_85 /* OrderedSet+Testing.swift */ = {isa = PBXFileReference; path = "OrderedSet+Testing.swift"; sourceTree = "<group>"; };
+		OBJ_86 /* OrderedSet+UnorderedView.swift */ = {isa = PBXFileReference; path = "OrderedSet+UnorderedView.swift"; sourceTree = "<group>"; };
+		OBJ_87 /* OrderedSet+UnstableInternals.swift */ = {isa = PBXFileReference; path = "OrderedSet+UnstableInternals.swift"; sourceTree = "<group>"; };
+		OBJ_88 /* OrderedSet.swift */ = {isa = PBXFileReference; path = OrderedSet.swift; sourceTree = "<group>"; };
+		OBJ_90 /* RandomAccessCollection+Offsets.swift */ = {isa = PBXFileReference; path = "RandomAccessCollection+Offsets.swift"; sourceTree = "<group>"; };
+		OBJ_91 /* _UnsafeBitset.swift */ = {isa = PBXFileReference; path = _UnsafeBitset.swift; sourceTree = "<group>"; };
+		OBJ_92 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/Users/soumyaranjanmahunt/Documents/personal_projs/AsyncObjects/.build/checkouts/swift-collections/Package.swift"; sourceTree = "<group>"; };
 		asyncobjects::AsyncObjects::Product /* AsyncObjects.framework */ = {isa = PBXFileReference; path = AsyncObjects.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		asyncobjects::AsyncObjectsTests::Product /* AsyncObjectsTests.xctest */ = {isa = PBXFileReference; path = AsyncObjectsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		swift-collections::OrderedCollections::Product /* OrderedCollections.framework */ = {isa = PBXFileReference; path = OrderedCollections.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		OBJ_108 /* Frameworks */ = {
+		OBJ_111 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
-				OBJ_109 /* OrderedCollections.framework in Frameworks */,
+				OBJ_112 /* OrderedCollections.framework in Frameworks */,
 			);
 		};
-		OBJ_138 /* Frameworks */ = {
+		OBJ_142 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
-				OBJ_139 /* AsyncObjects.framework in Frameworks */,
-				OBJ_140 /* OrderedCollections.framework in Frameworks */,
+				OBJ_143 /* AsyncObjects.framework in Frameworks */,
+				OBJ_144 /* OrderedCollections.framework in Frameworks */,
 			);
 		};
-		OBJ_197 /* Frameworks */ = {
+		OBJ_201 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
 			);
@@ -200,69 +204,71 @@
 		OBJ_10 /* AsyncObjects */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_11 /* AsyncEvent.swift */,
-				OBJ_12 /* AsyncObject.swift */,
-				OBJ_13 /* AsyncSemaphore.swift */,
-				OBJ_14 /* CancellationSource.swift */,
-				OBJ_15 /* Continuable.swift */,
-				OBJ_16 /* Future.swift */,
-				OBJ_17 /* TaskOperation.swift */,
-				OBJ_18 /* TaskQueue.swift */,
-				53371338F2D4577DAE73DF63 /* AsyncObjects.docc */,
+				OBJ_11 /* AsyncCountdownEvent.swift */,
+				OBJ_12 /* AsyncEvent.swift */,
+				OBJ_13 /* AsyncObject.swift */,
+				OBJ_14 /* AsyncSemaphore.swift */,
+				OBJ_15 /* CancellationSource.swift */,
+				OBJ_16 /* Continuable.swift */,
+				OBJ_17 /* Future.swift */,
+				OBJ_18 /* TaskOperation.swift */,
+				OBJ_19 /* TaskQueue.swift */,
+				E9FB843106F08791F27034B6 /* AsyncObjects.docc */,
 			);
 			name = AsyncObjects;
 			path = Sources/AsyncObjects;
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_19 /* Tests */ = {
+		OBJ_20 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_20 /* AsyncObjectsTests */,
+				OBJ_21 /* AsyncObjectsTests */,
 			);
 			name = Tests;
 			path = "";
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_20 /* AsyncObjectsTests */ = {
+		OBJ_21 /* AsyncObjectsTests */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_21 /* AsyncEventTests.swift */,
-				OBJ_22 /* AsyncObjectTests.swift */,
-				OBJ_23 /* AsyncSemaphoreTests.swift */,
-				OBJ_24 /* CancellationSourceTests.swift */,
-				OBJ_25 /* NonThrowingFutureTests.swift */,
-				OBJ_26 /* StandardLibraryTests.swift */,
-				OBJ_27 /* TaskOperationTests.swift */,
-				OBJ_28 /* TaskQueueTests.swift */,
-				OBJ_29 /* ThrowingFutureTests.swift */,
-				OBJ_30 /* XCTestCase.swift */,
+				OBJ_22 /* AsyncCountdownEventTests.swift */,
+				OBJ_23 /* AsyncEventTests.swift */,
+				OBJ_24 /* AsyncObjectTests.swift */,
+				OBJ_25 /* AsyncSemaphoreTests.swift */,
+				OBJ_26 /* CancellationSourceTests.swift */,
+				OBJ_27 /* NonThrowingFutureTests.swift */,
+				OBJ_28 /* StandardLibraryTests.swift */,
+				OBJ_29 /* TaskOperationTests.swift */,
+				OBJ_30 /* TaskQueueTests.swift */,
+				OBJ_31 /* ThrowingFutureTests.swift */,
+				OBJ_32 /* XCTestCase.swift */,
 			);
 			name = AsyncObjectsTests;
 			path = Tests/AsyncObjectsTests;
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_31 /* Dependencies */ = {
+		OBJ_33 /* Dependencies */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_32 /* swift-collections 1.0.2 */,
+				OBJ_34 /* swift-collections 1.0.2 */,
 			);
 			name = Dependencies;
 			path = "";
 			sourceTree = "<group>";
 		};
-		OBJ_32 /* swift-collections 1.0.2 */ = {
+		OBJ_34 /* swift-collections 1.0.2 */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_33 /* Collections */,
-				OBJ_34 /* DequeModule */,
-				OBJ_35 /* OrderedCollections */,
-				OBJ_90 /* Package.swift */,
+				OBJ_35 /* Collections */,
+				OBJ_36 /* DequeModule */,
+				OBJ_37 /* OrderedCollections */,
+				OBJ_92 /* Package.swift */,
 			);
 			name = "swift-collections 1.0.2";
 			path = "";
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_33 /* Collections */ = {
+		OBJ_35 /* Collections */ = {
 			isa = PBXGroup;
 			children = (
 			);
@@ -270,7 +276,7 @@
 			path = ".build/checkouts/swift-collections/Sources/Collections";
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_34 /* DequeModule */ = {
+		OBJ_36 /* DequeModule */ = {
 			isa = PBXGroup;
 			children = (
 			);
@@ -278,54 +284,54 @@
 			path = ".build/checkouts/swift-collections/Sources/DequeModule";
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_35 /* OrderedCollections */ = {
+		OBJ_37 /* OrderedCollections */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_36 /* HashTable */,
-				OBJ_45 /* OrderedDictionary */,
-				OBJ_63 /* OrderedSet */,
-				OBJ_87 /* Utilities */,
+				OBJ_38 /* HashTable */,
+				OBJ_47 /* OrderedDictionary */,
+				OBJ_65 /* OrderedSet */,
+				OBJ_89 /* Utilities */,
 			);
 			name = OrderedCollections;
 			path = ".build/checkouts/swift-collections/Sources/OrderedCollections";
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_36 /* HashTable */ = {
+		OBJ_38 /* HashTable */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_37 /* _HashTable+Bucket.swift */,
-				OBJ_38 /* _HashTable+BucketIterator.swift */,
-				OBJ_39 /* _HashTable+Constants.swift */,
-				OBJ_40 /* _HashTable+CustomStringConvertible.swift */,
-				OBJ_41 /* _HashTable+Testing.swift */,
-				OBJ_42 /* _HashTable+UnsafeHandle.swift */,
-				OBJ_43 /* _HashTable.swift */,
-				OBJ_44 /* _Hashtable+Header.swift */,
+				OBJ_39 /* _HashTable+Bucket.swift */,
+				OBJ_40 /* _HashTable+BucketIterator.swift */,
+				OBJ_41 /* _HashTable+Constants.swift */,
+				OBJ_42 /* _HashTable+CustomStringConvertible.swift */,
+				OBJ_43 /* _HashTable+Testing.swift */,
+				OBJ_44 /* _HashTable+UnsafeHandle.swift */,
+				OBJ_45 /* _HashTable.swift */,
+				OBJ_46 /* _Hashtable+Header.swift */,
 			);
 			name = HashTable;
 			path = HashTable;
 			sourceTree = "<group>";
 		};
-		OBJ_45 /* OrderedDictionary */ = {
+		OBJ_47 /* OrderedDictionary */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_46 /* OrderedDictionary+Codable.swift */,
-				OBJ_47 /* OrderedDictionary+CustomDebugStringConvertible.swift */,
-				OBJ_48 /* OrderedDictionary+CustomReflectable.swift */,
-				OBJ_49 /* OrderedDictionary+CustomStringConvertible.swift */,
-				OBJ_50 /* OrderedDictionary+Deprecations.swift */,
-				OBJ_51 /* OrderedDictionary+Elements+SubSequence.swift */,
-				OBJ_52 /* OrderedDictionary+Elements.swift */,
-				OBJ_53 /* OrderedDictionary+Equatable.swift */,
-				OBJ_54 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift */,
-				OBJ_55 /* OrderedDictionary+Hashable.swift */,
-				OBJ_56 /* OrderedDictionary+Initializers.swift */,
-				OBJ_57 /* OrderedDictionary+Invariants.swift */,
-				OBJ_58 /* OrderedDictionary+Partial MutableCollection.swift */,
-				OBJ_59 /* OrderedDictionary+Partial RangeReplaceableCollection.swift */,
-				OBJ_60 /* OrderedDictionary+Sequence.swift */,
-				OBJ_61 /* OrderedDictionary+Values.swift */,
-				OBJ_62 /* OrderedDictionary.swift */,
+				OBJ_48 /* OrderedDictionary+Codable.swift */,
+				OBJ_49 /* OrderedDictionary+CustomDebugStringConvertible.swift */,
+				OBJ_50 /* OrderedDictionary+CustomReflectable.swift */,
+				OBJ_51 /* OrderedDictionary+CustomStringConvertible.swift */,
+				OBJ_52 /* OrderedDictionary+Deprecations.swift */,
+				OBJ_53 /* OrderedDictionary+Elements+SubSequence.swift */,
+				OBJ_54 /* OrderedDictionary+Elements.swift */,
+				OBJ_55 /* OrderedDictionary+Equatable.swift */,
+				OBJ_56 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift */,
+				OBJ_57 /* OrderedDictionary+Hashable.swift */,
+				OBJ_58 /* OrderedDictionary+Initializers.swift */,
+				OBJ_59 /* OrderedDictionary+Invariants.swift */,
+				OBJ_60 /* OrderedDictionary+Partial MutableCollection.swift */,
+				OBJ_61 /* OrderedDictionary+Partial RangeReplaceableCollection.swift */,
+				OBJ_62 /* OrderedDictionary+Sequence.swift */,
+				OBJ_63 /* OrderedDictionary+Values.swift */,
+				OBJ_64 /* OrderedDictionary.swift */,
 			);
 			name = OrderedDictionary;
 			path = OrderedDictionary;
@@ -337,39 +343,39 @@
 				OBJ_6 /* Package.swift */,
 				OBJ_7 /* Configs */,
 				OBJ_9 /* Sources */,
-				OBJ_19 /* Tests */,
-				OBJ_31 /* Dependencies */,
-				OBJ_91 /* Products */,
+				OBJ_20 /* Tests */,
+				OBJ_33 /* Dependencies */,
+				OBJ_93 /* Products */,
 			);
 			path = "";
 			sourceTree = "<group>";
 		};
-		OBJ_63 /* OrderedSet */ = {
+		OBJ_65 /* OrderedSet */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_64 /* OrderedSet+Codable.swift */,
-				OBJ_65 /* OrderedSet+CustomDebugStringConvertible.swift */,
-				OBJ_66 /* OrderedSet+CustomReflectable.swift */,
-				OBJ_67 /* OrderedSet+CustomStringConvertible.swift */,
-				OBJ_68 /* OrderedSet+Diffing.swift */,
-				OBJ_69 /* OrderedSet+Equatable.swift */,
-				OBJ_70 /* OrderedSet+ExpressibleByArrayLiteral.swift */,
-				OBJ_71 /* OrderedSet+Hashable.swift */,
-				OBJ_72 /* OrderedSet+Initializers.swift */,
-				OBJ_73 /* OrderedSet+Insertions.swift */,
-				OBJ_74 /* OrderedSet+Invariants.swift */,
-				OBJ_75 /* OrderedSet+Partial MutableCollection.swift */,
-				OBJ_76 /* OrderedSet+Partial RangeReplaceableCollection.swift */,
-				OBJ_77 /* OrderedSet+Partial SetAlgebra+Basics.swift */,
-				OBJ_78 /* OrderedSet+Partial SetAlgebra+Operations.swift */,
-				OBJ_79 /* OrderedSet+Partial SetAlgebra+Predicates.swift */,
-				OBJ_80 /* OrderedSet+RandomAccessCollection.swift */,
-				OBJ_81 /* OrderedSet+ReserveCapacity.swift */,
-				OBJ_82 /* OrderedSet+SubSequence.swift */,
-				OBJ_83 /* OrderedSet+Testing.swift */,
-				OBJ_84 /* OrderedSet+UnorderedView.swift */,
-				OBJ_85 /* OrderedSet+UnstableInternals.swift */,
-				OBJ_86 /* OrderedSet.swift */,
+				OBJ_66 /* OrderedSet+Codable.swift */,
+				OBJ_67 /* OrderedSet+CustomDebugStringConvertible.swift */,
+				OBJ_68 /* OrderedSet+CustomReflectable.swift */,
+				OBJ_69 /* OrderedSet+CustomStringConvertible.swift */,
+				OBJ_70 /* OrderedSet+Diffing.swift */,
+				OBJ_71 /* OrderedSet+Equatable.swift */,
+				OBJ_72 /* OrderedSet+ExpressibleByArrayLiteral.swift */,
+				OBJ_73 /* OrderedSet+Hashable.swift */,
+				OBJ_74 /* OrderedSet+Initializers.swift */,
+				OBJ_75 /* OrderedSet+Insertions.swift */,
+				OBJ_76 /* OrderedSet+Invariants.swift */,
+				OBJ_77 /* OrderedSet+Partial MutableCollection.swift */,
+				OBJ_78 /* OrderedSet+Partial RangeReplaceableCollection.swift */,
+				OBJ_79 /* OrderedSet+Partial SetAlgebra+Basics.swift */,
+				OBJ_80 /* OrderedSet+Partial SetAlgebra+Operations.swift */,
+				OBJ_81 /* OrderedSet+Partial SetAlgebra+Predicates.swift */,
+				OBJ_82 /* OrderedSet+RandomAccessCollection.swift */,
+				OBJ_83 /* OrderedSet+ReserveCapacity.swift */,
+				OBJ_84 /* OrderedSet+SubSequence.swift */,
+				OBJ_85 /* OrderedSet+Testing.swift */,
+				OBJ_86 /* OrderedSet+UnorderedView.swift */,
+				OBJ_87 /* OrderedSet+UnstableInternals.swift */,
+				OBJ_88 /* OrderedSet.swift */,
 			);
 			name = OrderedSet;
 			path = OrderedSet;
@@ -384,11 +390,11 @@
 			path = "";
 			sourceTree = "<group>";
 		};
-		OBJ_87 /* Utilities */ = {
+		OBJ_89 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_88 /* RandomAccessCollection+Offsets.swift */,
-				OBJ_89 /* _UnsafeBitset.swift */,
+				OBJ_90 /* RandomAccessCollection+Offsets.swift */,
+				OBJ_91 /* _UnsafeBitset.swift */,
 			);
 			name = Utilities;
 			path = Utilities;
@@ -403,7 +409,7 @@
 			path = "";
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_91 /* Products */ = {
+		OBJ_93 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				asyncobjects::AsyncObjects::Product /* AsyncObjects.framework */,
@@ -419,15 +425,15 @@
 /* Begin PBXNativeTarget section */
 		asyncobjects::AsyncObjects /* AsyncObjects */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_96 /* Build configuration list for PBXNativeTarget "AsyncObjects" */;
+			buildConfigurationList = OBJ_98 /* Build configuration list for PBXNativeTarget "AsyncObjects" */;
 			buildPhases = (
-				OBJ_99 /* Sources */,
-				OBJ_108 /* Frameworks */,
+				OBJ_101 /* Sources */,
+				OBJ_111 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				OBJ_110 /* PBXTargetDependency */,
+				OBJ_113 /* PBXTargetDependency */,
 			);
 			name = AsyncObjects;
 			productName = AsyncObjects;
@@ -436,16 +442,16 @@
 		};
 		asyncobjects::AsyncObjectsTests /* AsyncObjectsTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_124 /* Build configuration list for PBXNativeTarget "AsyncObjectsTests" */;
+			buildConfigurationList = OBJ_127 /* Build configuration list for PBXNativeTarget "AsyncObjectsTests" */;
 			buildPhases = (
-				OBJ_127 /* Sources */,
-				OBJ_138 /* Frameworks */,
+				OBJ_130 /* Sources */,
+				OBJ_142 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				OBJ_141 /* PBXTargetDependency */,
-				OBJ_142 /* PBXTargetDependency */,
+				OBJ_145 /* PBXTargetDependency */,
+				OBJ_146 /* PBXTargetDependency */,
 			);
 			name = AsyncObjectsTests;
 			productName = AsyncObjectsTests;
@@ -454,9 +460,9 @@
 		};
 		asyncobjects::SwiftPMPackageDescription /* AsyncObjectsPackageDescription */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_113 /* Build configuration list for PBXNativeTarget "AsyncObjectsPackageDescription" */;
+			buildConfigurationList = OBJ_116 /* Build configuration list for PBXNativeTarget "AsyncObjectsPackageDescription" */;
 			buildPhases = (
-				OBJ_116 /* Sources */,
+				OBJ_119 /* Sources */,
 			);
 			buildRules = (
 			);
@@ -468,10 +474,10 @@
 		};
 		swift-collections::OrderedCollections /* OrderedCollections */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_143 /* Build configuration list for PBXNativeTarget "OrderedCollections" */;
+			buildConfigurationList = OBJ_147 /* Build configuration list for PBXNativeTarget "OrderedCollections" */;
 			buildPhases = (
-				OBJ_146 /* Sources */,
-				OBJ_197 /* Frameworks */,
+				OBJ_150 /* Sources */,
+				OBJ_201 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -484,9 +490,9 @@
 		};
 		swift-collections::SwiftPMPackageDescription /* swift-collectionsPackageDescription */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_199 /* Build configuration list for PBXNativeTarget "swift-collectionsPackageDescription" */;
+			buildConfigurationList = OBJ_203 /* Build configuration list for PBXNativeTarget "swift-collectionsPackageDescription" */;
 			buildPhases = (
-				OBJ_202 /* Sources */,
+				OBJ_206 /* Sources */,
 			);
 			buildRules = (
 			);
@@ -513,7 +519,7 @@
 				en,
 			);
 			mainGroup = OBJ_5;
-			productRefGroup = OBJ_91 /* Products */;
+			productRefGroup = OBJ_93 /* Products */;
 			projectDirPath = .;
 			targets = (
 				asyncobjects::AsyncObjects /* AsyncObjects */,
@@ -527,155 +533,188 @@
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		OBJ_116 /* Sources */ = {
+		OBJ_101 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
-				OBJ_117 /* Package.swift in Sources */,
+				OBJ_102 /* AsyncCountdownEvent.swift in Sources */,
+				OBJ_103 /* AsyncEvent.swift in Sources */,
+				OBJ_104 /* AsyncObject.swift in Sources */,
+				OBJ_105 /* AsyncSemaphore.swift in Sources */,
+				OBJ_106 /* CancellationSource.swift in Sources */,
+				OBJ_107 /* Continuable.swift in Sources */,
+				OBJ_108 /* Future.swift in Sources */,
+				OBJ_109 /* TaskOperation.swift in Sources */,
+				OBJ_110 /* TaskQueue.swift in Sources */,
+				A0CAD561B98384E1A7187731 /* AsyncObjects.docc in Sources */,
 			);
 		};
-		OBJ_127 /* Sources */ = {
+		OBJ_119 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
-				OBJ_128 /* AsyncEventTests.swift in Sources */,
-				OBJ_129 /* AsyncObjectTests.swift in Sources */,
-				OBJ_130 /* AsyncSemaphoreTests.swift in Sources */,
-				OBJ_131 /* CancellationSourceTests.swift in Sources */,
-				OBJ_132 /* NonThrowingFutureTests.swift in Sources */,
-				OBJ_133 /* StandardLibraryTests.swift in Sources */,
-				OBJ_134 /* TaskOperationTests.swift in Sources */,
-				OBJ_135 /* TaskQueueTests.swift in Sources */,
-				OBJ_136 /* ThrowingFutureTests.swift in Sources */,
-				OBJ_137 /* XCTestCase.swift in Sources */,
+				OBJ_120 /* Package.swift in Sources */,
 			);
 		};
-		OBJ_146 /* Sources */ = {
+		OBJ_130 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
-				OBJ_147 /* _HashTable+Bucket.swift in Sources */,
-				OBJ_148 /* _HashTable+BucketIterator.swift in Sources */,
-				OBJ_149 /* _HashTable+Constants.swift in Sources */,
-				OBJ_150 /* _HashTable+CustomStringConvertible.swift in Sources */,
-				OBJ_151 /* _HashTable+Testing.swift in Sources */,
-				OBJ_152 /* _HashTable+UnsafeHandle.swift in Sources */,
-				OBJ_153 /* _HashTable.swift in Sources */,
-				OBJ_154 /* _Hashtable+Header.swift in Sources */,
-				OBJ_155 /* OrderedDictionary+Codable.swift in Sources */,
-				OBJ_156 /* OrderedDictionary+CustomDebugStringConvertible.swift in Sources */,
-				OBJ_157 /* OrderedDictionary+CustomReflectable.swift in Sources */,
-				OBJ_158 /* OrderedDictionary+CustomStringConvertible.swift in Sources */,
-				OBJ_159 /* OrderedDictionary+Deprecations.swift in Sources */,
-				OBJ_160 /* OrderedDictionary+Elements+SubSequence.swift in Sources */,
-				OBJ_161 /* OrderedDictionary+Elements.swift in Sources */,
-				OBJ_162 /* OrderedDictionary+Equatable.swift in Sources */,
-				OBJ_163 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift in Sources */,
-				OBJ_164 /* OrderedDictionary+Hashable.swift in Sources */,
-				OBJ_165 /* OrderedDictionary+Initializers.swift in Sources */,
-				OBJ_166 /* OrderedDictionary+Invariants.swift in Sources */,
-				OBJ_167 /* OrderedDictionary+Partial MutableCollection.swift in Sources */,
-				OBJ_168 /* OrderedDictionary+Partial RangeReplaceableCollection.swift in Sources */,
-				OBJ_169 /* OrderedDictionary+Sequence.swift in Sources */,
-				OBJ_170 /* OrderedDictionary+Values.swift in Sources */,
-				OBJ_171 /* OrderedDictionary.swift in Sources */,
-				OBJ_172 /* OrderedSet+Codable.swift in Sources */,
-				OBJ_173 /* OrderedSet+CustomDebugStringConvertible.swift in Sources */,
-				OBJ_174 /* OrderedSet+CustomReflectable.swift in Sources */,
-				OBJ_175 /* OrderedSet+CustomStringConvertible.swift in Sources */,
-				OBJ_176 /* OrderedSet+Diffing.swift in Sources */,
-				OBJ_177 /* OrderedSet+Equatable.swift in Sources */,
-				OBJ_178 /* OrderedSet+ExpressibleByArrayLiteral.swift in Sources */,
-				OBJ_179 /* OrderedSet+Hashable.swift in Sources */,
-				OBJ_180 /* OrderedSet+Initializers.swift in Sources */,
-				OBJ_181 /* OrderedSet+Insertions.swift in Sources */,
-				OBJ_182 /* OrderedSet+Invariants.swift in Sources */,
-				OBJ_183 /* OrderedSet+Partial MutableCollection.swift in Sources */,
-				OBJ_184 /* OrderedSet+Partial RangeReplaceableCollection.swift in Sources */,
-				OBJ_185 /* OrderedSet+Partial SetAlgebra+Basics.swift in Sources */,
-				OBJ_186 /* OrderedSet+Partial SetAlgebra+Operations.swift in Sources */,
-				OBJ_187 /* OrderedSet+Partial SetAlgebra+Predicates.swift in Sources */,
-				OBJ_188 /* OrderedSet+RandomAccessCollection.swift in Sources */,
-				OBJ_189 /* OrderedSet+ReserveCapacity.swift in Sources */,
-				OBJ_190 /* OrderedSet+SubSequence.swift in Sources */,
-				OBJ_191 /* OrderedSet+Testing.swift in Sources */,
-				OBJ_192 /* OrderedSet+UnorderedView.swift in Sources */,
-				OBJ_193 /* OrderedSet+UnstableInternals.swift in Sources */,
-				OBJ_194 /* OrderedSet.swift in Sources */,
-				OBJ_195 /* RandomAccessCollection+Offsets.swift in Sources */,
-				OBJ_196 /* _UnsafeBitset.swift in Sources */,
+				OBJ_131 /* AsyncCountdownEventTests.swift in Sources */,
+				OBJ_132 /* AsyncEventTests.swift in Sources */,
+				OBJ_133 /* AsyncObjectTests.swift in Sources */,
+				OBJ_134 /* AsyncSemaphoreTests.swift in Sources */,
+				OBJ_135 /* CancellationSourceTests.swift in Sources */,
+				OBJ_136 /* NonThrowingFutureTests.swift in Sources */,
+				OBJ_137 /* StandardLibraryTests.swift in Sources */,
+				OBJ_138 /* TaskOperationTests.swift in Sources */,
+				OBJ_139 /* TaskQueueTests.swift in Sources */,
+				OBJ_140 /* ThrowingFutureTests.swift in Sources */,
+				OBJ_141 /* XCTestCase.swift in Sources */,
 			);
 		};
-		OBJ_202 /* Sources */ = {
+		OBJ_150 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
-				OBJ_203 /* Package.swift in Sources */,
+				OBJ_151 /* _HashTable+Bucket.swift in Sources */,
+				OBJ_152 /* _HashTable+BucketIterator.swift in Sources */,
+				OBJ_153 /* _HashTable+Constants.swift in Sources */,
+				OBJ_154 /* _HashTable+CustomStringConvertible.swift in Sources */,
+				OBJ_155 /* _HashTable+Testing.swift in Sources */,
+				OBJ_156 /* _HashTable+UnsafeHandle.swift in Sources */,
+				OBJ_157 /* _HashTable.swift in Sources */,
+				OBJ_158 /* _Hashtable+Header.swift in Sources */,
+				OBJ_159 /* OrderedDictionary+Codable.swift in Sources */,
+				OBJ_160 /* OrderedDictionary+CustomDebugStringConvertible.swift in Sources */,
+				OBJ_161 /* OrderedDictionary+CustomReflectable.swift in Sources */,
+				OBJ_162 /* OrderedDictionary+CustomStringConvertible.swift in Sources */,
+				OBJ_163 /* OrderedDictionary+Deprecations.swift in Sources */,
+				OBJ_164 /* OrderedDictionary+Elements+SubSequence.swift in Sources */,
+				OBJ_165 /* OrderedDictionary+Elements.swift in Sources */,
+				OBJ_166 /* OrderedDictionary+Equatable.swift in Sources */,
+				OBJ_167 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift in Sources */,
+				OBJ_168 /* OrderedDictionary+Hashable.swift in Sources */,
+				OBJ_169 /* OrderedDictionary+Initializers.swift in Sources */,
+				OBJ_170 /* OrderedDictionary+Invariants.swift in Sources */,
+				OBJ_171 /* OrderedDictionary+Partial MutableCollection.swift in Sources */,
+				OBJ_172 /* OrderedDictionary+Partial RangeReplaceableCollection.swift in Sources */,
+				OBJ_173 /* OrderedDictionary+Sequence.swift in Sources */,
+				OBJ_174 /* OrderedDictionary+Values.swift in Sources */,
+				OBJ_175 /* OrderedDictionary.swift in Sources */,
+				OBJ_176 /* OrderedSet+Codable.swift in Sources */,
+				OBJ_177 /* OrderedSet+CustomDebugStringConvertible.swift in Sources */,
+				OBJ_178 /* OrderedSet+CustomReflectable.swift in Sources */,
+				OBJ_179 /* OrderedSet+CustomStringConvertible.swift in Sources */,
+				OBJ_180 /* OrderedSet+Diffing.swift in Sources */,
+				OBJ_181 /* OrderedSet+Equatable.swift in Sources */,
+				OBJ_182 /* OrderedSet+ExpressibleByArrayLiteral.swift in Sources */,
+				OBJ_183 /* OrderedSet+Hashable.swift in Sources */,
+				OBJ_184 /* OrderedSet+Initializers.swift in Sources */,
+				OBJ_185 /* OrderedSet+Insertions.swift in Sources */,
+				OBJ_186 /* OrderedSet+Invariants.swift in Sources */,
+				OBJ_187 /* OrderedSet+Partial MutableCollection.swift in Sources */,
+				OBJ_188 /* OrderedSet+Partial RangeReplaceableCollection.swift in Sources */,
+				OBJ_189 /* OrderedSet+Partial SetAlgebra+Basics.swift in Sources */,
+				OBJ_190 /* OrderedSet+Partial SetAlgebra+Operations.swift in Sources */,
+				OBJ_191 /* OrderedSet+Partial SetAlgebra+Predicates.swift in Sources */,
+				OBJ_192 /* OrderedSet+RandomAccessCollection.swift in Sources */,
+				OBJ_193 /* OrderedSet+ReserveCapacity.swift in Sources */,
+				OBJ_194 /* OrderedSet+SubSequence.swift in Sources */,
+				OBJ_195 /* OrderedSet+Testing.swift in Sources */,
+				OBJ_196 /* OrderedSet+UnorderedView.swift in Sources */,
+				OBJ_197 /* OrderedSet+UnstableInternals.swift in Sources */,
+				OBJ_198 /* OrderedSet.swift in Sources */,
+				OBJ_199 /* RandomAccessCollection+Offsets.swift in Sources */,
+				OBJ_200 /* _UnsafeBitset.swift in Sources */,
 			);
 		};
-		OBJ_99 /* Sources */ = {
+		OBJ_206 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
-				OBJ_100 /* AsyncEvent.swift in Sources */,
-				OBJ_101 /* AsyncObject.swift in Sources */,
-				OBJ_102 /* AsyncSemaphore.swift in Sources */,
-				OBJ_103 /* CancellationSource.swift in Sources */,
-				OBJ_104 /* Continuable.swift in Sources */,
-				OBJ_105 /* Future.swift in Sources */,
-				OBJ_106 /* TaskOperation.swift in Sources */,
-				OBJ_107 /* TaskQueue.swift in Sources */,
-				56F443B3BA5CF7EBA759FCD7 /* AsyncObjects.docc in Sources */,
+				OBJ_207 /* Package.swift in Sources */,
 			);
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		OBJ_110 /* PBXTargetDependency */ = {
+		OBJ_113 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = swift-collections::OrderedCollections /* OrderedCollections */;
 		};
-		OBJ_122 /* PBXTargetDependency */ = {
+		OBJ_125 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = asyncobjects::AsyncObjectsTests /* AsyncObjectsTests */;
 		};
-		OBJ_141 /* PBXTargetDependency */ = {
+		OBJ_145 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = asyncobjects::AsyncObjects /* AsyncObjects */;
 		};
-		OBJ_142 /* PBXTargetDependency */ = {
+		OBJ_146 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = swift-collections::OrderedCollections /* OrderedCollections */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		OBJ_114 /* Debug */ = {
+		OBJ_100 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = OBJ_8 /* AsyncObjects.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				DRIVERKIT_DEPLOYMENT_TARGET = 19.0;
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = AsyncObjects.xcodeproj/AsyncObjects_Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				OTHER_CFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = AsyncObjects;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
+				SWIFT_VERSION = 5.0;
+				TARGET_NAME = AsyncObjects;
+				TVOS_DEPLOYMENT_TARGET = 13.0;
+				WATCHOS_DEPLOYMENT_TARGET = 6.0;
+			};
+			name = Release;
+		};
+		OBJ_117 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -package-description-version 5.6.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Users/soumyaranjanmahunt/Downloads/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.0.sdk -package-description-version 5.6.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
-		OBJ_115 /* Release */ = {
+		OBJ_118 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -package-description-version 5.6.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Users/soumyaranjanmahunt/Downloads/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.0.sdk -package-description-version 5.6.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
-		OBJ_120 /* Debug */ = {
+		OBJ_123 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 			};
 			name = Debug;
 		};
-		OBJ_121 /* Release */ = {
+		OBJ_124 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 			};
 			name = Release;
 		};
-		OBJ_125 /* Debug */ = {
+		OBJ_128 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = OBJ_8 /* AsyncObjects.xcconfig */;
 			buildSettings = {
@@ -703,7 +742,7 @@
 			};
 			name = Debug;
 		};
-		OBJ_126 /* Release */ = {
+		OBJ_129 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = OBJ_8 /* AsyncObjects.xcconfig */;
 			buildSettings = {
@@ -731,7 +770,7 @@
 			};
 			name = Release;
 		};
-		OBJ_144 /* Debug */ = {
+		OBJ_148 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = OBJ_8 /* AsyncObjects.xcconfig */;
 			buildSettings = {
@@ -744,9 +783,9 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = AsyncObjects.xcodeproj/OrderedCollections_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -757,12 +796,12 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = OrderedCollections;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
-				WATCHOS_DEPLOYMENT_TARGET = 2.0;
+				TVOS_DEPLOYMENT_TARGET = 11.0;
+				WATCHOS_DEPLOYMENT_TARGET = 4.0;
 			};
 			name = Debug;
 		};
-		OBJ_145 /* Release */ = {
+		OBJ_149 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = OBJ_8 /* AsyncObjects.xcconfig */;
 			buildSettings = {
@@ -775,9 +814,9 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = AsyncObjects.xcodeproj/OrderedCollections_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -788,25 +827,25 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = OrderedCollections;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
-				WATCHOS_DEPLOYMENT_TARGET = 2.0;
+				TVOS_DEPLOYMENT_TARGET = 11.0;
+				WATCHOS_DEPLOYMENT_TARGET = 4.0;
 			};
 			name = Release;
 		};
-		OBJ_200 /* Debug */ = {
+		OBJ_204 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -package-description-version 5.3.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Users/soumyaranjanmahunt/Downloads/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.0.sdk -package-description-version 5.3.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
-		OBJ_201 /* Release */ = {
+		OBJ_205 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -package-description-version 5.3.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Users/soumyaranjanmahunt/Downloads/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.0.sdk -package-description-version 5.3.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -864,7 +903,7 @@
 			};
 			name = Release;
 		};
-		OBJ_97 /* Debug */ = {
+		OBJ_99 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = OBJ_8 /* AsyncObjects.xcconfig */;
 			buildSettings = {
@@ -895,81 +934,41 @@
 			};
 			name = Debug;
 		};
-		OBJ_98 /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = OBJ_8 /* AsyncObjects.xcconfig */;
-			buildSettings = {
-				CURRENT_PROJECT_VERSION = 1;
-				DRIVERKIT_DEPLOYMENT_TARGET = 19.0;
-				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
-				);
-				HEADER_SEARCH_PATHS = "$(inherited)";
-				INFOPLIST_FILE = AsyncObjects.xcodeproj/AsyncObjects_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
-				OTHER_CFLAGS = "$(inherited)";
-				OTHER_LDFLAGS = "$(inherited)";
-				OTHER_SWIFT_FLAGS = "$(inherited)";
-				PRODUCT_BUNDLE_IDENTIFIER = AsyncObjects;
-				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
-				SWIFT_VERSION = 5.0;
-				TARGET_NAME = AsyncObjects;
-				TVOS_DEPLOYMENT_TARGET = 13.0;
-				WATCHOS_DEPLOYMENT_TARGET = 6.0;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		OBJ_113 /* Build configuration list for PBXNativeTarget "AsyncObjectsPackageDescription" */ = {
+		OBJ_116 /* Build configuration list for PBXNativeTarget "AsyncObjectsPackageDescription" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_114 /* Debug */,
-				OBJ_115 /* Release */,
+				OBJ_117 /* Debug */,
+				OBJ_118 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		OBJ_119 /* Build configuration list for PBXAggregateTarget "AsyncObjectsPackageTests" */ = {
+		OBJ_122 /* Build configuration list for PBXAggregateTarget "AsyncObjectsPackageTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_120 /* Debug */,
-				OBJ_121 /* Release */,
+				OBJ_123 /* Debug */,
+				OBJ_124 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		OBJ_124 /* Build configuration list for PBXNativeTarget "AsyncObjectsTests" */ = {
+		OBJ_127 /* Build configuration list for PBXNativeTarget "AsyncObjectsTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_125 /* Debug */,
-				OBJ_126 /* Release */,
+				OBJ_128 /* Debug */,
+				OBJ_129 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		OBJ_143 /* Build configuration list for PBXNativeTarget "OrderedCollections" */ = {
+		OBJ_147 /* Build configuration list for PBXNativeTarget "OrderedCollections" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_144 /* Debug */,
-				OBJ_145 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		OBJ_199 /* Build configuration list for PBXNativeTarget "swift-collectionsPackageDescription" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				OBJ_200 /* Debug */,
-				OBJ_201 /* Release */,
+				OBJ_148 /* Debug */,
+				OBJ_149 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -983,11 +982,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		OBJ_96 /* Build configuration list for PBXNativeTarget "AsyncObjects" */ = {
+		OBJ_203 /* Build configuration list for PBXNativeTarget "swift-collectionsPackageDescription" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				OBJ_97 /* Debug */,
-				OBJ_98 /* Release */,
+				OBJ_204 /* Debug */,
+				OBJ_205 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		OBJ_98 /* Build configuration list for PBXNativeTarget "AsyncObjects" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_99 /* Debug */,
+				OBJ_100 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

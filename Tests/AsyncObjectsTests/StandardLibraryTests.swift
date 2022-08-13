@@ -26,4 +26,23 @@ class StandardLibraryTests: XCTestCase {
         let value = try await task.value
         XCTAssertEqual(value, 5)
     }
+
+    func testAsyncFunctionCallWithoutAwait() async throws {
+        let time = DispatchTime.now()
+        async let val: Void = Task {
+            do {
+                try await Task.sleep(nanoseconds: UInt64(3E9))
+                debugPrint("\(#function): Async task completed")
+            } catch {
+                XCTFail("Unrecognized task cancellation")
+            }
+        }.value
+        XCTAssertEqual(
+            0,
+            Int(
+                DispatchTime.now().uptimeNanoseconds - time.uptimeNanoseconds
+            ) / Int(1E9)
+        )
+        debugPrint("\(#function): Test method call completed")
+    }
 }

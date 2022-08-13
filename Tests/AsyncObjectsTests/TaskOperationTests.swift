@@ -22,7 +22,12 @@ class TaskOperationTests: XCTestCase {
             handler: nil
         )
         await waitForExpectations(timeout: 2)
-        operation.waitUntilFinished()
+        await GlobalContinuation<Void, Never>.with { continuation in
+            DispatchQueue.global(qos: .default).async {
+                operation.waitUntilFinished()
+                continuation.resume()
+            }
+        }
         XCTAssertEqual(
             3,
             Int(
@@ -54,7 +59,12 @@ class TaskOperationTests: XCTestCase {
         )
         await waitForExpectations(timeout: 2)
         operation.cancel()
-        operation.waitUntilFinished()
+        await GlobalContinuation<Void, Never>.with { continuation in
+            DispatchQueue.global(qos: .default).async {
+                operation.waitUntilFinished()
+                continuation.resume()
+            }
+        }
         XCTAssertTrue(operation.isFinished)
         XCTAssertFalse(operation.isExecuting)
         XCTAssertTrue(operation.isCancelled)
@@ -101,7 +111,12 @@ class TaskOperationTests: XCTestCase {
         )
         await waitForExpectations(timeout: 2)
         operation.cancel()
-        operation.waitUntilFinished()
+        await GlobalContinuation<Void, Never>.with { continuation in
+            DispatchQueue.global(qos: .default).async {
+                operation.waitUntilFinished()
+                continuation.resume()
+            }
+        }
         XCTAssertTrue(operation.isFinished)
         XCTAssertFalse(operation.isExecuting)
         XCTAssertTrue(operation.isCancelled)
