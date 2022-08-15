@@ -19,10 +19,12 @@ public actor Future<Output, Failure: Error> {
     /// A type that represents the result in the future, when an element or error is available.
     public typealias FutureResult = Result<Output, Failure>
     /// The suspended tasks continuation type.
-    private typealias Continuation = GlobalContinuation<Output, Failure>
+    @usableFromInline
+    typealias Continuation = GlobalContinuation<Output, Failure>
     /// The continuations stored with an associated key for all the suspended task
     /// that are waiting for future to be fulfilled.
-    private var continuations: [UUID: Continuation] = [:]
+    @usableFromInline
+    private(set) var continuations: [UUID: Continuation] = [:]
     /// The underlying `Result` that indicates either future fulfilled or rejected.
     ///
     /// If future isn't fulfilled or rejected, the value is `nil`.
@@ -33,8 +35,8 @@ public actor Future<Output, Failure: Error> {
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
-    @inline(__always)
-    private func addContinuation(
+    @inlinable
+    func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID = .init()
     ) {
@@ -297,8 +299,8 @@ extension Future where Failure == Error {
     /// from `continuations` map and resumes with `CancellationError`.
     ///
     /// - Parameter key: The key in the map.
-    @inline(__always)
-    private func removeContinuation(withKey key: UUID) {
+    @inlinable
+    func removeContinuation(withKey key: UUID) {
         let continuation = continuations.removeValue(forKey: key)
         continuation?.cancel()
     }
@@ -313,8 +315,8 @@ extension Future where Failure == Error {
     /// - Returns: The value continuation is resumed with.
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
-    @inline(__always)
-    private func withPromisedContinuation() async throws -> Output {
+    @inlinable
+    func withPromisedContinuation() async throws -> Output {
         let key = UUID()
         let value = try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in

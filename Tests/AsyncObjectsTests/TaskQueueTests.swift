@@ -2,41 +2,42 @@ import XCTest
 @testable import AsyncObjects
 
 class TaskQueueTests: XCTestCase {
+    typealias TaskOption = (
+        queue: TaskPriority?, task: TaskPriority?, flags: TaskQueue.Flags
+    )
 
     func testSignalingQueueDoesNothing() async {
         let queue = TaskQueue()
         await queue.signal()
-        let barriered = await queue.barriered
-        XCTAssertFalse(barriered)
+        let blocked = await queue.blocked
+        XCTAssertFalse(blocked)
     }
 
     func testSignalingLockedQueueDoesNothing() async throws {
         let queue = TaskQueue()
         Task.detached {
-            try await queue.exec(barrier: true) {
-                try await Task.sleep(nanoseconds: UInt64(5E9))
+            try await queue.exec(flags: .block) {
+                try await Self.sleep(seconds: 3)
             }
         }
-        try await Task.sleep(nanoseconds: UInt64(1E9))
+        try await Self.sleep(seconds: 1)
         await queue.signal()
-        let barriered = await queue.barriered
-        XCTAssertTrue(barriered)
+        let blocked = await queue.blocked
+        XCTAssertTrue(blocked)
     }
 
-    func checkWaitOnQueue(priorities: [TaskQueue.Priority]) async throws {
-        let queue = TaskQueue(priority: priorities[0])
-        try await checkExecInterval(durationInSeconds: 5) {
+    func checkWaitOnQueue(option: TaskOption) async throws {
+        let queue = TaskQueue(priority: option.queue)
+        try await checkExecInterval(durationInSeconds: 1) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
+                await group.addTaskAndStart {
                     try await queue.exec(
-                        barrier: true,
-                        priority: priorities[1]
+                        priority: option.task,
+                        flags: option.flags
                     ) {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                        try await Self.sleep(seconds: 1)
                     }
                 }
-                // To make sure barrier task started before wait
-                try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask { await queue.wait() }
                 try await group.waitForAll()
             }
@@ -44,60 +45,41 @@ class TaskQueueTests: XCTestCase {
     }
 
     func testWaitOnQueue() async throws {
-        let prioritiesMatrix: [[TaskQueue.Priority]] = [
-            [.none, .none],
-            [.none, .inherit],
-            [.none, .enforce(.high)],
-            [.none, .detached()],
-            [.none, .detached(.high)],
-            [.inherit, .none],
-            [.inherit, .inherit],
-            [.inherit, .enforce(.high)],
-            [.inherit, .detached()],
-            [.inherit, .detached(.high)],
-            [.enforce(.high), .none],
-            [.enforce(.high), .inherit],
-            [.enforce(.high), .enforce(.high)],
-            [.enforce(.high), .detached()],
-            [.enforce(.high), .detached(.high)],
-            [.detached(), .none],
-            [.detached(), .inherit],
-            [.detached(), .enforce(.high)],
-            [.detached(), .detached()],
-            [.detached(), .detached(.high)],
-            [.detached(.high), .none],
-            [.detached(.high), .inherit],
-            [.detached(.high), .enforce(.high)],
-            [.detached(.high), .detached()],
-            [.detached(.high), .detached(.high)],
+        let options: [TaskOption] = [
+            (queue: nil, task: nil, flags: []),
+            (queue: nil, task: .high, flags: []),
+            (queue: nil, task: .high, flags: .enforce),
+            (queue: nil, task: nil, flags: .detached),
+            (queue: nil, task: .high, flags: [.enforce, .detached]),
+            (queue: .high, task: nil, flags: []),
+            (queue: .high, task: .high, flags: []),
+            (queue: .high, task: .high, flags: .enforce),
+            (queue: .high, task: nil, flags: .detached),
+            (queue: .high, task: .high, flags: [.enforce, .detached]),
         ]
         try await withThrowingTaskGroup(of: Void.self) { group in
-            prioritiesMatrix.forEach { priorities in
+            options.forEach { option in
                 group.addTask {
-                    try await self.checkWaitOnQueue(priorities: priorities)
+                    try await self.checkWaitOnQueue(option: option)
                 }
             }
             try await group.waitForAll()
         }
     }
 
-    func checkWaitTimeoutOnQueue(
-        priorities: [TaskQueue.Priority]
-    ) async throws {
-        let queue = TaskQueue(priority: priorities[0])
-        try await checkExecInterval(durationInSeconds: 3) {
+    func checkWaitTimeoutOnQueue(option: TaskOption) async throws {
+        let queue = TaskQueue(priority: option.queue)
+        try await checkExecInterval(durationInSeconds: 1) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
+                await group.addTaskAndStart {
                     try await queue.exec(
-                        barrier: true,
-                        priority: priorities[1]
+                        priority: option.task,
+                        flags: [option.flags, .block]
                     ) {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                        try await Self.sleep(seconds: 2)
                     }
                 }
-                // To make sure barrier task started before wait
-                try await Task.sleep(nanoseconds: UInt64(1E7))
-                group.addTask { await queue.wait(forNanoseconds: UInt64(3E9)) }
+                group.addTask { await queue.wait(forSeconds: 1) }
                 for try await _ in group.prefix(1) {
                     group.cancelAll()
                 }
@@ -106,57 +88,40 @@ class TaskQueueTests: XCTestCase {
     }
 
     func testWaitTimeoutOnQueue() async throws {
-        let prioritiesMatrix: [[TaskQueue.Priority]] = [
-            [.none, .none],
-            [.none, .inherit],
-            [.none, .enforce(.high)],
-            [.none, .detached()],
-            [.none, .detached(.high)],
-            [.inherit, .none],
-            [.inherit, .inherit],
-            [.inherit, .enforce(.high)],
-            [.inherit, .detached()],
-            [.inherit, .detached(.high)],
-            [.enforce(.high), .none],
-            [.enforce(.high), .inherit],
-            [.enforce(.high), .enforce(.high)],
-            [.enforce(.high), .detached()],
-            [.enforce(.high), .detached(.high)],
-            [.detached(), .none],
-            [.detached(), .inherit],
-            [.detached(), .enforce(.high)],
-            [.detached(), .detached()],
-            [.detached(), .detached(.high)],
-            [.detached(.high), .none],
-            [.detached(.high), .inherit],
-            [.detached(.high), .enforce(.high)],
-            [.detached(.high), .detached()],
-            [.detached(.high), .detached(.high)],
+        let options: [TaskOption] = [
+            (queue: nil, task: nil, flags: []),
+            (queue: nil, task: .high, flags: []),
+            (queue: nil, task: .high, flags: .enforce),
+            (queue: nil, task: nil, flags: .detached),
+            (queue: nil, task: .high, flags: [.enforce, .detached]),
+            (queue: .high, task: nil, flags: []),
+            (queue: .high, task: .high, flags: []),
+            (queue: .high, task: .high, flags: .enforce),
+            (queue: .high, task: nil, flags: .detached),
+            (queue: .high, task: .high, flags: [.enforce, .detached]),
         ]
         try await withThrowingTaskGroup(of: Void.self) { group in
-            prioritiesMatrix.forEach { priorities in
+            options.forEach { option in
                 group.addTask {
-                    try await self.checkWaitTimeoutOnQueue(
-                        priorities: priorities
-                    )
+                    try await self.checkWaitTimeoutOnQueue(option: option)
                 }
             }
             try await group.waitForAll()
         }
     }
 
-    func testExecutionOfTwoBarriers() async throws {
+    func testExecutionOfTwoBlockOperations() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 10) {
+        try await checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask {
-                    try await queue.exec(barrier: true) {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 1)
                     }
                 }
                 group.addTask {
-                    try await queue.exec(barrier: true) {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 2)
                     }
                 }
                 try await group.waitForAll()
@@ -164,20 +129,18 @@ class TaskQueueTests: XCTestCase {
         }
     }
 
-    func testExecutionOfTaskBeforeBarrier() async throws {
+    func testExecutionOfTaskBeforeBlockOperation() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 5) {
+        try await checkExecInterval(durationInSeconds: 1) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
+                await group.addTaskAndStart {
                     try await queue.exec {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                        try await Self.sleep(seconds: 1)
                     }
                 }
-                // To make sure barrier task added after concurrent task
-                try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
-                    try await queue.exec(barrier: true) {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 1)
                     }
                 }
                 try await group.waitForAll()
@@ -185,20 +148,176 @@ class TaskQueueTests: XCTestCase {
         }
     }
 
-    func testExecutionOfTaskAfterBarrier() async throws {
+    func testExecutionOfTaskAfterBlockOperation() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 10) {
+        try await checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
-                    try await queue.exec(barrier: true) {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                await group.addTaskAndStart {
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 2)
                     }
                 }
-                // To make sure barrier task started before adding new task
-                try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
                     try await queue.exec {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                        try await Self.sleep(seconds: 1)
+                    }
+                }
+                try await group.waitForAll()
+            }
+        }
+    }
+
+    func testCancellationOfBlockTaskWithoutBlockingQueue() async throws {
+        let queue = TaskQueue()
+        try await checkExecInterval(durationInSeconds: 3) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                await group.addTaskAndStart {
+                    try await Self.sleep(seconds: 1)
+                    // Throws error for waiting method
+                    throw CancellationError()
+                }
+                group.addTask {
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                do {
+                    try await group.waitForAll()
+                } catch {
+                    // Cancels block task
+                    group.cancelAll()
+                }
+                try await queue.exec {
+                    try await Self.sleep(seconds: 2)
+                }
+            }
+        }
+    }
+
+    func testCancellationOfMultipleBlockTasksWithoutBlockingQueue()
+        async throws
+    {
+        let queue = TaskQueue()
+        try await checkExecInterval(durationInSeconds: 3) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                await group.addTaskAndStart {
+                    try await Self.sleep(seconds: 1)
+                    // Throws error for waiting method
+                    throw CancellationError()
+                }
+                group.addTask {
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                group.addTask {
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 3)
+                    }
+                }
+                do {
+                    try await group.waitForAll()
+                } catch {
+                    // Cancels block tasks
+                    group.cancelAll()
+                }
+                try await queue.exec {
+                    try await Self.sleep(seconds: 2)
+                }
+            }
+        }
+    }
+
+    func
+        testCancellationOfMultipleBlockTasksAndOneConcurrentTaskWithoutBlockingQueue()
+        async throws
+    {
+        let queue = TaskQueue()
+        try await checkExecInterval(durationInSeconds: 3) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                await group.addTaskAndStart {
+                    try await Self.sleep(seconds: 1)
+                    // Throws error for waiting method
+                    throw CancellationError()
+                }
+                group.addTask {
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                group.addTask {
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 3)
+                    }
+                }
+                group.addTask {
+                    try await queue.exec {
+                        try await Self.sleep(seconds: 4)
+                    }
+                }
+                do {
+                    try await group.waitForAll()
+                } catch {
+                    // Cancels block tasks
+                    group.cancelAll()
+                }
+                try await queue.exec {
+                    try await Self.sleep(seconds: 2)
+                }
+            }
+        }
+    }
+
+    func testExecutionOfTwoBarrierOperations() async throws {
+        let queue = TaskQueue()
+        try await checkExecInterval(durationInSeconds: 3) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                group.addTask {
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 1)
+                    }
+                }
+                try await group.waitForAll()
+            }
+        }
+    }
+
+    func testExecutionOfTaskBeforeBarrierOperation() async throws {
+        let queue = TaskQueue()
+        try await checkExecInterval(durationInSeconds: 3) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                await group.addTaskAndStart {
+                    try await queue.exec {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                group.addTask {
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 1)
+                    }
+                }
+                try await group.waitForAll()
+            }
+        }
+    }
+
+    func testExecutionOfTaskAfterBarrierOperation() async throws {
+        let queue = TaskQueue()
+        try await checkExecInterval(durationInSeconds: 3) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                await group.addTaskAndStart {
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                group.addTask {
+                    try await queue.exec {
+                        try await Self.sleep(seconds: 1)
                     }
                 }
                 try await group.waitForAll()
@@ -208,28 +327,26 @@ class TaskQueueTests: XCTestCase {
 
     func testCancellationOfBarrierTaskWithoutBlockingQueue() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 7) {
+        try await checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(2E9))
+                await group.addTaskAndStart {
+                    try await Self.sleep(seconds: 1)
                     // Throws error for waiting method
                     throw CancellationError()
                 }
-                // To make sure cancellation task started before adding barrier task
-                try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
-                    try await queue.exec(barrier: true) {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 2)
                     }
                 }
                 do {
                     try await group.waitForAll()
                 } catch {
-                    // Cancels barrier task
+                    // Cancels block task
                     group.cancelAll()
                 }
                 try await queue.exec {
-                    try await Task.sleep(nanoseconds: UInt64(5E9))
+                    try await Self.sleep(seconds: 2)
                 }
             }
         }
@@ -239,33 +356,31 @@ class TaskQueueTests: XCTestCase {
         async throws
     {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 8) {
+        try await checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(3E9))
+                await group.addTaskAndStart {
+                    try await Self.sleep(seconds: 1)
                     // Throws error for waiting method
                     throw CancellationError()
                 }
-                // To make sure cancellation task started before adding barrier task
-                try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
-                    try await queue.exec(barrier: true) {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 3)
                     }
                 }
                 group.addTask {
-                    try await queue.exec(barrier: true) {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 2)
                     }
                 }
                 do {
                     try await group.waitForAll()
                 } catch {
-                    // Cancels barrier tasks
+                    // Cancels block tasks
                     group.cancelAll()
                 }
                 try await queue.exec {
-                    try await Task.sleep(nanoseconds: UInt64(5E9))
+                    try await Self.sleep(seconds: 2)
                 }
             }
         }
@@ -276,39 +391,129 @@ class TaskQueueTests: XCTestCase {
         async throws
     {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 8) {
+        try await checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(3E9))
+                await group.addTaskAndStart {
+                    try await Self.sleep(seconds: 1)
                     // Throws error for waiting method
                     throw CancellationError()
                 }
-                // To make sure cancellation task started before adding barrier task
-                try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
-                    try await queue.exec(barrier: true) {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 3)
                     }
                 }
                 group.addTask {
-                    try await queue.exec(barrier: true) {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 2)
                     }
                 }
                 group.addTask {
                     try await queue.exec {
-                        try await Task.sleep(nanoseconds: UInt64(5E9))
+                        try await Self.sleep(seconds: 4)
                     }
                 }
                 do {
                     try await group.waitForAll()
                 } catch {
-                    // Cancels barrier tasks
+                    // Cancels block tasks
                     group.cancelAll()
                 }
                 try await queue.exec {
-                    try await Task.sleep(nanoseconds: UInt64(5E9))
+                    try await Self.sleep(seconds: 2)
                 }
+            }
+        }
+    }
+
+    func testExecutionOfBlockTaskBeforeBarrierOperation() async throws {
+        let queue = TaskQueue()
+        try await checkExecInterval(durationInSeconds: 3) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                await group.addTaskAndStart {
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                group.addTask {
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 1)
+                    }
+                }
+                try await group.waitForAll()
+            }
+        }
+    }
+
+    func testExecutionOfBlockTaskAfterBarrierOperation() async throws {
+        let queue = TaskQueue()
+        try await checkExecInterval(durationInSeconds: 3) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                await group.addTaskAndStart {
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                group.addTask {
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 1)
+                    }
+                }
+                try await group.waitForAll()
+            }
+        }
+    }
+
+    func testLongRunningConcurrentTaskWithShortBlockTaskBeforeBarrierOperation()
+        async throws
+    {
+        let queue = TaskQueue()
+        // Concurrent + Barrier
+        try await checkExecInterval(durationInSeconds: 5) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                await group.addTaskAndStart {
+                    try await queue.exec {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                await group.addTaskAndStart {
+                    try await queue.exec(flags: .block) {
+                        try await Self.sleep(seconds: 1)
+                    }
+                }
+                await group.addTaskAndStart {
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 3)
+                    }
+                }
+                try await group.waitForAll()
+            }
+        }
+    }
+
+    func testLongRunningConcurrentTaskWithShortBlockTaskAfterBarrierOperation()
+        async throws
+    {
+        let queue = TaskQueue()
+        // Concurrent + Barrier + Block
+        await checkExecInterval(durationInSeconds: 6) {
+            await withTaskGroup(of: Void.self) { group in
+                await group.addTaskAndStart {
+                    await queue.exec {
+                        try! await Self.sleep(seconds: 3)
+                    }
+                }
+                await group.addTaskAndStart {
+                    await queue.exec(flags: .barrier) {
+                        try! await Self.sleep(seconds: 2)
+                    }
+                }
+                await group.addTaskAndStart {
+                    await queue.exec(flags: .block) {
+                        try! await Self.sleep(seconds: 1)
+                    }
+                }
+                await group.waitForAll()
             }
         }
     }

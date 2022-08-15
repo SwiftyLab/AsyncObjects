@@ -6,15 +6,15 @@ class AsyncSemaphoreTests: XCTestCase {
     func checkSemaphoreWait(
         for semaphore: AsyncSemaphore,
         taskCount count: Int = 1,
-        withDelay delay: UInt64 = UInt64(5E9),
-        durationInSeconds seconds: Int = 0
+        withDelay delay: UInt64 = 1,
+        durationInSeconds seconds: Int = 1
     ) async throws {
         try await checkExecInterval(durationInSeconds: seconds) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for _ in 0..<count {
                     group.addTask {
                         await semaphore.wait()
-                        try await Task.sleep(nanoseconds: delay)
+                        try await Self.sleep(seconds: delay)
                         await semaphore.signal()
                     }
                 }
@@ -26,8 +26,8 @@ class AsyncSemaphoreTests: XCTestCase {
     func checkSemaphoreWaitWithTimeOut(
         value: UInt = 3,
         taskCount count: Int = 1,
-        withDelay delay: UInt64 = UInt64(5E9),
-        timeout: UInt64 = UInt64(3E9),
+        withDelay delay: UInt64 = 2,
+        timeout: UInt64 = 1,
         durationInSeconds seconds: Int = 0
     ) async throws {
         let semaphore = AsyncSemaphore(value: value)
@@ -42,7 +42,7 @@ class AsyncSemaphoreTests: XCTestCase {
                         result == .success
                             ? await store.addSuccess()
                             : await store.addFailure()
-                        try await Task.sleep(nanoseconds: delay)
+                        try await Self.sleep(seconds: delay)
                         await semaphore.signal()
                     }
                 }
@@ -58,20 +58,12 @@ class AsyncSemaphoreTests: XCTestCase {
 
     func testSemaphoreWaitWithTasksLessThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        try await checkSemaphoreWait(
-            for: semaphore,
-            taskCount: 2,
-            durationInSeconds: 5
-        )
+        try await checkSemaphoreWait(for: semaphore, taskCount: 2)
     }
 
     func testSemaphoreWaitWithTasksEqualToCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        try await checkSemaphoreWait(
-            for: semaphore,
-            taskCount: 3,
-            durationInSeconds: 5
-        )
+        try await checkSemaphoreWait(for: semaphore, taskCount: 3)
     }
 
     func testSemaphoreWaitWithTasksGreaterThanCount() async throws {
@@ -79,7 +71,7 @@ class AsyncSemaphoreTests: XCTestCase {
         try await checkSemaphoreWait(
             for: semaphore,
             taskCount: 5,
-            durationInSeconds: 10
+            durationInSeconds: 2
         )
     }
 
@@ -89,23 +81,23 @@ class AsyncSemaphoreTests: XCTestCase {
         try await checkSemaphoreWait(
             for: semaphore,
             taskCount: 4,
-            durationInSeconds: 10
+            durationInSeconds: 2
         )
     }
 
     func testSemaphoreWaitTimeoutWithTasksLessThanCount() async throws {
         try await checkSemaphoreWaitWithTimeOut(
             taskCount: 3,
-            timeout: UInt64(3E9),
-            durationInSeconds: 5
+            timeout: 3,
+            durationInSeconds: 2
         )
     }
 
     func testSemaphoreWaitTimeoutWithTasksGreaterThanCount() async throws {
         try await checkSemaphoreWaitWithTimeOut(
             taskCount: 5,
-            timeout: UInt64(3E9),
-            durationInSeconds: 8
+            timeout: 3,
+            durationInSeconds: 2
         )
     }
 
@@ -121,8 +113,8 @@ class AsyncSemaphoreTests: XCTestCase {
     func testUsageAsMutexWaitWithTimeout() async throws {
         let mutex = AsyncSemaphore()
         var result: TaskTimeoutResult = .success
-        await checkExecInterval(durationInSeconds: 4) {
-            result = await mutex.wait(forNanoseconds: UInt64(4E9))
+        await checkExecInterval(durationInSeconds: 1) {
+            result = await mutex.wait(forSeconds: 1)
         }
         XCTAssertEqual(result, .timedOut)
     }
@@ -131,29 +123,27 @@ class AsyncSemaphoreTests: XCTestCase {
         let mutex = AsyncSemaphore()
         var result: TaskTimeoutResult = .timedOut
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(5E9))
+            try await Self.sleep(seconds: 1)
             await mutex.signal()
         }
-        await checkExecInterval(durationInSeconds: 5) {
-            result = await mutex.wait(forNanoseconds: UInt64(10E9))
+        await checkExecInterval(durationInSeconds: 1) {
+            result = await mutex.wait(forSeconds: 2)
         }
         XCTAssertEqual(result, .success)
     }
 
     func testSemaphoreWaitCancellationWithTasksGreaterThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        try await checkExecInterval(durationInSeconds: 10) {
+        try await checkExecInterval(durationInSeconds: 4) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for index in 0..<8 {
                     group.addTask {
                         if index <= 3 || index.isMultiple(of: 2) {
                             await semaphore.wait()
-                            try await Task.sleep(nanoseconds: UInt64(5E9))
+                            try await Self.sleep(seconds: 2)
                             await semaphore.signal()
                         } else {
-                            let result = await semaphore.wait(
-                                forNanoseconds: UInt64(3E9)
-                            )
+                            let result = await semaphore.wait(forSeconds: 1)
                             XCTAssertEqual(result, .timedOut)
                         }
                     }

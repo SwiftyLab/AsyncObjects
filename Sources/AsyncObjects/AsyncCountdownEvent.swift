@@ -17,10 +17,12 @@ import OrderedCollections
 /// only one low priority usage allowed at one time.
 public actor AsyncCountdownEvent: AsyncObject {
     /// The suspended tasks continuation type.
-    private typealias Continuation = GlobalContinuation<Void, Error>
+    @usableFromInline
+    typealias Continuation = GlobalContinuation<Void, Error>
     /// The continuations stored with an associated key for all the suspended task that are waiting to be resumed.
-    private var continuations: OrderedDictionary<UUID, Continuation> = [:]
-    /// The lower limit for the countdown event to trigger.
+    @usableFromInline
+    private(set) var continuations: OrderedDictionary<UUID, Continuation> = [:]
+    /// The limit up to which the countdown counts and triggers event.
     ///
     /// By default this is set to zero and can be changed during initialization.
     public let limit: UInt
@@ -28,7 +30,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// If the current count becomes less or equal to limit, queued tasks
     /// are resumed from suspension until current count exceeds limit.
-    public private(set) var currentCount: UInt
+    public var currentCount: UInt
     /// Initial count of the countdown when count started.
     ///
     /// Can be changed after initialization
@@ -44,8 +46,8 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
-    @inline(__always)
-    private func addContinuation(
+    @inlinable
+    func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -56,8 +58,8 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// from `continuations` map and resumes with `CancellationError`.
     ///
     /// - Parameter key: The key in the map.
-    @inline(__always)
-    private func removeContinuation(withKey key: UUID) {
+    @inlinable
+    func removeContinuation(withKey key: UUID) {
         let continuation = continuations.removeValue(forKey: key)
         continuation?.cancel()
     }
@@ -65,15 +67,15 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// Decrements countdown count by the provided number.
     ///
     /// - Parameter number: The number to decrement count by.
-    @inline(__always)
-    private func decrementCount(by number: UInt = 1) {
+    @inlinable
+    func decrementCount(by number: UInt = 1) {
         guard currentCount > 0 else { return }
         currentCount -= number
     }
 
     /// Resume previously waiting continuations for countdown event.
-    @inline(__always)
-    private func resumeContinuations() {
+    @inlinable
+    func resumeContinuations() {
         while !continuations.isEmpty && isSet {
             let (_, continuation) = continuations.removeFirst()
             continuation.resume()
@@ -89,8 +91,8 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
-    @inline(__always)
-    private func withPromisedContinuation() async throws {
+    @inlinable
+    func withPromisedContinuation() async throws {
         let key = UUID()
         try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in

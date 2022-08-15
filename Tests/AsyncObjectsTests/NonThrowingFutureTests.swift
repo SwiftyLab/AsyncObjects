@@ -18,7 +18,7 @@ class NonThrowingFutureTests: XCTestCase {
                 XCTAssertEqual(value, 5)
             }
             group.addTask {
-                try! await Task.sleep(nanoseconds: UInt64(5E9))
+                try! await Self.sleep(seconds: 1)
                 await future.fulfill(producing: 5)
             }
             await group.waitForAll()
@@ -43,23 +43,20 @@ class NonThrowingFutureTests: XCTestCase {
         let allFuture = await Future.all(future1, future3, future2)
         try await checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
+                await group.addTaskAndStart {
                     let value = await allFuture.value
                     XCTAssertEqual(value, [1, 3, 2])
                 }
-                // To make sure all future task started
-                // before adding future fulfill tasks
-                try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(1E9))
+                    try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
                 }
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(2E9))
+                    try await Self.sleep(seconds: 2)
                     await future2.fulfill(producing: 2)
                 }
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(3E9))
+                    try await Self.sleep(seconds: 3)
                     await future3.fulfill(producing: 3)
                 }
                 try await group.waitForAll()
@@ -74,7 +71,7 @@ class NonThrowingFutureTests: XCTestCase {
         let allFuture = await Future.allSettled(future1, future2, future3)
         try await checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
+                await group.addTaskAndStart {
                     let values = await allFuture.value
                     for (index, item) in values.enumerated() {
                         switch item {
@@ -85,19 +82,16 @@ class NonThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
-                // To make sure all future task started
-                // before adding future fulfill tasks
-                try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(1E9))
+                    try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
                 }
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(2E9))
+                    try await Self.sleep(seconds: 2)
                     await future2.fulfill(producing: 2)
                 }
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(3E9))
+                    try await Self.sleep(seconds: 3)
                     await future3.fulfill(producing: 3)
                 }
                 try await group.waitForAll()
@@ -112,25 +106,22 @@ class NonThrowingFutureTests: XCTestCase {
         let allFuture = await Future.race(future1, future2, future3)
         try await checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
+                await group.addTaskAndStart {
                     await self.checkExecInterval(durationInSeconds: 1) {
                         let value = await allFuture.value
                         XCTAssertEqual(value, 1)
                     }
                 }
-                // To make sure all future task started
-                // before adding future fulfill tasks
-                try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(1E9))
+                    try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
                 }
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(2E9))
+                    try await Self.sleep(seconds: 2)
                     await future2.fulfill(producing: 2)
                 }
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(3E9))
+                    try await Self.sleep(seconds: 3)
                     await future3.fulfill(producing: 3)
                 }
                 try await group.waitForAll()
@@ -145,25 +136,22 @@ class NonThrowingFutureTests: XCTestCase {
         let allFuture = await Future.any(future1, future2, future3)
         try await checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                group.addTask {
+                await group.addTaskAndStart {
                     await self.checkExecInterval(durationInSeconds: 1) {
                         let value = await allFuture.value
                         XCTAssertEqual(value, 1)
                     }
                 }
-                // To make sure all future task started
-                // before adding future fulfill tasks
-                try await Task.sleep(nanoseconds: UInt64(1E7))
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(1E9))
+                    try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
                 }
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(2E9))
+                    try await Self.sleep(seconds: 2)
                     await future2.fulfill(producing: 2)
                 }
                 group.addTask {
-                    try await Task.sleep(nanoseconds: UInt64(3E9))
+                    try await Self.sleep(seconds: 3)
                     await future3.fulfill(producing: 3)
                 }
                 try await group.waitForAll()

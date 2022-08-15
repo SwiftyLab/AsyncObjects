@@ -8,7 +8,7 @@ class TaskOperationTests: XCTestCase {
     func testTaskOperation() async throws {
         let queue = OperationQueue()
         let operation = TaskOperation(queue: .global(qos: .background)) {
-            (try? await Task.sleep(nanoseconds: UInt64(3E9))) != nil
+            (try? await Self.sleep(seconds: 3)) != nil
         }
         XCTAssertTrue(operation.isAsynchronous)
         XCTAssertFalse(operation.isExecuting)
@@ -46,7 +46,7 @@ class TaskOperationTests: XCTestCase {
     func testTaskOperationCancellation() async throws {
         let queue = OperationQueue()
         let operation = TaskOperation(queue: .global(qos: .background)) {
-            (try? await Task.sleep(nanoseconds: UInt64(3E9))) != nil
+            (try? await Self.sleep(seconds: 3)) != nil
         }
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
@@ -77,7 +77,7 @@ class TaskOperationTests: XCTestCase {
     func testThrowingTaskOperation() throws {
         let queue = OperationQueue()
         let operation = TaskOperation(queue: .global(qos: .background)) {
-            try await Task.sleep(nanoseconds: UInt64(3E9))
+            try await Self.sleep(seconds: 3)
         }
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
@@ -98,7 +98,7 @@ class TaskOperationTests: XCTestCase {
     func testThrowingTaskOperationCancellation() async throws {
         let queue = OperationQueue()
         let operation = TaskOperation(queue: .global(qos: .background)) {
-            try await Task.sleep(nanoseconds: UInt64(3E9))
+            try await Self.sleep(seconds: 3)
         }
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
@@ -124,7 +124,7 @@ class TaskOperationTests: XCTestCase {
 
     func testTaskOperationAsyncWait() async throws {
         let operation = TaskOperation(queue: .global(qos: .background)) {
-            (try? await Task.sleep(nanoseconds: UInt64(3E9))) != nil
+            (try? await Self.sleep(seconds: 3)) != nil
         }
         operation.signal()
         await checkExecInterval(durationInRange: ...3, for: operation.wait)
@@ -132,11 +132,11 @@ class TaskOperationTests: XCTestCase {
 
     func testTaskOperationAsyncWaitTimeout() async throws {
         let operation = TaskOperation(queue: .global(qos: .background)) {
-            (try? await Task.sleep(nanoseconds: UInt64(10E9))) != nil
+            (try? await Self.sleep(seconds: 3)) != nil
         }
         operation.signal()
-        await checkExecInterval(durationInSeconds: 3) {
-            await operation.wait(forNanoseconds: UInt64(3E9))
+        await checkExecInterval(durationInSeconds: 1) {
+            await operation.wait(forSeconds: 1)
         }
     }
 

@@ -5,7 +5,7 @@ class StandardLibraryTests: XCTestCase {
 
     func testTaskValueFetchingCancelation() async throws {
         let task = Task { () -> Int in
-            try await Task.sleep(nanoseconds: UInt64(3E9))
+            try await Self.sleep(seconds: 1)
             return 5
         }
 
@@ -31,7 +31,7 @@ class StandardLibraryTests: XCTestCase {
         let time = DispatchTime.now()
         async let val: Void = Task {
             do {
-                try await Task.sleep(nanoseconds: UInt64(3E9))
+                try await Self.sleep(seconds: 1)
                 debugPrint("\(#function): Async task completed")
             } catch {
                 XCTFail("Unrecognized task cancellation")

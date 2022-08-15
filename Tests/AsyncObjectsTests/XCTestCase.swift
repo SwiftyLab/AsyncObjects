@@ -1,5 +1,6 @@
 import XCTest
 import Dispatch
+@testable import AsyncObjects
 
 extension XCTestCase {
     func checkExecInterval(
@@ -64,5 +65,18 @@ extension XCTestCase {
             range.contains(duration),
             "\(duration) not present in \(range)"
         )
+    }
+
+    static func sleep(seconds: UInt64) async throws {
+        try await Task.sleep(nanoseconds: seconds * 1_000_000_000)
+    }
+}
+
+extension AsyncObject {
+    @discardableResult
+    @Sendable
+    @inlinable
+    func wait(forSeconds seconds: UInt64) async -> TaskTimeoutResult {
+        return await self.wait(forNanoseconds: seconds * 1_000_000_000)
     }
 }

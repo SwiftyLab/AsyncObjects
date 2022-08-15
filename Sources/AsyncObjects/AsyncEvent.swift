@@ -8,9 +8,11 @@ import Foundation
 /// Wait for event signal by calling ``wait()`` method or its timeout variation ``wait(forNanoseconds:)``.
 public actor AsyncEvent: AsyncObject {
     /// The suspended tasks continuation type.
-    private typealias Continuation = GlobalContinuation<Void, Error>
+    @usableFromInline
+    typealias Continuation = GlobalContinuation<Void, Error>
     /// The continuations stored with an associated key for all the suspended task that are waiting for event signal.
-    private var continuations: [UUID: Continuation] = [:]
+    @usableFromInline
+    private(set) var continuations: [UUID: Continuation] = [:]
     /// Indicates whether current state of event is signalled.
     private var signalled: Bool
 
@@ -19,8 +21,8 @@ public actor AsyncEvent: AsyncObject {
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
-    @inline(__always)
-    private func addContinuation(
+    @inlinable
+    func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -31,8 +33,8 @@ public actor AsyncEvent: AsyncObject {
     /// from `continuations` map and resumes with `CancellationError`.
     ///
     /// - Parameter key: The key in the map.
-    @inline(__always)
-    private func removeContinuation(withKey key: UUID) {
+    @inlinable
+    func removeContinuation(withKey key: UUID) {
         let continuation = continuations.removeValue(forKey: key)
         continuation?.cancel()
     }
@@ -45,8 +47,8 @@ public actor AsyncEvent: AsyncObject {
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
-    @inline(__always)
-    private func withPromisedContinuation() async throws {
+    @inlinable
+    func withPromisedContinuation() async throws {
         let key = UUID()
         try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in

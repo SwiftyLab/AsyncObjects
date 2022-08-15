@@ -13,7 +13,7 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitZeroTimeoutWithoutIncrement() async throws {
         let event = AsyncCountdownEvent()
         await checkExecInterval(durationInSeconds: 0) {
-            let result = await event.wait(forNanoseconds: 0)
+            let result = await event.wait(forSeconds: 0)
             XCTAssertEqual(result, .success)
         }
     }
@@ -47,7 +47,7 @@ class AsyncCountdownEventTests: XCTestCase {
         await event.increment(by: 10)
         signalCountdownEvent(event, times: 10)
         await checkExecInterval(durationInSeconds: 3) {
-            let result = await event.wait(forNanoseconds: UInt64(3E9))
+            let result = await event.wait(forSeconds: 3)
             XCTAssertEqual(result, .timedOut)
         }
     }
@@ -56,7 +56,7 @@ class AsyncCountdownEventTests: XCTestCase {
         let event = AsyncCountdownEvent(until: 3)
         await event.increment(by: 10)
         signalCountdownEvent(event, times: 10)
-        await checkExecInterval(durationInSeconds: 3.5) {
+        await checkExecInterval(durationInRange: 3.5..<4) {
             await event.wait()
         }
     }
@@ -66,7 +66,7 @@ class AsyncCountdownEventTests: XCTestCase {
         await event.increment(by: 10)
         signalCountdownEvent(event, times: 10)
         await checkExecInterval(durationInSeconds: 2) {
-            let result = await event.wait(forNanoseconds: UInt64(2E9))
+            let result = await event.wait(forSeconds: 2)
             XCTAssertEqual(result, .timedOut)
         }
     }
@@ -87,7 +87,7 @@ class AsyncCountdownEventTests: XCTestCase {
         await event.increment(by: 10)
         signalCountdownEvent(event, times: 10)
         await checkExecInterval(durationInSeconds: 3) {
-            let result = await event.wait(forNanoseconds: UInt64(3E9))
+            let result = await event.wait(forSeconds: 3)
             XCTAssertEqual(result, .timedOut)
         }
     }
@@ -96,7 +96,7 @@ class AsyncCountdownEventTests: XCTestCase {
         let event = AsyncCountdownEvent()
         await event.increment(by: 10)
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(3E9))
+            try await Self.sleep(seconds: 3)
             await event.reset()
         }
         await checkExecInterval(durationInSeconds: 3) {
@@ -108,7 +108,7 @@ class AsyncCountdownEventTests: XCTestCase {
         let event = AsyncCountdownEvent()
         await event.increment(by: 10)
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(3E9))
+            try await Self.sleep(seconds: 3)
             await event.reset(to: 2)
             self.signalCountdownEvent(event, times: 10)
         }
@@ -121,11 +121,11 @@ class AsyncCountdownEventTests: XCTestCase {
         let event = AsyncCountdownEvent()
         await event.increment(by: 10)
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(3E9))
+            try await Self.sleep(seconds: 3)
             await event.reset()
         }
         await checkExecInterval(durationInSeconds: 2) {
-            await event.wait(forNanoseconds: UInt64(2E9))
+            await event.wait(forSeconds: 2)
         }
     }
 
@@ -133,12 +133,12 @@ class AsyncCountdownEventTests: XCTestCase {
         let event = AsyncCountdownEvent()
         await event.increment(by: 10)
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(3E9))
+            try await Self.sleep(seconds: 3)
             await event.reset(to: 6)
             self.signalCountdownEvent(event, times: 10)
         }
         await checkExecInterval(durationInSeconds: 3) {
-            await event.wait(forNanoseconds: UInt64(3E9))
+            await event.wait(forSeconds: 3)
         }
     }
 
@@ -147,7 +147,7 @@ class AsyncCountdownEventTests: XCTestCase {
         let event = AsyncCountdownEvent()
         await event.increment(by: 10)
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(2E9))
+            try await Self.sleep(seconds: 2)
             await event.reset(to: 2)
         }
         self.signalCountdownEvent(event, times: 10)

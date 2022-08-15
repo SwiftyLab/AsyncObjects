@@ -1,5 +1,6 @@
 /// A type that allows to interface between synchronous and asynchronous code,
 /// by representing task state and allowing task resuming with some value or error.
+@usableFromInline
 protocol Continuable: Sendable {
     /// The type of value to resume the continuation with in case of success.
     associatedtype Success
@@ -26,6 +27,7 @@ extension Continuable where Failure == Error {
     func cancel() { self.resume(throwing: CancellationError()) }
 }
 
+@usableFromInline
 protocol ThrowingContinuable: Continuable {
     /// The type of error to resume the continuation with in case of failure.
     associatedtype Failure = Error
@@ -44,6 +46,7 @@ protocol ThrowingContinuable: Continuable {
     static func with(_ fn: (Self) -> Void) async throws -> Success
 }
 
+@usableFromInline
 protocol NonThrowingContinuable: Continuable {
     /// The type of error to resume the continuation with in case of failure.
     associatedtype Failure = Never
@@ -64,6 +67,7 @@ protocol NonThrowingContinuable: Continuable {
 #if DEBUG || ASYNCOBJECTS_USE_CHECKEDCONTINUATION
 /// The continuation type used in package in `DEBUG` mode
 /// or if `ASYNCOBJECTS_USE_CHECKEDCONTINUATION` flag turned on.
+@usableFromInline
 typealias GlobalContinuation<T, E: Error> = CheckedContinuation<T, E>
 
 extension CheckedContinuation: Continuable {}
@@ -111,6 +115,7 @@ extension CheckedContinuation: NonThrowingContinuable where E == Never {
 #else
 /// The continuation type used in package in `RELEASE` mode
 ///and in absence of `ASYNCOBJECTS_USE_CHECKEDCONTINUATION` flag.
+@usableFromInline
 typealias GlobalContinuation<T, E: Error> = UnsafeContinuation<T, E>
 
 extension UnsafeContinuation: Continuable {}

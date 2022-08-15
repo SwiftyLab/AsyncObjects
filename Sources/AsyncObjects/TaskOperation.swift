@@ -15,7 +15,8 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     @unchecked Sendable
 {
     /// The dispatch queue used to synchronize data access and modifications.
-    private let propQueue: DispatchQueue
+    @usableFromInline
+    let propQueue: DispatchQueue
     /// The asynchronous action to perform as part of the operation..
     private let underlyingAction: @Sendable () async throws -> R
     /// The top-level task that executes asynchronous action provided
@@ -159,24 +160,26 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// Must be called either when operation completes or cancelled.
     @inline(__always)
-    private func finish() {
+    func finish() {
         isExecuting = false
         isFinished = true
     }
 
     // MARK: AsyncObject Impl
     /// The suspended tasks continuation type.
-    private typealias Continuation = GlobalContinuation<Void, Error>
+    @usableFromInline
+    typealias Continuation = GlobalContinuation<Void, Error>
     /// The continuations stored with an associated key for all the suspended task that are waiting for operation completion.
-    private var continuations: [UUID: Continuation] = [:]
+    @usableFromInline
+    private(set) var continuations: [UUID: Continuation] = [:]
 
     /// Add continuation with the provided key in `continuations` map.
     ///
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
-    @inline(__always)
-    private func addContinuation(
+    @inlinable
+    func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -190,8 +193,8 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// from `continuations` map.
     ///
     /// - Parameter key: The key in the map.
-    @inline(__always)
-    private func removeContinuation(withKey key: UUID) {
+    @inlinable
+    func removeContinuation(withKey key: UUID) {
         propQueue.sync(flags: [.barrier]) {
             let continuation = continuations.removeValue(forKey: key)
             continuation?.cancel()
@@ -206,7 +209,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
-    @inline(__always)
+    @inlinable
     func withPromisedContinuation() async throws {
         let key = UUID()
         try await withTaskCancellationHandler { [weak self] in

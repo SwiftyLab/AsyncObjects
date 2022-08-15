@@ -5,11 +5,11 @@ class AsyncEventTests: XCTestCase {
 
     func checkWait(
         for event: AsyncEvent,
-        signalIn interval: UInt64 = UInt64(5E9),
-        durationInSeconds seconds: Int = 0
+        signalIn interval: UInt64 = 1,
+        durationInSeconds seconds: Int = 1
     ) async throws {
         Task.detached {
-            try await Task.sleep(nanoseconds: interval)
+            try await Self.sleep(seconds: interval)
             await event.signal()
         }
         await checkExecInterval(durationInSeconds: seconds, for: event.wait)
@@ -17,25 +17,25 @@ class AsyncEventTests: XCTestCase {
 
     func testEventWait() async throws {
         let event = AsyncEvent(signaledInitially: false)
-        try await checkWait(for: event, durationInSeconds: 5)
+        try await checkWait(for: event)
     }
 
     func testEventLockAndWait() async throws {
         let event = AsyncEvent()
         await event.reset()
-        try await checkWait(for: event, durationInSeconds: 5)
+        try await checkWait(for: event)
     }
 
     func testReleasedEventWait() async throws {
         let event = AsyncEvent()
-        try await checkWait(for: event)
+        try await checkWait(for: event, durationInSeconds: 0)
     }
 
     func testEventWaitWithTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         var result: TaskTimeoutResult = .success
-        await checkExecInterval(durationInSeconds: 4) {
-            result = await event.wait(forNanoseconds: UInt64(4E9))
+        await checkExecInterval(durationInSeconds: 1) {
+            result = await event.wait(forSeconds: 1)
         }
         XCTAssertEqual(result, .timedOut)
     }
@@ -53,11 +53,11 @@ class AsyncEventTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         var result: TaskTimeoutResult = .timedOut
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(5E9))
+            try await Self.sleep(seconds: 1)
             await event.signal()
         }
-        await checkExecInterval(durationInSeconds: 5) {
-            result = await event.wait(forNanoseconds: UInt64(10E9))
+        await checkExecInterval(durationInSeconds: 1) {
+            result = await event.wait(forSeconds: 2)
         }
         XCTAssertEqual(result, .success)
     }
@@ -66,7 +66,7 @@ class AsyncEventTests: XCTestCase {
         let event = AsyncEvent()
         var result: TaskTimeoutResult = .timedOut
         await checkExecInterval(durationInSeconds: 0) {
-            result = await event.wait(forNanoseconds: UInt64(10E9))
+            result = await event.wait(forSeconds: 2)
         }
         XCTAssertEqual(result, .success)
     }

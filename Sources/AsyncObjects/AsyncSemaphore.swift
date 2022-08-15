@@ -11,23 +11,27 @@ import OrderedCollections
 /// or its timeout variation ``wait(forNanoseconds:)``.
 public actor AsyncSemaphore: AsyncObject {
     /// The suspended tasks continuation type.
-    private typealias Continuation = GlobalContinuation<Void, Error>
+    @usableFromInline
+    typealias Continuation = GlobalContinuation<Void, Error>
     /// The continuations stored with an associated key for all the suspended task that are waiting for access to resource.
-    private var continuations: OrderedDictionary<UUID, Continuation> = [:]
+    @usableFromInline
+    private(set) var continuations: OrderedDictionary<UUID, Continuation> = [:]
     /// Pool size for concurrent resource access.
     /// Has value provided during initialization incremented by one.
-    private var limit: UInt
+    @usableFromInline
+    private(set) var limit: UInt
     /// Current count of semaphore.
     /// Can have maximum value up to `limit`.
-    private var count: Int
+    @usableFromInline
+    private(set) var count: Int
 
     /// Add continuation with the provided key in `continuations` map.
     ///
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
-    @inline(__always)
-    private func addContinuation(
+    @inlinable
+    func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -38,16 +42,16 @@ public actor AsyncSemaphore: AsyncObject {
     /// from `continuations` map and resumes with `CancellationError`.
     ///
     /// - Parameter key: The key in the map.
-    @inline(__always)
-    private func removeContinuation(withKey key: UUID) {
+    @inlinable
+    func removeContinuation(withKey key: UUID) {
         let continuation = continuations.removeValue(forKey: key)
         continuation?.cancel()
         incrementCount()
     }
 
     /// Increments semaphore count within limit provided.
-    @inline(__always)
-    private func incrementCount() {
+    @inlinable
+    func incrementCount() {
         guard count < limit else { return }
         count += 1
     }
@@ -60,8 +64,8 @@ public actor AsyncSemaphore: AsyncObject {
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
-    @inline(__always)
-    private func withPromisedContinuation() async throws {
+    @inlinable
+    func withPromisedContinuation() async throws {
         let key = UUID()
         try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in

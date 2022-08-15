@@ -7,11 +7,11 @@ class AsyncObjectTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(5E9))
+            try await Self.sleep(seconds: 1)
             await event.signal()
             await mutex.signal()
         }
-        await checkExecInterval(durationInSeconds: 5) {
+        await checkExecInterval(durationInSeconds: 1) {
             await waitForAll(event, mutex)
         }
     }
@@ -20,12 +20,12 @@ class AsyncObjectTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(5E9))
+            try await Self.sleep(seconds: 1)
             await event.signal()
-            try await Task.sleep(nanoseconds: UInt64(5E9))
+            try await Self.sleep(seconds: 1)
             await mutex.signal()
         }
-        await checkExecInterval(durationInSeconds: 5) {
+        await checkExecInterval(durationInSeconds: 1) {
             await waitForAny(event, mutex)
         }
     }
@@ -34,18 +34,18 @@ class AsyncObjectTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         let op = TaskOperation(queue: .global(qos: .background)) {
-            try await Task.sleep(nanoseconds: UInt64(5E9))
+            try await Self.sleep(seconds: 3)
         }
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(2E9))
+            try await Self.sleep(seconds: 1)
             await event.signal()
         }
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(3E9))
+            try await Self.sleep(seconds: 2)
             await mutex.signal()
         }
         op.signal()
-        await checkExecInterval(durationInSeconds: 3) {
+        await checkExecInterval(durationInSeconds: 2) {
             await waitForAny(event, mutex, op, count: 2)
         }
     }
@@ -54,10 +54,10 @@ class AsyncObjectTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         var result: TaskTimeoutResult = .success
-        await checkExecInterval(durationInSeconds: 5) {
+        await checkExecInterval(durationInSeconds: 1) {
             result = await waitForAll(
                 event, mutex,
-                forNanoseconds: UInt64(5E9)
+                forNanoseconds: UInt64(1E9)
             )
         }
         XCTAssertEqual(result, .timedOut)
@@ -67,10 +67,10 @@ class AsyncObjectTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         var result: TaskTimeoutResult = .success
-        await checkExecInterval(durationInSeconds: 5) {
+        await checkExecInterval(durationInSeconds: 1) {
             result = await waitForAny(
                 event, mutex,
-                forNanoseconds: UInt64(5E9)
+                forNanoseconds: UInt64(1E9)
             )
         }
         XCTAssertEqual(result, .timedOut)
@@ -81,22 +81,22 @@ class AsyncObjectTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         let op = TaskOperation(queue: .global(qos: .background)) {
-            try await Task.sleep(nanoseconds: UInt64(7E9))
+            try await Self.sleep(seconds: 4)
         }
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(3E9))
+            try await Self.sleep(seconds: 1)
             await event.signal()
         }
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(5E9))
+            try await Self.sleep(seconds: 3)
             await mutex.signal()
         }
         op.signal()
-        await checkExecInterval(durationInSeconds: 4) {
+        await checkExecInterval(durationInSeconds: 2) {
             result = await waitForAny(
                 event, mutex, op,
                 count: 2,
-                forNanoseconds: UInt64(4E9)
+                forNanoseconds: UInt64(2E9)
             )
         }
         XCTAssertEqual(result, .timedOut)
@@ -107,14 +107,14 @@ class AsyncObjectTests: XCTestCase {
         let mutex = AsyncSemaphore()
         var result: TaskTimeoutResult = .timedOut
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(5E9))
+            try await Self.sleep(seconds: 1)
             await event.signal()
             await mutex.signal()
         }
-        await checkExecInterval(durationInSeconds: 5) {
+        await checkExecInterval(durationInSeconds: 1) {
             result = await waitForAll(
                 event, mutex,
-                forNanoseconds: UInt64(10E9)
+                forNanoseconds: UInt64(2E9)
             )
         }
         XCTAssertEqual(result, .success)
@@ -125,15 +125,15 @@ class AsyncObjectTests: XCTestCase {
         let mutex = AsyncSemaphore()
         var result: TaskTimeoutResult = .timedOut
         Task.detached {
-            try await Task.sleep(nanoseconds: UInt64(5E9))
+            try await Self.sleep(seconds: 1)
             await event.signal()
-            try await Task.sleep(nanoseconds: UInt64(5E9))
+            try await Self.sleep(seconds: 1)
             await mutex.signal()
         }
-        await checkExecInterval(durationInSeconds: 5) {
+        await checkExecInterval(durationInSeconds: 1) {
             result = await waitForAny(
                 event, mutex,
-                forNanoseconds: UInt64(10E9)
+                forNanoseconds: UInt64(2E9)
             )
         }
         XCTAssertEqual(result, .success)

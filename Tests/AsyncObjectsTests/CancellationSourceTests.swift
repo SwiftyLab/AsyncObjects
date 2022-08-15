@@ -6,7 +6,7 @@ class CancellationSourceTests: XCTestCase {
     func testTaskCancellation() async throws {
         let source = await CancellationSource()
         let task = Task {
-            try await Task.sleep(nanoseconds: UInt64(10E9))
+            try await Self.sleep(seconds: 1)
         }
         await source.register(task: task)
         await source.cancel()
@@ -14,12 +14,12 @@ class CancellationSourceTests: XCTestCase {
     }
 
     func testTaskCancellationWithTimeout() async throws {
-        let source = CancellationSource(cancelAfterNanoseconds: UInt64(5E9))
+        let source = CancellationSource(cancelAfterNanoseconds: UInt64(1E9))
         let task = Task {
-            try await Task.sleep(nanoseconds: UInt64(10E9))
+            try await Self.sleep(seconds: 2)
         }
         await source.register(task: task)
-        try await Task.sleep(nanoseconds: UInt64(6E9))
+        try await Self.sleep(seconds: 2)
         XCTAssertTrue(task.isCancelled)
     }
 
@@ -27,7 +27,7 @@ class CancellationSourceTests: XCTestCase {
         let parentSource = await CancellationSource()
         let source = await CancellationSource(linkedWith: parentSource)
         let task = Task {
-            try await Task.sleep(nanoseconds: UInt64(10E9))
+            try await Self.sleep(seconds: 1)
         }
         await source.register(task: task)
         await parentSource.cancel()
@@ -41,7 +41,7 @@ class CancellationSourceTests: XCTestCase {
             linkedWith: parentSource1, parentSource2
         )
         let task = Task {
-            try await Task.sleep(nanoseconds: UInt64(10E9))
+            try await Self.sleep(seconds: 1)
         }
         await source.register(task: task)
         await parentSource1.cancel()
@@ -52,7 +52,7 @@ class CancellationSourceTests: XCTestCase {
         let source = await CancellationSource()
         let task = await Task(cancellationSource: source) {
             do {
-                try await Task.sleep(nanoseconds: UInt64(10E9))
+                try await Self.sleep(seconds: 1)
                 XCTFail("Unexpected task progression")
             } catch {}
         }
@@ -66,7 +66,7 @@ class CancellationSourceTests: XCTestCase {
         let source = await CancellationSource()
         let task = await Task.detached(cancellationSource: source) {
             do {
-                try await Task.sleep(nanoseconds: UInt64(10E9))
+                try await Self.sleep(seconds: 1)
                 XCTFail("Unexpected task progression")
             } catch {}
         }
@@ -79,7 +79,7 @@ class CancellationSourceTests: XCTestCase {
     {
         let source = await CancellationSource()
         let task = try await Task(cancellationSource: source) {
-            try await Task.sleep(nanoseconds: UInt64(10E9))
+            try await Self.sleep(seconds: 1)
         }
         await source.cancel()
         XCTAssertTrue(task.isCancelled)
@@ -90,7 +90,7 @@ class CancellationSourceTests: XCTestCase {
     {
         let source = await CancellationSource()
         let task = try await Task.detached(cancellationSource: source) {
-            try await Task.sleep(nanoseconds: UInt64(10E9))
+            try await Self.sleep(seconds: 1)
         }
         await source.cancel()
         XCTAssertTrue(task.isCancelled)
@@ -101,7 +101,7 @@ class CancellationSourceTests: XCTestCase {
     ) -> Task<Void, Never> {
         return Task(cancellationSource: source) {
             do {
-                try await Task.sleep(nanoseconds: UInt64(10E9))
+                try await Self.sleep(seconds: 1)
             } catch {
                 XCTAssertTrue(Task.isCancelled)
             }
@@ -113,7 +113,7 @@ class CancellationSourceTests: XCTestCase {
         let source = await CancellationSource()
         let task = createTaskWithCancellationSource(source)
         Task {
-            try await Task.sleep(nanoseconds: UInt64(2E9))
+            try await Self.sleep(seconds: 2)
             await source.cancel()
         }
         await task.value
@@ -124,7 +124,7 @@ class CancellationSourceTests: XCTestCase {
     ) -> Task<Void, Never> {
         return Task.detached(cancellationSource: source) {
             do {
-                try await Task.sleep(nanoseconds: UInt64(10E9))
+                try await Self.sleep(seconds: 2)
                 XCTFail("Unexpected task progression")
             } catch {}
         }
@@ -136,7 +136,7 @@ class CancellationSourceTests: XCTestCase {
         let source = await CancellationSource()
         let task = createDetachedTaskWithCancellationSource(source)
         Task {
-            try await Task.sleep(nanoseconds: UInt64(2E9))
+            try await Self.sleep(seconds: 1)
             await source.cancel()
         }
         await task.value
@@ -146,7 +146,7 @@ class CancellationSourceTests: XCTestCase {
         _ source: CancellationSource
     ) throws -> Task<Void, Error> {
         return try Task(cancellationSource: source) {
-            try await Task.sleep(nanoseconds: UInt64(10E9))
+            try await Self.sleep(seconds: 2)
             XCTFail("Unexpected task progression")
         }
     }
@@ -157,7 +157,7 @@ class CancellationSourceTests: XCTestCase {
         let source = await CancellationSource()
         let task = try createThrowingTaskWithCancellationSource(source)
         Task {
-            try await Task.sleep(nanoseconds: UInt64(2E9))
+            try await Self.sleep(seconds: 1)
             await source.cancel()
         }
         let value: Void? = try? await task.value
@@ -168,7 +168,7 @@ class CancellationSourceTests: XCTestCase {
         _ source: CancellationSource
     ) throws -> Task<Void, Error> {
         return try Task.detached(cancellationSource: source) {
-            try await Task.sleep(nanoseconds: UInt64(10E9))
+            try await Self.sleep(seconds: 2)
             XCTFail("Unexpected task progression")
         }
     }
@@ -180,7 +180,7 @@ class CancellationSourceTests: XCTestCase {
         let source = await CancellationSource()
         let task = try createThrowingDetachedTaskWithCancellationSource(source)
         Task {
-            try await Task.sleep(nanoseconds: UInt64(2E9))
+            try await Self.sleep(seconds: 1)
             await source.cancel()
         }
         let value: Void? = try? await task.value

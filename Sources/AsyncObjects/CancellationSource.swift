@@ -14,20 +14,22 @@ import Foundation
 ///            In case of circular dependency between cancellation sources, app will go into infinite recursion.
 public actor CancellationSource {
     /// All the registered tasks for cooperative cancellation.
-    private var registeredTasks: [AnyHashable: () -> Void] = [:]
+    @usableFromInline
+    private(set) var registeredTasks: [AnyHashable: () -> Void] = [:]
     /// All the linked cancellation sources that cancellation event will be propagated.
     ///
     /// - TODO: Store weak reference for cancellation sources.
     /// ```swift
     /// private var linkedSources: NSHashTable<CancellationSource> = .weakObjects()
     /// ```
-    private var linkedSources: [CancellationSource] = []
+    @usableFromInline
+    private(set) var linkedSources: [CancellationSource] = []
 
     /// Add task to registered cooperative cancellation tasks list.
     ///
     /// - Parameter task: The task to register.
-    @inline(__always)
-    private func add<Success, Failure>(task: Task<Success, Failure>) {
+    @inlinable
+    func add<Success, Failure>(task: Task<Success, Failure>) {
         guard !task.isCancelled else { return }
         registeredTasks[task] = { task.cancel() }
     }
@@ -35,16 +37,16 @@ public actor CancellationSource {
     /// Remove task from registered cooperative cancellation tasks list.
     ///
     /// - Parameter task: The task to remove.
-    @inline(__always)
-    private func remove<Success, Failure>(task: Task<Success, Failure>) {
+    @inlinable
+    func remove<Success, Failure>(task: Task<Success, Failure>) {
         registeredTasks.removeValue(forKey: task)
     }
 
     /// Add cancellation source to linked cancellation sources list to propagate cancellation event.
     ///
     /// - Parameter task: The source to link.
-    @inline(__always)
-    private func addSource(_ source: CancellationSource) {
+    @inlinable
+    func addSource(_ source: CancellationSource) {
         linkedSources.append(source)
     }
 
