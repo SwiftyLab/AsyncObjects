@@ -554,7 +554,7 @@ class TaskQueueTests: XCTestCase {
         }
     }
 
-    /// Scenario descriped in: 
+    /// Scenario described in: 
     /// https://forums.swift.org/t/concurrency-suspending-an-actor-async-func-until-the-actor-meets-certain-conditions/56580
     func testBarrierTaskWithMultipleConcurrentTasks() async throws {
         let queue = TaskQueue()

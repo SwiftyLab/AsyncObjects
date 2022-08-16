@@ -40,8 +40,9 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// The value of this property is true if the operation is currently executing
     /// provided asynchronous operation or false if it is not.
-    public override private(set) var isExecuting: Bool {
+    public override internal(set) var isExecuting: Bool {
         get { propQueue.sync { _isExecuting } }
+        @usableFromInline
         set {
             willChangeValue(forKey: "isExecuting")
             propQueue.sync(flags: [.barrier]) { _isExecuting = newValue }
@@ -55,8 +56,9 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// The value of this property is true if the operation is finished executing or cancelled
     /// provided asynchronous operation or false if it is not.
-    public override private(set) var isFinished: Bool {
+    public override internal(set) var isFinished: Bool {
         get { propQueue.sync { _isFinished } }
+        @usableFromInline
         set {
             willChangeValue(forKey: "isFinished")
             propQueue.sync(flags: [.barrier]) {
@@ -159,7 +161,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// Moves this operation to finished state.
     ///
     /// Must be called either when operation completes or cancelled.
-    @inline(__always)
+    @inlinable
     func finish() {
         isExecuting = false
         isFinished = true
