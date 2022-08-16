@@ -244,8 +244,6 @@ public func waitForTaskCompletion(
         }
         if let result = await group.next() {
             timedOut = !result
-        } else {
-            timedOut = true
         }
         group.cancelAll()
     }

@@ -47,6 +47,8 @@ class NonThrowingFutureTests: XCTestCase {
                     let value = await allFuture.value
                     XCTAssertEqual(value, [1, 3, 2])
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -82,6 +84,8 @@ class NonThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -112,6 +116,8 @@ class NonThrowingFutureTests: XCTestCase {
                         XCTAssertEqual(value, 1)
                     }
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -142,6 +148,8 @@ class NonThrowingFutureTests: XCTestCase {
                         XCTAssertEqual(value, 1)
                     }
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -157,5 +165,24 @@ class NonThrowingFutureTests: XCTestCase {
                 try await group.waitForAll()
             }
         }
+    }
+
+    func testConstructingAllFutureFromZeroFutures() async {
+        let future = await Future<Int, Never>.all()
+        let value = await future.value
+        XCTAssertTrue(value.isEmpty)
+    }
+
+    func testConstructingAllSettledFutureFromZeroFutures() async {
+        let future = await Future<Int, Never>.allSettled()
+        let value = await future.value
+        XCTAssertTrue(value.isEmpty)
+    }
+
+    func testMultipleTimesFutureFulfilled() async throws {
+        let future = await Future<Int, Never>(with: .success(5))
+        await future.fulfill(producing: 10)
+        let value = await future.value
+        XCTAssertEqual(value, 5)
     }
 }

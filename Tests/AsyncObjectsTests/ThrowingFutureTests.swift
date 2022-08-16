@@ -67,7 +67,7 @@ class ThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testCombiningAllPromisesWithAllSuccess() async throws {
+    func testCombiningAllFuturesWithAllSuccess() async throws {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
@@ -78,6 +78,8 @@ class ThrowingFutureTests: XCTestCase {
                     let value = try await allFuture.value
                     XCTAssertEqual(value, [1, 2, 3])
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -95,7 +97,7 @@ class ThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testCombiningAllPromisesWithSomeErrors() async throws {
+    func testCombiningAllFuturesWithSomeErrors() async throws {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
@@ -114,6 +116,8 @@ class ThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -131,7 +135,7 @@ class ThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testCombiningAllSettledPromisesWithAllSuccess() async throws {
+    func testCombiningAllSettledFuturesWithAllSuccess() async throws {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
@@ -149,6 +153,8 @@ class ThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -166,7 +172,7 @@ class ThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testCombiningAllSettledPromisesWithSomeErrors() async throws {
+    func testCombiningAllSettledFuturesWithSomeErrors() async throws {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
@@ -189,6 +195,8 @@ class ThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -206,7 +214,7 @@ class ThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testRacingPromisesWithAllSuccess() async throws {
+    func testRacingFuturesWithAllSuccess() async throws {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
@@ -219,6 +227,8 @@ class ThrowingFutureTests: XCTestCase {
                         XCTAssertEqual(value, 1)
                     }
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -236,7 +246,7 @@ class ThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testRacingPromisesWithSomeErrors() async throws {
+    func testRacingFuturesWithSomeErrors() async throws {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
@@ -255,6 +265,8 @@ class ThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(throwing: CancellationError())
@@ -272,7 +284,7 @@ class ThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testAnyPromisesWithAllSuccess() async throws {
+    func testAnyFuturesWithAllSuccess() async throws {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
@@ -285,6 +297,8 @@ class ThrowingFutureTests: XCTestCase {
                         XCTAssertEqual(value, 1)
                     }
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -302,7 +316,7 @@ class ThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testAnyPromisesWithSomeErrors() async throws {
+    func testAnyFuturesWithSomeErrors() async throws {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
@@ -315,6 +329,8 @@ class ThrowingFutureTests: XCTestCase {
                         XCTAssertEqual(value, 2)
                     }
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(throwing: CancellationError())
@@ -332,7 +348,7 @@ class ThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testAnyPromisesWithAllErrors() async throws {
+    func testAnyFuturesWithAllErrors() async throws {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
@@ -351,6 +367,8 @@ class ThrowingFutureTests: XCTestCase {
                         }
                     }
                 }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(throwing: CancellationError())
@@ -366,5 +384,33 @@ class ThrowingFutureTests: XCTestCase {
                 try await group.waitForAll()
             }
         }
+    }
+
+    func testConstructingAnyFutureFromZeroFutures() async {
+        let future = await Future<Int, Error>.any()
+        let result = await future.result
+        switch result {
+        case .failure(let error): XCTAssertTrue(type(of: error) == CancellationError.self)
+        default: XCTFail("Unexpected future fulfillment")
+        }
+    }
+
+    func testConstructingAllFutureFromZeroFutures() async throws {
+        let future = await Future<Int, Error>.all()
+        let value = try await future.value
+        XCTAssertTrue(value.isEmpty)
+    }
+
+    func testConstructingAllSettledFutureFromZeroFutures() async throws {
+        let future = await Future<Int, Error>.allSettled()
+        let value = await future.value
+        XCTAssertTrue(value.isEmpty)
+    }
+
+    func testMultipleTimesFutureFulfilled() async throws {
+        let future = await Future<Int, Error>(with: .success(5))
+        await future.fulfill(producing: 10)
+        let value = try await future.value
+        XCTAssertEqual(value, 5)
     }
 }

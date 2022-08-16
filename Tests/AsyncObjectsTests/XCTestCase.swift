@@ -70,6 +70,10 @@ extension XCTestCase {
     static func sleep(seconds: UInt64) async throws {
         try await Task.sleep(nanoseconds: seconds * 1_000_000_000)
     }
+
+    static func sleep(forSeconds seconds: Double) async throws {
+        try await Task.sleep(nanoseconds: UInt64(seconds * 1E9))
+    }
 }
 
 extension AsyncObject {
