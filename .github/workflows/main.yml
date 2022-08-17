@@ -23,138 +23,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # analyze:
-  #   name: Analyze
-  #   if: github.event_name != 'workflow_dispatch'
-  #   uses: SwiftyLab/ci/.github/workflows/codeql-analysis.yml@main
-  #   permissions:
-  #     actions: read
-  #     contents: read
-  #     security-events: write
-
-  # spell-check:
-  #   name: Run spell check
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Checkout repository
-  #     uses: actions/checkout@v3
-
-  #   - name: Spellcheck Action
-  #     uses: rojopolis/spellcheck-github-actions@0.24.0
-  #     with:
-  #       config_path: .github/config/spellcheck.yml
-
-  swift-package-test:
+  test:
     name: Swift Package
-    uses: SwiftyLab/ci/.github/workflows/swift-package.yml@main
-    secrets: inherit
-    with:
-      codecov-swift: '5.6'
-      codecov-os: macos-12
-      matrix: >
-        {
-          "include": [
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "swift": "5.6"
-            },
-            {
-              "os": "ubuntu-latest",
-              "swift": "5.6"
-            }
-          ]
-        }
+    runs-on: macos-12
 
-  cocoapods-test:
-    name: CocoaPods
-    uses: SwiftyLab/ci/.github/workflows/cocoapods.yml@main
-    with:
-      matrix: >
-        {
-          "include": [
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "macos"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "watchos"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "tvos"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "ios"
-            }
-          ]
-        }
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-  xcode-test:
-    name: Xcode
-    uses: SwiftyLab/ci/.github/workflows/xcode.yml@main
-    with:
-      matrix: >
-        {
-          "include": [
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "macOS"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "watchOS"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "tvOS"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "iOS"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "mac-catalyst"
-            }
-          ]
-        }
+    - name: Setup repository
+      if: steps.precondition.outputs.proceed == 'true'
+      uses: SwiftyLab/ci/actions/setup@main
 
-  ci:
-    name: CI
-    if: github.event_name == 'push'
-    needs: [swift-package-test, xcode-test, cocoapods-test]
-    # needs: [analyze, swift-package-test, xcode-test, cocoapods-test]
-    uses: SwiftyLab/ci/.github/workflows/ci.yml@main
-
-  cd:
-    name: CD
-    if: |
-      (github.event_name == 'push' && needs.ci.outputs.release == 'true') ||
-      (always() &&
-       github.event_name == 'workflow_dispatch' &&
-       github.event.inputs.release == 'true' &&
-       needs.swift-package-test.result == 'success' &&
-       needs.xcode-test.result == 'success' &&
-       needs.cocoapods-test.result == 'success' &&
-       (needs.ci.result == 'success' || needs.ci.result == 'skipped'))
-    # (needs.analyze.result == 'success' || needs.analyze.result == 'skipped')
-    needs: [ci, swift-package-test, xcode-test, cocoapods-test]
-    # needs: [ci, analyze, swift-package-test, xcode-test, cocoapods-test]
-    uses: SwiftyLab/ci/.github/workflows/cd.yml@main
-    with:
-      os: macos-12
-      version: ${{ github.event.inputs.version }}
-    secrets:
-      COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
+    - name: Run generate
+      run: npm run generate
