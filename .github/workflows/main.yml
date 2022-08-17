@@ -35,4 +35,6 @@ jobs:
       uses: SwiftyLab/ci/actions/setup@main
 
     - name: Run generate
-      run: npm run generate
+      run: |
+       npm install
+       npm run generate
