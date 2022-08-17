@@ -36,5 +36,4 @@ jobs:
 
     - name: Run generate
       run: |
-       npm install
-       npm run generate
+       node gen.js
