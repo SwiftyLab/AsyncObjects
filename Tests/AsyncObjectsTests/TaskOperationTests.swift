@@ -127,7 +127,10 @@ class TaskOperationTests: XCTestCase {
             (try? await Self.sleep(seconds: 3)) != nil
         }
         operation.signal()
-        await checkExecInterval(durationInRange: ...3, for: operation.wait)
+        await Self.checkExecInterval(
+            durationInRange: ...3,
+            for: operation.wait
+        )
     }
 
     func testTaskOperationAsyncWaitTimeout() async throws {

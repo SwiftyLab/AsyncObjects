@@ -59,7 +59,7 @@ class AsyncCountdownEventTests: XCTestCase {
         let event = AsyncCountdownEvent(until: 3)
         await event.increment(by: 10)
         Self.signalCountdownEvent(event, times: 10)
-        await checkExecInterval(durationInRange: 3.5..<4) {
+        await Self.checkExecInterval(durationInRange: 3.5..<4) {
             await event.wait()
         }
     }
@@ -78,7 +78,7 @@ class AsyncCountdownEventTests: XCTestCase {
         let event = AsyncCountdownEvent(until: 3, initial: 2)
         await event.increment(by: 10)
         Self.signalCountdownEvent(event, times: 10)
-        await checkExecInterval(durationInRange: 4.5..<5) {
+        await Self.checkExecInterval(durationInRange: 4.5..<5) {
             await event.wait()
         }
     }
@@ -154,7 +154,7 @@ class AsyncCountdownEventTests: XCTestCase {
             await event.reset(to: 2)
         }
         Self.signalCountdownEvent(event, times: 10)
-        await checkExecInterval(durationInRange: 2.5...3.1) {
+        await Self.checkExecInterval(durationInRange: 2.5...3.1) {
             await event.wait()
         }
     }

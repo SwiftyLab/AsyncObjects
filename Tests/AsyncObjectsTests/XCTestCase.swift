@@ -35,7 +35,7 @@ extension XCTestCase {
         )
     }
 
-    func checkExecInterval<R: RangeExpression>(
+    static func checkExecInterval<R: RangeExpression>(
         durationInRange range: R,
         for task: () async throws -> Void
     ) async rethrows where R.Bound == Int {
@@ -51,7 +51,7 @@ extension XCTestCase {
         )
     }
 
-    func checkExecInterval<R: RangeExpression>(
+    static func checkExecInterval<R: RangeExpression>(
         durationInRange range: R,
         for task: () async throws -> Void
     ) async rethrows where R.Bound == Double {

@@ -602,4 +602,116 @@ class TaskQueueTests: XCTestCase {
             }
         }
     }
+
+    func testCancellableAndNonCancellableTasksOnSingleQueue() async throws {
+        let queue = TaskQueue()
+        await Self.checkExecInterval(durationInSeconds: 0) {
+            await withThrowingTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    try await queue.exec {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                group.addTask {
+                    try await queue.exec {
+                        try await Self.sleep(seconds: 3)
+                    }
+                }
+                group.addTask {
+                    await queue.exec {
+                        do {
+                            try await Self.sleep(seconds: 4)
+                            XCTFail("Unexpected task progression")
+                        } catch {
+                            XCTAssertTrue(
+                                type(of: error) == CancellationError.self
+                            )
+                        }
+                    }
+                }
+                group.cancelAll()
+            }
+        }
+    }
+
+    func testCancellableAndNonCancellableTasksOnSingleQueueWithBarrier()
+        async throws
+    {
+        let queue = TaskQueue()
+        try await Self.checkExecInterval(durationInSeconds: 3) {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    try await queue.exec {
+                        try await Self.sleep(seconds: 1)
+                    }
+                }
+                group.addTask {
+                    try await queue.exec {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                group.addTask {
+                    try await queue.exec {
+                        try await Self.sleep(seconds: 3)
+                    }
+                }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
+                await group.addTaskAndStart {
+                    try await queue.exec(flags: .barrier) {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                // Make sure previous tasks started
+                try await Self.sleep(forSeconds: 0.01)
+                group.addTask {
+                    try await queue.exec {
+                        try await Self.sleep(seconds: 2)
+                    }
+                }
+                group.addTask {
+                    await queue.exec {
+                        do {
+                            try await Self.sleep(seconds: 3)
+                            XCTFail("Unexpected task progression")
+                        } catch {
+                            XCTAssertTrue(
+                                type(of: error) == CancellationError.self
+                            )
+                        }
+                    }
+                }
+                group.addTask {
+                    await queue.exec {
+                        do {
+                            try await Self.sleep(seconds: 4)
+                            XCTFail("Unexpected task progression")
+                        } catch {
+                            XCTAssertTrue(
+                                type(of: error) == CancellationError.self
+                            )
+                        }
+                    }
+                }
+
+                for _ in 0..<3 { try await group.next() }
+                group.cancelAll()
+            }
+        }
+    }
+
+    func testTaskExecutionWithJustAddingTasks() async throws {
+        let queue = TaskQueue()
+        queue.addTask(flags: .barrier) {
+            try await Self.sleep(seconds: 2)
+        }
+        // Make sure previous tasks started
+        try await Self.sleep(forSeconds: 0.01)
+        await Self.checkExecInterval(durationInSeconds: 2) {
+            queue.addTask {
+                try! await Self.sleep(seconds: 2)
+            }
+            await queue.wait()
+        }
+    }
 }

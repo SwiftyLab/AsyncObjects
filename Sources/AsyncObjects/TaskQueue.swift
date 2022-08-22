@@ -437,6 +437,58 @@ public actor TaskQueue: AsyncObject {
         }
     }
 
+    /// Adds the given throwing operation to queue to be executed asynchronously
+    /// based on the priority and flags.
+    ///
+    /// Immediately runs the provided operation if queue isn't blocked by any task,
+    /// otherwise adds operation to queue to be executed later.
+    ///
+    /// - Parameters:
+    ///   - priority: The priority with which operation executed. Pass `nil` to use the priority
+    ///               from execution context(`Task.currentPriority`).
+    ///   - flags: Additional attributes to apply when executing the operation.
+    ///            For a list of possible values, see ``Flags``.
+    ///   - operation: The throwing operation to perform.
+    public nonisolated func addTask<T: Sendable>(
+        priority: TaskPriority? = nil,
+        flags: Flags = [],
+        operation: @Sendable @escaping () async throws -> T
+    ) {
+        Task {
+            try await exec(
+                priority: priority,
+                flags: flags,
+                operation: operation
+            )
+        }
+    }
+
+    /// Adds the given non-throwing operation to queue to be executed asynchronously
+    /// based on the priority and flags.
+    ///
+    /// Immediately runs the provided operation if queue isn't blocked by any task,
+    /// otherwise adds operation to queue to be executed later.
+    ///
+    /// - Parameters:
+    ///   - priority: The priority with which operation executed. Pass `nil` to use the priority
+    ///               from execution context(`Task.currentPriority`).
+    ///   - flags: Additional attributes to apply when executing the operation.
+    ///            For a list of possible values, see ``Flags``.
+    ///   - operation: The non-throwing operation to perform.
+    public nonisolated func addTask<T: Sendable>(
+        priority: TaskPriority? = nil,
+        flags: Flags = [],
+        operation: @Sendable @escaping () async -> T
+    ) {
+        Task {
+            await exec(
+                priority: priority,
+                flags: flags,
+                operation: operation
+            )
+        }
+    }
+
     /// Signalling on queue does nothing.
     /// Only added to satisfy ``AsyncObject`` requirements.
     public func signal() {
