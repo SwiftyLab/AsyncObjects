@@ -26,9 +26,9 @@ class TaskQueueTests: XCTestCase {
         XCTAssertTrue(blocked)
     }
 
-    func checkWaitOnQueue(option: TaskOption) async throws {
+    static func checkWaitOnQueue(option: TaskOption) async throws {
         let queue = TaskQueue(priority: option.queue)
-        try await checkExecInterval(durationInSeconds: 1) {
+        try await Self.checkExecInterval(durationInSeconds: 1) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await queue.exec(
@@ -62,16 +62,16 @@ class TaskQueueTests: XCTestCase {
         try await withThrowingTaskGroup(of: Void.self) { group in
             options.forEach { option in
                 group.addTask {
-                    try await self.checkWaitOnQueue(option: option)
+                    try await Self.checkWaitOnQueue(option: option)
                 }
             }
             try await group.waitForAll()
         }
     }
 
-    func checkWaitTimeoutOnQueue(option: TaskOption) async throws {
+    static func checkWaitTimeoutOnQueue(option: TaskOption) async throws {
         let queue = TaskQueue(priority: option.queue)
-        try await checkExecInterval(durationInSeconds: 1) {
+        try await Self.checkExecInterval(durationInSeconds: 1) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await queue.exec(
@@ -107,7 +107,7 @@ class TaskQueueTests: XCTestCase {
         try await withThrowingTaskGroup(of: Void.self) { group in
             options.forEach { option in
                 group.addTask {
-                    try await self.checkWaitTimeoutOnQueue(option: option)
+                    try await Self.checkWaitTimeoutOnQueue(option: option)
                 }
             }
             try await group.waitForAll()
@@ -116,7 +116,7 @@ class TaskQueueTests: XCTestCase {
 
     func testExecutionOfTwoBlockOperations() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask {
                     try await queue.exec(flags: .block) {
@@ -135,7 +135,7 @@ class TaskQueueTests: XCTestCase {
 
     func testExecutionOfTaskBeforeBlockOperation() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 1) {
+        try await Self.checkExecInterval(durationInSeconds: 1) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await queue.exec {
@@ -156,7 +156,7 @@ class TaskQueueTests: XCTestCase {
 
     func testExecutionOfTaskAfterBlockOperation() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await queue.exec(flags: .block) {
@@ -177,7 +177,7 @@ class TaskQueueTests: XCTestCase {
 
     func testCancellationOfBlockTaskWithoutBlockingQueue() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await Self.sleep(seconds: 1)
@@ -208,7 +208,7 @@ class TaskQueueTests: XCTestCase {
         async throws
     {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await Self.sleep(seconds: 1)
@@ -245,7 +245,7 @@ class TaskQueueTests: XCTestCase {
         async throws
     {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await Self.sleep(seconds: 1)
@@ -284,7 +284,7 @@ class TaskQueueTests: XCTestCase {
 
     func testExecutionOfTwoBarrierOperations() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
@@ -303,7 +303,7 @@ class TaskQueueTests: XCTestCase {
 
     func testExecutionOfTaskBeforeBarrierOperation() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await queue.exec {
@@ -324,7 +324,7 @@ class TaskQueueTests: XCTestCase {
 
     func testExecutionOfTaskAfterBarrierOperation() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await queue.exec(flags: .barrier) {
@@ -345,7 +345,7 @@ class TaskQueueTests: XCTestCase {
 
     func testCancellationOfBarrierTaskWithoutBlockingQueue() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await Self.sleep(seconds: 1)
@@ -376,7 +376,7 @@ class TaskQueueTests: XCTestCase {
         async throws
     {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await Self.sleep(seconds: 1)
@@ -413,7 +413,7 @@ class TaskQueueTests: XCTestCase {
         async throws
     {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await Self.sleep(seconds: 1)
@@ -452,7 +452,7 @@ class TaskQueueTests: XCTestCase {
 
     func testExecutionOfBlockTaskBeforeBarrierOperation() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await queue.exec(flags: .block) {
@@ -473,7 +473,7 @@ class TaskQueueTests: XCTestCase {
 
     func testExecutionOfBlockTaskAfterBarrierOperation() async throws {
         let queue = TaskQueue()
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await queue.exec(flags: .barrier) {
@@ -497,7 +497,7 @@ class TaskQueueTests: XCTestCase {
     {
         let queue = TaskQueue()
         // Concurrent + Barrier
-        try await checkExecInterval(durationInSeconds: 5) {
+        try await Self.checkExecInterval(durationInSeconds: 5) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await queue.exec {
@@ -528,7 +528,7 @@ class TaskQueueTests: XCTestCase {
     {
         let queue = TaskQueue()
         // Concurrent + Barrier + Block
-        await checkExecInterval(durationInSeconds: 6) {
+        await Self.checkExecInterval(durationInSeconds: 6) {
             await withTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     await queue.exec {
@@ -554,11 +554,11 @@ class TaskQueueTests: XCTestCase {
         }
     }
 
-    /// Scenario described in: 
+    /// Scenario described in:
     /// https://forums.swift.org/t/concurrency-suspending-an-actor-async-func-until-the-actor-meets-certain-conditions/56580
     func testBarrierTaskWithMultipleConcurrentTasks() async throws {
         let queue = TaskQueue()
-        await checkExecInterval(durationInSeconds: 8) {
+        await Self.checkExecInterval(durationInSeconds: 8) {
             await withTaskGroup(of: Void.self) { group in
                 group.addTask {
                     await queue.exec {

@@ -25,11 +25,13 @@ public actor CancellationSource {
     @usableFromInline
     private(set) var linkedSources: [CancellationSource] = []
 
+    // MARK: Internal
+
     /// Add task to registered cooperative cancellation tasks list.
     ///
     /// - Parameter task: The task to register.
     @inlinable
-    func add<Success, Failure>(task: Task<Success, Failure>) {
+    func _add<Success, Failure>(task: Task<Success, Failure>) {
         guard !task.isCancelled else { return }
         registeredTasks[task] = { task.cancel() }
     }
@@ -38,7 +40,7 @@ public actor CancellationSource {
     ///
     /// - Parameter task: The task to remove.
     @inlinable
-    func remove<Success, Failure>(task: Task<Success, Failure>) {
+    func _remove<Success, Failure>(task: Task<Success, Failure>) {
         registeredTasks.removeValue(forKey: task)
     }
 
@@ -46,9 +48,11 @@ public actor CancellationSource {
     ///
     /// - Parameter task: The source to link.
     @inlinable
-    func addSource(_ source: CancellationSource) {
+    func _addSource(_ source: CancellationSource) {
         linkedSources.append(source)
     }
+
+    // MARK: Public
 
     /// Creates a new cancellation source object.
     ///
@@ -66,7 +70,7 @@ public actor CancellationSource {
     public init(linkedWith sources: [CancellationSource]) async {
         await withTaskGroup(of: Void.self) { group in
             sources.forEach { source in
-                group.addTask { await source.addSource(self) }
+                group.addTask { await source._addSource(self) }
             }
             await group.waitForAll()
         }
@@ -103,10 +107,10 @@ public actor CancellationSource {
     ///
     /// - Parameter task: The task to register.
     public func register<Success, Failure>(task: Task<Success, Failure>) {
-        add(task: task)
+        _add(task: task)
         Task { [weak self] in
             let _ = await task.result
-            await self?.remove(task: task)
+            await self?._remove(task: task)
         }
     }
 

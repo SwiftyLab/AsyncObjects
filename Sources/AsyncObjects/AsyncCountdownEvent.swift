@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 import OrderedCollections
 
 /// An event object that controls access to a resource between high and low priority tasks
@@ -41,13 +41,15 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// Queued tasks are resumed from suspension when event is set and until current count exceeds limit.
     public var isSet: Bool { currentCount >= 0 && currentCount <= limit }
 
+    // MARK: Internal
+
     /// Add continuation with the provided key in `continuations` map.
     ///
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    func addContinuation(
+    func _addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -59,7 +61,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    func removeContinuation(withKey key: UUID) {
+    func _removeContinuation(withKey key: UUID) {
         let continuation = continuations.removeValue(forKey: key)
         continuation?.cancel()
     }
@@ -68,14 +70,14 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// - Parameter number: The number to decrement count by.
     @inlinable
-    func decrementCount(by number: UInt = 1) {
+    func _decrementCount(by number: UInt = 1) {
         guard currentCount > 0 else { return }
         currentCount -= number
     }
 
     /// Resume previously waiting continuations for countdown event.
     @inlinable
-    func resumeContinuations() {
+    func _resumeContinuations() {
         while !continuations.isEmpty && isSet {
             let (_, continuation) = continuations.removeFirst()
             continuation.resume()
@@ -84,26 +86,28 @@ public actor AsyncCountdownEvent: AsyncObject {
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
-    /// Continuation can be cancelled with error if current task is cancelled, by invoking `removeContinuation`.
+    /// Continuation can be cancelled with error if current task is cancelled, by invoking `_removeContinuation`.
     ///
-    /// Spins up a new continuation and requests to track it with key by invoking `addContinuation`.
-    /// This operation cooperatively checks for cancellation and reacting to it by invoking `removeContinuation`.
+    /// Spins up a new continuation and requests to track it with key by invoking `_addContinuation`.
+    /// This operation cooperatively checks for cancellation and reacting to it by invoking `_removeContinuation`.
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    func withPromisedContinuation() async throws {
+    func _withPromisedContinuation() async throws {
         let key = UUID()
         try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in
-                await self?.removeContinuation(withKey: key)
+                await self?._removeContinuation(withKey: key)
             }
         } operation: { () -> Continuation.Success in
             try await Continuation.with { continuation in
-                self.addContinuation(continuation, withKey: key)
+                self._addContinuation(continuation, withKey: key)
             }
         }
     }
+
+    // MARK: Public
 
     /// Creates new countdown event with the limit count down up to and an initial count.
     /// By default, both limit and initial count are zero.
@@ -141,7 +145,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// are resumed from suspension until current count exceeds limit.
     public func reset() {
         self.currentCount = initialCount
-        resumeContinuations()
+        _resumeContinuations()
     }
 
     /// Resets initial count and current count to specified value.
@@ -153,7 +157,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     public func reset(to count: UInt) {
         initialCount = count
         self.currentCount = count
-        resumeContinuations()
+        _resumeContinuations()
     }
 
     /// Registers a signal (decrements) with the countdown event.
@@ -171,8 +175,8 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// - Parameter count: The number of signals to register.
     public func signal(repeat count: UInt) {
-        decrementCount(by: count)
-        resumeContinuations()
+        _decrementCount(by: count)
+        _resumeContinuations()
     }
 
     /// Waits for, or increments, a countdown event.
@@ -184,6 +188,6 @@ public actor AsyncCountdownEvent: AsyncObject {
     @Sendable
     public func wait() async {
         if isSet { currentCount += 1; return }
-        try? await withPromisedContinuation()
+        try? await _withPromisedContinuation()
     }
 }

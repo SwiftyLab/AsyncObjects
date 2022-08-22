@@ -2,7 +2,7 @@ import Foundation
 
 /// A result value indicating whether a task finished before a specified time.
 @frozen
-public enum TaskTimeoutResult: Hashable {
+public enum TaskTimeoutResult: Hashable, Sendable {
     /// Indicates that a task successfully finished
     /// before the specified time elapsed.
     case success
@@ -240,7 +240,8 @@ public func waitForTaskCompletion(
             }
         }
         group.addTask {
-            (try? await Task.sleep(nanoseconds: timeout + 1_000)) == nil
+            await Task.yield()
+            return (try? await Task.sleep(nanoseconds: timeout + 1_000)) == nil
         }
         if let result = await group.next() {
             timedOut = !result

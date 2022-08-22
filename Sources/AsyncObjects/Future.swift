@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// An object that eventually produces a single value and then finishes or fails.
 ///
@@ -10,7 +10,7 @@ import Foundation
 /// by using ``fulfill(with:)`` method. In the success case,
 /// the future’s downstream subscriber receives the element prior to the publishing stream finishing normally.
 /// If the result is an error, publishing terminates with that error.
-public actor Future<Output, Failure: Error> {
+public actor Future<Output: Sendable, Failure: Error> {
     /// A type that represents a closure to invoke in the future, when an element or error is available.
     ///
     /// The promise closure receives one parameter: a `Result` that contains
@@ -36,7 +36,7 @@ public actor Future<Output, Failure: Error> {
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    func addContinuation(
+    func _addContinuation(
         _ continuation: Continuation,
         withKey key: UUID = .init()
     ) {
@@ -54,8 +54,8 @@ public actor Future<Output, Failure: Error> {
     /// - Parameter result: The result of the future.
     ///
     /// - Returns: The newly created future.
-    public init(with result: FutureResult) async {
-        self.fulfill(with: result)
+    public init(with result: FutureResult) {
+        self.result = result
     }
 
     /// Creates a future that invokes a promise closure when the publisher emits an element.
@@ -66,7 +66,7 @@ public actor Future<Output, Failure: Error> {
     ///
     /// - Returns: The newly created future.
     public init(
-        attemptToFulfill: @escaping (
+        attemptToFulfill: @Sendable @escaping (
             @escaping Future<Output, Failure>.Promise
         ) async -> Void
     ) async {
@@ -125,7 +125,7 @@ extension Future where Failure == Never {
     public var value: Output {
         get async {
             if let result = result { return try! result.get() }
-            return await Continuation.with { self.addContinuation($0) }
+            return await Continuation.with { self._addContinuation($0) }
         }
     }
 
@@ -142,7 +142,7 @@ extension Future where Failure == Never {
         _ futures: [Future<Output, Failure>]
     ) async -> Future<[Output], Failure> {
         typealias IndexedOutput = (index: Int, value: Output)
-        guard !futures.isEmpty else { return await .init(with: .success([])) }
+        guard !futures.isEmpty else { return .init(with: .success([])) }
         return await .init { promise in
             await withTaskGroup(of: IndexedOutput.self) { group in
                 var result: [IndexedOutput] = []
@@ -189,7 +189,7 @@ extension Future where Failure == Never {
         _ futures: [Future<Output, Failure>]
     ) async -> Future<[FutureResult], Never> {
         typealias IndexedOutput = (index: Int, value: FutureResult)
-        guard !futures.isEmpty else { return await .init(with: .success([])) }
+        guard !futures.isEmpty else { return .init(with: .success([])) }
         return await .init { promise in
             await withTaskGroup(of: IndexedOutput.self) { group in
                 var result: [IndexedOutput] = []
@@ -300,31 +300,31 @@ extension Future where Failure == Error {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    func removeContinuation(withKey key: UUID) {
+    func _removeContinuation(withKey key: UUID) {
         let continuation = continuations.removeValue(forKey: key)
         continuation?.cancel()
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
-    /// Continuation can be cancelled with error if current task is cancelled, by invoking `removeContinuation`.
+    /// Continuation can be cancelled with error if current task is cancelled, by invoking `_removeContinuation`.
     ///
-    /// Spins up a new continuation and requests to track it with key by invoking `addContinuation`.
-    /// This operation cooperatively checks for cancellation and reacting to it by invoking `removeContinuation`.
+    /// Spins up a new continuation and requests to track it with key by invoking `_addContinuation`.
+    /// This operation cooperatively checks for cancellation and reacting to it by invoking `_removeContinuation`.
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
     /// - Returns: The value continuation is resumed with.
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    func withPromisedContinuation() async throws -> Output {
+    func _withPromisedContinuation() async throws -> Output {
         let key = UUID()
         let value = try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in
-                await self?.removeContinuation(withKey: key)
+                await self?._removeContinuation(withKey: key)
             }
         } operation: { () -> Continuation.Success in
             let value = try await Continuation.with { continuation in
-                self.addContinuation(continuation, withKey: key)
+                self._addContinuation(continuation, withKey: key)
             }
             return value
         }
@@ -340,7 +340,7 @@ extension Future where Failure == Error {
     public var value: Output {
         get async throws {
             if let result = result { return try result.get() }
-            return try await withPromisedContinuation()
+            return try await _withPromisedContinuation()
         }
     }
 
@@ -359,7 +359,7 @@ extension Future where Failure == Error {
         _ futures: [Future<Output, Failure>]
     ) async -> Future<[Output], Failure> {
         typealias IndexedOutput = (index: Int, value: Output)
-        guard !futures.isEmpty else { return await .init(with: .success([])) }
+        guard !futures.isEmpty else { return .init(with: .success([])) }
         return await .init { promise in
             await withThrowingTaskGroup(of: IndexedOutput.self) { group in
                 var result: [IndexedOutput] = []
@@ -415,7 +415,7 @@ extension Future where Failure == Error {
         _ futures: [Future<Output, Failure>]
     ) async -> Future<[FutureResult], Never> {
         typealias IndexedOutput = (index: Int, value: FutureResult)
-        guard !futures.isEmpty else { return await .init(with: .success([])) }
+        guard !futures.isEmpty else { return .init(with: .success([])) }
         return await .init { promise in
             await withTaskGroup(of: IndexedOutput.self) { group in
                 var result: [IndexedOutput] = []
@@ -518,7 +518,7 @@ extension Future where Failure == Error {
     public static func any(
         _ futures: [Future<Output, Failure>]
     ) async -> Future<Output, Failure> {
-        guard !futures.isEmpty else { return await .init(with: .cancelled) }
+        guard !futures.isEmpty else { return .init(with: .cancelled) }
         return await .init { promise in
             await withTaskGroup(of: FutureResult.self) { group in
                 futures.forEach { future in

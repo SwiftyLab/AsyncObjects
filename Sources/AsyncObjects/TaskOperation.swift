@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 import Dispatch
 
 /// An object that bridges asynchronous work under structured concurrency
@@ -139,7 +139,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         guard isExecuting, execTask == nil else { return }
         execTask = Task { [weak self] in
             guard let self = self else { throw CancellationError() }
-            defer { self.finish() }
+            defer { self._finish() }
             let result = try await underlyingAction()
             return result
         }
@@ -155,19 +155,19 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// calling this method has no effect.
     public override func cancel() {
         execTask?.cancel()
-        finish()
+        _finish()
     }
 
     /// Moves this operation to finished state.
     ///
     /// Must be called either when operation completes or cancelled.
     @inlinable
-    func finish() {
+    func _finish() {
         isExecuting = false
         isFinished = true
     }
 
-    // MARK: AsyncObject Impl
+    // MARK: AsyncObject
     /// The suspended tasks continuation type.
     @usableFromInline
     typealias Continuation = GlobalContinuation<Void, Error>
@@ -181,7 +181,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    func addContinuation(
+    func _addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -196,7 +196,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    func removeContinuation(withKey key: UUID) {
+    func _removeContinuation(withKey key: UUID) {
         propQueue.sync(flags: [.barrier]) {
             let continuation = continuations.removeValue(forKey: key)
             continuation?.cancel()
@@ -204,21 +204,21 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
-    /// Continuation can be cancelled with error if current task is cancelled, by invoking `removeContinuation`.
+    /// Continuation can be cancelled with error if current task is cancelled, by invoking `_removeContinuation`.
     ///
-    /// Spins up a new continuation and requests to track it with key by invoking `addContinuation`.
-    /// This operation cooperatively checks for cancellation and reacting to it by invoking `removeContinuation`.
+    /// Spins up a new continuation and requests to track it with key by invoking `_addContinuation`.
+    /// This operation cooperatively checks for cancellation and reacting to it by invoking `_removeContinuation`.
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    func withPromisedContinuation() async throws {
+    func _withPromisedContinuation() async throws {
         let key = UUID()
         try await withTaskCancellationHandler { [weak self] in
-            self?.removeContinuation(withKey: key)
+            self?._removeContinuation(withKey: key)
         } operation: { () -> Continuation.Success in
             try await Continuation.with { continuation in
-                self.addContinuation(continuation, withKey: key)
+                self._addContinuation(continuation, withKey: key)
             }
         }
     }
@@ -237,6 +237,6 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     @Sendable
     public func wait() async {
         guard !isFinished else { return }
-        try? await withPromisedContinuation()
+        try? await _withPromisedContinuation()
     }
 }

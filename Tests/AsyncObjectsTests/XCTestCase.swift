@@ -3,7 +3,7 @@ import Dispatch
 @testable import AsyncObjects
 
 extension XCTestCase {
-    func checkExecInterval(
+    static func checkExecInterval(
         durationInSeconds seconds: Int = 0,
         for task: () async throws -> Void
     ) async rethrows {
@@ -17,7 +17,7 @@ extension XCTestCase {
         )
     }
 
-    func checkExecInterval(
+    static func checkExecInterval(
         durationInSeconds seconds: Double = 0,
         roundedUpTo digit: UInt = 1,
         for task: () async throws -> Void

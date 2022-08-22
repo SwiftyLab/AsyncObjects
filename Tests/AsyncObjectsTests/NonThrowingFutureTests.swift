@@ -5,7 +5,7 @@ import Dispatch
 class NonThrowingFutureTests: XCTestCase {
 
     func testFutureFulfilledInitialization() async throws {
-        let future = await Future<Int, Never>(with: .success(5))
+        let future = Future<Int, Never>(with: .success(5))
         let value = await future.value
         XCTAssertEqual(value, 5)
     }
@@ -41,7 +41,7 @@ class NonThrowingFutureTests: XCTestCase {
         let future2 = Future<Int, Never>()
         let future3 = Future<Int, Never>()
         let allFuture = await Future.all(future1, future3, future2)
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     let value = await allFuture.value
@@ -71,7 +71,7 @@ class NonThrowingFutureTests: XCTestCase {
         let future2 = Future<Int, Never>()
         let future3 = Future<Int, Never>()
         let allFuture = await Future.allSettled(future1, future2, future3)
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     let values = await allFuture.value
@@ -108,10 +108,10 @@ class NonThrowingFutureTests: XCTestCase {
         let future2 = Future<Int, Never>()
         let future3 = Future<Int, Never>()
         let allFuture = await Future.race(future1, future2, future3)
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    await self.checkExecInterval(durationInSeconds: 1) {
+                    await Self.checkExecInterval(durationInSeconds: 1) {
                         let value = await allFuture.value
                         XCTAssertEqual(value, 1)
                     }
@@ -140,10 +140,10 @@ class NonThrowingFutureTests: XCTestCase {
         let future2 = Future<Int, Never>()
         let future3 = Future<Int, Never>()
         let allFuture = await Future.any(future1, future2, future3)
-        try await checkExecInterval(durationInSeconds: 3) {
+        try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    await self.checkExecInterval(durationInSeconds: 1) {
+                    await Self.checkExecInterval(durationInSeconds: 1) {
                         let value = await allFuture.value
                         XCTAssertEqual(value, 1)
                     }
@@ -180,9 +180,18 @@ class NonThrowingFutureTests: XCTestCase {
     }
 
     func testMultipleTimesFutureFulfilled() async throws {
-        let future = await Future<Int, Never>(with: .success(5))
+        let future = Future<Int, Never>(with: .success(5))
         await future.fulfill(producing: 10)
         let value = await future.value
         XCTAssertEqual(value, 5)
+    }
+
+    func testFutureAsyncInitializerDuration() async throws {
+        await Self.checkExecInterval(durationInSeconds: 0) {
+            let _ = await Future<Int, Never> { promise in
+                try! await Self.sleep(seconds: 1)
+                promise(.success(5))
+            }
+        }
     }
 }

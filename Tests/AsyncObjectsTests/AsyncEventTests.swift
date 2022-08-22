@@ -12,7 +12,10 @@ class AsyncEventTests: XCTestCase {
             try await Self.sleep(seconds: interval)
             await event.signal()
         }
-        await checkExecInterval(durationInSeconds: seconds, for: event.wait)
+        await Self.checkExecInterval(
+            durationInSeconds: seconds,
+            for: event.wait
+        )
     }
 
     func testEventWait() async throws {
@@ -34,7 +37,7 @@ class AsyncEventTests: XCTestCase {
     func testEventWaitWithTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         var result: TaskTimeoutResult = .success
-        await checkExecInterval(durationInSeconds: 1) {
+        await Self.checkExecInterval(durationInSeconds: 1) {
             result = await event.wait(forSeconds: 1)
         }
         XCTAssertEqual(result, .timedOut)
@@ -43,7 +46,7 @@ class AsyncEventTests: XCTestCase {
     func testEventWaitWithZeroTimeout() async throws {
         let event = AsyncEvent(signaledInitially: true)
         var result: TaskTimeoutResult = .success
-        await checkExecInterval(durationInSeconds: 0) {
+        await Self.checkExecInterval(durationInSeconds: 0) {
             result = await event.wait(forNanoseconds: 0)
         }
         XCTAssertEqual(result, .success)
@@ -56,7 +59,7 @@ class AsyncEventTests: XCTestCase {
             try await Self.sleep(seconds: 1)
             await event.signal()
         }
-        await checkExecInterval(durationInSeconds: 1) {
+        await Self.checkExecInterval(durationInSeconds: 1) {
             result = await event.wait(forSeconds: 2)
         }
         XCTAssertEqual(result, .success)
@@ -65,7 +68,7 @@ class AsyncEventTests: XCTestCase {
     func testReleasedEventWaitSuccessWithoutTimeout() async throws {
         let event = AsyncEvent()
         var result: TaskTimeoutResult = .timedOut
-        await checkExecInterval(durationInSeconds: 0) {
+        await Self.checkExecInterval(durationInSeconds: 0) {
             result = await event.wait(forSeconds: 2)
         }
         XCTAssertEqual(result, .success)

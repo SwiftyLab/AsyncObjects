@@ -135,7 +135,7 @@ class TaskOperationTests: XCTestCase {
             (try? await Self.sleep(seconds: 3)) != nil
         }
         operation.signal()
-        await checkExecInterval(durationInSeconds: 1) {
+        await Self.checkExecInterval(durationInSeconds: 1) {
             await operation.wait(forSeconds: 1)
         }
     }
@@ -145,7 +145,7 @@ class TaskOperationTests: XCTestCase {
             // Do nothing
         }
         operation.signal()
-        await checkExecInterval(durationInSeconds: 0) {
+        await Self.checkExecInterval(durationInSeconds: 0) {
             await operation.wait(forNanoseconds: 0)
         }
     }

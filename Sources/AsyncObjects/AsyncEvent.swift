@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// An object that controls execution of tasks depending on the signal state.
 ///
@@ -16,13 +16,15 @@ public actor AsyncEvent: AsyncObject {
     /// Indicates whether current state of event is signalled.
     private var signalled: Bool
 
+    // MARK: Internal
+
     /// Add continuation with the provided key in `continuations` map.
     ///
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    func addContinuation(
+    func _addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -34,32 +36,34 @@ public actor AsyncEvent: AsyncObject {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    func removeContinuation(withKey key: UUID) {
+    func _removeContinuation(withKey key: UUID) {
         let continuation = continuations.removeValue(forKey: key)
         continuation?.cancel()
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
-    /// Continuation can be cancelled with error if current task is cancelled, by invoking `removeContinuation`.
+    /// Continuation can be cancelled with error if current task is cancelled, by invoking `_removeContinuation`.
     ///
-    /// Spins up a new continuation and requests to track it with key by invoking `addContinuation`.
-    /// This operation cooperatively checks for cancellation and reacting to it by invoking `removeContinuation`.
+    /// Spins up a new continuation and requests to track it with key by invoking `_addContinuation`.
+    /// This operation cooperatively checks for cancellation and reacting to it by invoking `_removeContinuation`.
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    func withPromisedContinuation() async throws {
+    func _withPromisedContinuation() async throws {
         let key = UUID()
         try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in
-                await self?.removeContinuation(withKey: key)
+                await self?._removeContinuation(withKey: key)
             }
         } operation: { () -> Continuation.Success in
             try await Continuation.with { continuation in
-                self.addContinuation(continuation, withKey: key)
+                self._addContinuation(continuation, withKey: key)
             }
         }
     }
+
+    // MARK: Public
 
     /// Creates a new event with signal state provided.
     /// By default, event is initially in signalled state.
@@ -96,6 +100,6 @@ public actor AsyncEvent: AsyncObject {
     @Sendable
     public func wait() async {
         guard !signalled else { return }
-        try? await withPromisedContinuation()
+        try? await _withPromisedContinuation()
     }
 }

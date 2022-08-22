@@ -5,20 +5,23 @@ class AsyncCountdownEventTests: XCTestCase {
 
     func testCountdownWaitWithoutIncrement() async throws {
         let event = AsyncCountdownEvent()
-        await checkExecInterval(durationInSeconds: 0) {
+        await Self.checkExecInterval(durationInSeconds: 0) {
             await event.wait()
         }
     }
 
     func testCountdownWaitZeroTimeoutWithoutIncrement() async throws {
         let event = AsyncCountdownEvent()
-        await checkExecInterval(durationInSeconds: 0) {
+        await Self.checkExecInterval(durationInSeconds: 0) {
             let result = await event.wait(forSeconds: 0)
             XCTAssertEqual(result, .success)
         }
     }
 
-    func signalCountdownEvent(_ event: AsyncCountdownEvent, times count: UInt) {
+    static func signalCountdownEvent(
+        _ event: AsyncCountdownEvent,
+        times count: UInt
+    ) {
         Task.detached {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for i in 0..<count {
@@ -36,8 +39,8 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitWithIncrement() async throws {
         let event = AsyncCountdownEvent()
         await event.increment(by: 10)
-        signalCountdownEvent(event, times: 10)
-        await checkExecInterval(durationInSeconds: 5) {
+        Self.signalCountdownEvent(event, times: 10)
+        await Self.checkExecInterval(durationInSeconds: 5) {
             await event.wait()
         }
     }
@@ -45,8 +48,8 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitTimeoutWithIncrement() async throws {
         let event = AsyncCountdownEvent()
         await event.increment(by: 10)
-        signalCountdownEvent(event, times: 10)
-        await checkExecInterval(durationInSeconds: 3) {
+        Self.signalCountdownEvent(event, times: 10)
+        await Self.checkExecInterval(durationInSeconds: 3) {
             let result = await event.wait(forSeconds: 3)
             XCTAssertEqual(result, .timedOut)
         }
@@ -55,7 +58,7 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitWithLimitAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3)
         await event.increment(by: 10)
-        signalCountdownEvent(event, times: 10)
+        Self.signalCountdownEvent(event, times: 10)
         await checkExecInterval(durationInRange: 3.5..<4) {
             await event.wait()
         }
@@ -64,8 +67,8 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitTimeoutWithLimitAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3)
         await event.increment(by: 10)
-        signalCountdownEvent(event, times: 10)
-        await checkExecInterval(durationInSeconds: 2) {
+        Self.signalCountdownEvent(event, times: 10)
+        await Self.checkExecInterval(durationInSeconds: 2) {
             let result = await event.wait(forSeconds: 2)
             XCTAssertEqual(result, .timedOut)
         }
@@ -74,7 +77,7 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitWithLimitInitialCountAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3, initial: 2)
         await event.increment(by: 10)
-        signalCountdownEvent(event, times: 10)
+        Self.signalCountdownEvent(event, times: 10)
         await checkExecInterval(durationInRange: 4.5..<5) {
             await event.wait()
         }
@@ -85,8 +88,8 @@ class AsyncCountdownEventTests: XCTestCase {
     {
         let event = AsyncCountdownEvent(until: 3, initial: 3)
         await event.increment(by: 10)
-        signalCountdownEvent(event, times: 10)
-        await checkExecInterval(durationInSeconds: 3) {
+        Self.signalCountdownEvent(event, times: 10)
+        await Self.checkExecInterval(durationInSeconds: 3) {
             let result = await event.wait(forSeconds: 3)
             XCTAssertEqual(result, .timedOut)
         }
@@ -99,7 +102,7 @@ class AsyncCountdownEventTests: XCTestCase {
             try await Self.sleep(seconds: 3)
             await event.reset()
         }
-        await checkExecInterval(durationInSeconds: 3) {
+        await Self.checkExecInterval(durationInSeconds: 3) {
             await event.wait()
         }
     }
@@ -110,9 +113,9 @@ class AsyncCountdownEventTests: XCTestCase {
         Task.detached {
             try await Self.sleep(seconds: 3)
             await event.reset(to: 2)
-            self.signalCountdownEvent(event, times: 10)
+            Self.signalCountdownEvent(event, times: 10)
         }
-        await checkExecInterval(durationInSeconds: 4) {
+        await Self.checkExecInterval(durationInSeconds: 4) {
             await event.wait()
         }
     }
@@ -124,7 +127,7 @@ class AsyncCountdownEventTests: XCTestCase {
             try await Self.sleep(seconds: 3)
             await event.reset()
         }
-        await checkExecInterval(durationInSeconds: 2) {
+        await Self.checkExecInterval(durationInSeconds: 2) {
             await event.wait(forSeconds: 2)
         }
     }
@@ -135,9 +138,9 @@ class AsyncCountdownEventTests: XCTestCase {
         Task.detached {
             try await Self.sleep(seconds: 3)
             await event.reset(to: 6)
-            self.signalCountdownEvent(event, times: 10)
+            Self.signalCountdownEvent(event, times: 10)
         }
-        await checkExecInterval(durationInSeconds: 3) {
+        await Self.checkExecInterval(durationInSeconds: 3) {
             await event.wait(forSeconds: 3)
         }
     }
@@ -150,7 +153,7 @@ class AsyncCountdownEventTests: XCTestCase {
             try await Self.sleep(seconds: 2)
             await event.reset(to: 2)
         }
-        self.signalCountdownEvent(event, times: 10)
+        Self.signalCountdownEvent(event, times: 10)
         await checkExecInterval(durationInRange: 2.5...3.1) {
             await event.wait()
         }

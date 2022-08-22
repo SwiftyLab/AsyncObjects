@@ -11,7 +11,7 @@ class AsyncObjectTests: XCTestCase {
             await event.signal()
             await mutex.signal()
         }
-        await checkExecInterval(durationInSeconds: 1) {
+        await Self.checkExecInterval(durationInSeconds: 1) {
             await waitForAll(event, mutex)
         }
     }
@@ -25,7 +25,7 @@ class AsyncObjectTests: XCTestCase {
             try await Self.sleep(seconds: 1)
             await mutex.signal()
         }
-        await checkExecInterval(durationInSeconds: 1) {
+        await Self.checkExecInterval(durationInSeconds: 1) {
             await waitForAny(event, mutex)
         }
     }
@@ -45,7 +45,7 @@ class AsyncObjectTests: XCTestCase {
             await mutex.signal()
         }
         op.signal()
-        await checkExecInterval(durationInSeconds: 2) {
+        await Self.checkExecInterval(durationInSeconds: 2) {
             await waitForAny(event, mutex, op, count: 2)
         }
     }
@@ -54,7 +54,7 @@ class AsyncObjectTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         var result: TaskTimeoutResult = .success
-        await checkExecInterval(durationInSeconds: 1) {
+        await Self.checkExecInterval(durationInSeconds: 1) {
             result = await waitForAll(
                 event, mutex,
                 forNanoseconds: UInt64(1E9)
@@ -67,7 +67,7 @@ class AsyncObjectTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         var result: TaskTimeoutResult = .success
-        await checkExecInterval(durationInSeconds: 1) {
+        await Self.checkExecInterval(durationInSeconds: 1) {
             result = await waitForAny(
                 event, mutex,
                 forNanoseconds: UInt64(1E9)
@@ -92,7 +92,7 @@ class AsyncObjectTests: XCTestCase {
             await mutex.signal()
         }
         op.signal()
-        await checkExecInterval(durationInSeconds: 2) {
+        await Self.checkExecInterval(durationInSeconds: 2) {
             result = await waitForAny(
                 event, mutex, op,
                 count: 2,
@@ -111,7 +111,7 @@ class AsyncObjectTests: XCTestCase {
             await event.signal()
             await mutex.signal()
         }
-        await checkExecInterval(durationInSeconds: 1) {
+        await Self.checkExecInterval(durationInSeconds: 1) {
             result = await waitForAll(
                 event, mutex,
                 forNanoseconds: UInt64(2E9)
@@ -130,7 +130,7 @@ class AsyncObjectTests: XCTestCase {
             try await Self.sleep(seconds: 1)
             await mutex.signal()
         }
-        await checkExecInterval(durationInSeconds: 1) {
+        await Self.checkExecInterval(durationInSeconds: 1) {
             result = await waitForAny(
                 event, mutex,
                 forNanoseconds: UInt64(2E9)

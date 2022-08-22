@@ -27,6 +27,9 @@ extension Continuable where Failure == Error {
     func cancel() { self.resume(throwing: CancellationError()) }
 }
 
+/// A type that allows to interface between synchronous and asynchronous code,
+/// by representing a cancellable task state and allowing task resuming
+/// with some value or error if cancelled.
 @usableFromInline
 protocol ThrowingContinuable: Continuable {
     /// The type of error to resume the continuation with in case of failure.
@@ -37,15 +40,25 @@ protocol ThrowingContinuable: Continuable {
     /// The continuation can be resumed exactly once,
     /// subsequent resumes have different behaviors depending on type implementing.
     ///
-    /// - Parameter fn: A closure that takes the throwing continuation parameter.
-    ///                 You can resume the continuation exactly once.
+    /// - Parameters:
+    ///   - function: A string identifying the declaration
+    ///               that is the notional source for the continuation,
+    ///               used to identify the continuation in runtime diagnostics
+    ///               related to misuse of this continuation.
+    ///   - fn: A closure that takes the throwing continuation parameter.
+    ///         You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    static func with(_ fn: (Self) -> Void) async throws -> Success
+    static func with(
+        function: String,
+        _ fn: (Self) -> Void
+    ) async throws -> Success
 }
 
+/// A type that allows to interface between synchronous and asynchronous code,
+/// by representing task state and allowing task to be always resumed with some value.
 @usableFromInline
 protocol NonThrowingContinuable: Continuable {
     /// The type of error to resume the continuation with in case of failure.
@@ -56,12 +69,20 @@ protocol NonThrowingContinuable: Continuable {
     /// The continuation can be resumed exactly once,
     /// subsequent resumes have different behavior depending on type implementing.
     ///
-    /// - Parameter fn: A closure that takes the non-throwing continuation parameter.
-    ///                 You can resume the continuation exactly once.
+    /// - Parameters:
+    ///   - function: A string identifying the declaration
+    ///               that is the notional source for the continuation,
+    ///               used to identify the continuation in runtime diagnostics
+    ///               related to misuse of this continuation.
+    ///   - fn: A closure that takes the non-throwing continuation parameter.
+    ///         You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     @inlinable
-    static func with(_ fn: (Self) -> Void) async -> Success
+    static func with(
+        function: String,
+        _ fn: (Self) -> Void
+    ) async -> Success
 }
 
 #if DEBUG || ASYNCOBJECTS_USE_CHECKEDCONTINUATION
@@ -81,16 +102,25 @@ extension CheckedContinuation: ThrowingContinuable where E == Error {
     /// Once all errors resolved, use `UnsafeContinuation` in release mode to benefit improved performance
     /// at the loss of additional runtime checks.
     ///
-    /// - Parameter fn: A closure that takes a `CheckedContinuation` parameter.
-    ///                 You must resume the continuation exactly once.
+    /// - Parameters:
+    ///   - function: A string identifying the declaration
+    ///               that is the notional source for the continuation,
+    ///               used to identify the continuation in runtime diagnostics
+    ///               related to misuse of this continuation.
+    ///   - fn: A closure that takes a `CheckedContinuation` parameter.
+    ///         You must resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    static func with(_ body: (CheckedContinuation<T, E>) -> Void) async throws
-        -> T
-    {
-        return try await withCheckedThrowingContinuation(body)
+    static func with(
+        function: String = #function,
+        _ body: (CheckedContinuation<T, E>) -> Void
+    ) async throws -> T {
+        return try await withCheckedThrowingContinuation(
+            function: function,
+            body
+        )
     }
 }
 
@@ -103,13 +133,21 @@ extension CheckedContinuation: NonThrowingContinuable where E == Never {
     /// Once all errors resolved, use `UnsafeContinuation` in release mode to benefit improved performance
     /// at the loss of additional runtime checks.
     ///
-    /// - Parameter fn: A closure that takes a `CheckedContinuation` parameter.
-    ///                 You must resume the continuation exactly once.
+    /// - Parameters:
+    ///   - function: A string identifying the declaration
+    ///               that is the notional source for the continuation,
+    ///               used to identify the continuation in runtime diagnostics
+    ///               related to misuse of this continuation.
+    ///   - fn: A closure that takes a `CheckedContinuation` parameter.
+    ///         You must resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     @inlinable
-    static func with(_ body: (CheckedContinuation<T, E>) -> Void) async -> T {
-        return await withCheckedContinuation(body)
+    static func with(
+        function: String = #function,
+        _ body: (CheckedContinuation<T, E>) -> Void
+    ) async -> T {
+        return await withCheckedContinuation(function: function, body)
     }
 }
 #else
@@ -127,14 +165,21 @@ extension UnsafeContinuation: ThrowingContinuable where E == Error {
     /// The continuation must be resumed exactly once, subsequent resumes will cause runtime error.
     /// Use `CheckedContinuation` to capture relevant data in case of runtime errors.
     ///
-    /// - Parameter fn: A closure that takes an `UnsafeContinuation` parameter.
-    ///                 You must resume the continuation exactly once.
+    /// - Parameters:
+    ///   - function: A string identifying the declaration
+    ///               that is the notional source for the continuation,
+    ///               used to identify the continuation in runtime diagnostics
+    ///               related to misuse of this continuation.
+    ///   - fn: A closure that takes an `UnsafeContinuation` parameter.
+    ///         You must resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    static func with(_ fn: (UnsafeContinuation<T, E>) -> Void) async throws -> T
-    {
+    static func with(
+        function: String = #function,
+        _ fn: (UnsafeContinuation<T, E>) -> Void
+    ) async throws -> T {
         return try await withUnsafeThrowingContinuation(fn)
     }
 }
@@ -146,12 +191,20 @@ extension UnsafeContinuation: NonThrowingContinuable where E == Never {
     /// The continuation must be resumed exactly once, subsequent resumes will cause runtime error.
     /// Use `CheckedContinuation` to capture relevant data in case of runtime errors.
     ///
-    /// - Parameter fn: A closure that takes an `UnsafeContinuation` parameter.
-    ///                 You must resume the continuation exactly once.
+    /// - Parameters:
+    ///   - function: A string identifying the declaration
+    ///               that is the notional source for the continuation,
+    ///               used to identify the continuation in runtime diagnostics
+    ///               related to misuse of this continuation.
+    ///   - fn: A closure that takes an `UnsafeContinuation` parameter.
+    ///         You must resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     @inlinable
-    static func with(_ fn: (UnsafeContinuation<T, E>) -> Void) async -> T {
+    static func with(
+        function: String = #function,
+        _ fn: (UnsafeContinuation<T, E>) -> Void
+    ) async -> T {
         return await withUnsafeContinuation(fn)
     }
 }
