@@ -73,4 +73,16 @@ class AsyncEventTests: XCTestCase {
         }
         XCTAssertEqual(result, .success)
     }
+
+    func testDeinit() async throws {
+        let event = AsyncEvent(signaledInitially: false)
+        Task.detached {
+            try await Self.sleep(seconds: 1)
+            await event.signal()
+        }
+        await event.wait()
+        self.addTeardownBlock { [weak event] in
+            XCTAssertNil(event)
+        }
+    }
 }

@@ -414,4 +414,16 @@ class ThrowingFutureTests: XCTestCase {
         let value = try await future.value
         XCTAssertEqual(value, 5)
     }
+
+    func testDeinit() async throws {
+        let future = Future<Int, Error>()
+        Task.detached {
+            try await Self.sleep(seconds: 1)
+            await future.fulfill(producing: 5)
+        }
+        let _ = try await future.value
+        self.addTeardownBlock { [weak future] in
+            XCTAssertNil(future)
+        }
+    }
 }

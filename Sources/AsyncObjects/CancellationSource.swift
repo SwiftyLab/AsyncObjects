@@ -183,7 +183,7 @@ public extension Task {
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
         operation: @escaping @Sendable () async throws -> Success
-    ) rethrows where Failure == Error {
+    ) where Failure == Error {
         self.init(priority: priority) {
             let task = Self.init(priority: priority, operation: operation)
             await cancellationSource.register(task: task)
@@ -235,7 +235,7 @@ public extension Task {
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
         operation: @escaping @Sendable () async throws -> Success
-    ) rethrows -> Self where Failure == Error {
+    ) -> Self where Failure == Error {
         return Task.detached(priority: priority) {
             let task = Self.init(priority: priority, operation: operation)
             await cancellationSource.register(task: task)
@@ -280,7 +280,7 @@ public extension Task {
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
         operation: @escaping @Sendable () async throws -> Success
-    ) async rethrows where Failure == Error {
+    ) async where Failure == Error {
         self.init(priority: priority, operation: operation)
         await cancellationSource.register(task: self)
     }
@@ -323,7 +323,7 @@ public extension Task {
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
         operation: @escaping @Sendable () async throws -> Success
-    ) async rethrows -> Self where Failure == Error {
+    ) async -> Self where Failure == Error {
         let task = Task.detached(priority: priority, operation: operation)
         await cancellationSource.register(task: task)
         return task

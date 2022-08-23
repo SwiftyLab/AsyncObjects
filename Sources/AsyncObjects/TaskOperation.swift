@@ -14,9 +14,10 @@ import Dispatch
 public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     @unchecked Sendable
 {
-    /// The dispatch queue used to synchronize data access and modifications.
+    /// The platform dependent lock used to
+    /// synchronize data access and modifications.
     @usableFromInline
-    let propQueue: DispatchQueue
+    let locker: Locker
     /// The asynchronous action to perform as part of the operation..
     private let underlyingAction: @Sendable () async throws -> R
     /// The top-level task that executes asynchronous action provided
@@ -35,33 +36,35 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     public override var isCancelled: Bool { execTask?.isCancelled ?? false }
 
     /// Private store for boolean value indicating whether the operation is currently executing.
-    private var _isExecuting: Bool = false
+    @usableFromInline
+    var _isExecuting: Bool = false
     /// A Boolean value indicating whether the operation is currently executing.
     ///
     /// The value of this property is true if the operation is currently executing
     /// provided asynchronous operation or false if it is not.
     public override internal(set) var isExecuting: Bool {
-        get { propQueue.sync { _isExecuting } }
+        get { locker.perform { _isExecuting } }
         @usableFromInline
         set {
             willChangeValue(forKey: "isExecuting")
-            propQueue.sync(flags: [.barrier]) { _isExecuting = newValue }
+            locker.perform { _isExecuting = newValue }
             didChangeValue(forKey: "isExecuting")
         }
     }
 
     /// Private store for boolean value indicating whether the operation has finished executing its task.
-    private var _isFinished: Bool = false
+    @usableFromInline
+    var _isFinished: Bool = false
     /// A Boolean value indicating whether the operation has finished executing its task.
     ///
     /// The value of this property is true if the operation is finished executing or cancelled
     /// provided asynchronous operation or false if it is not.
     public override internal(set) var isFinished: Bool {
-        get { propQueue.sync { _isFinished } }
+        get { locker.perform { _isFinished } }
         @usableFromInline
         set {
             willChangeValue(forKey: "isFinished")
-            propQueue.sync(flags: [.barrier]) {
+            locker.perform {
                 _isFinished = newValue
                 guard newValue, !continuations.isEmpty else { return }
                 continuations.forEach { $0.value.resume() }
@@ -79,44 +82,30 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         get async { (await execTask?.result) ?? .failure(CancellationError()) }
     }
 
-    /// Creates a new operation that executes the provided throwing asynchronous task.
+    /// Creates a new operation that executes the provided asynchronous task.
     ///
-    /// The provided dispatch queue is used to synchronize operation property access and modifications
-    /// and prevent data races.
+    /// The operation execution only starts after ``start()`` is invoked.
+    /// Operation completes when underlying asynchronous task finishes.
+    /// The provided lock is used to synchronize operation property access and modifications
+    /// to prevent data races.
     ///
     /// - Parameters:
-    ///   - queue: The dispatch queue to be used to synchronize data access and modifications.
-    ///   - operation: The throwing asynchronous operation to execute.
+    ///   - locker: The locker to use to synchronize property read and mutations.
+    ///             New lock object is created in case none provided.
+    ///   - operation: The asynchronous operation to execute.
     ///
     /// - Returns: The newly created asynchronous operation.
     public init(
-        queue: DispatchQueue,
+        synchronizedWith locker: Locker = .init(),
         operation: @escaping @Sendable () async throws -> R
     ) {
-        self.propQueue = queue
+        self.locker = locker
         self.underlyingAction = operation
         super.init()
     }
 
-    deinit { self.continuations.forEach { $0.value.cancel() } }
-
-    /// Creates a new operation that executes the provided non-throwing asynchronous task.
-    ///
-    /// The provided dispatch queue is used to synchronize operation property access and modifications
-    /// and prevent data races.
-    ///
-    /// - Parameters:
-    ///   - queue: The dispatch queue to be used to synchronize data access and modifications.
-    ///   - operation: The non-throwing asynchronous operation to execute.
-    ///
-    /// - Returns: The newly created asynchronous operation.
-    public init(
-        queue: DispatchQueue,
-        operation: @escaping @Sendable () async -> R
-    ) {
-        self.propQueue = queue
-        self.underlyingAction = operation
-        super.init()
+    deinit {
+        locker.perform { self.continuations.forEach { $0.value.cancel() } }
     }
 
     /// Begins the execution of the operation.
@@ -138,9 +127,11 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     public override func main() {
         guard isExecuting, execTask == nil else { return }
         execTask = Task { [weak self] in
-            guard let self = self else { throw CancellationError() }
-            defer { self._finish() }
-            let result = try await underlyingAction()
+            guard
+                let action = self?.underlyingAction
+            else { throw CancellationError() }
+            defer { self?._finish() }
+            let result = try await action()
             return result
         }
     }
@@ -185,8 +176,8 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         _ continuation: Continuation,
         withKey key: UUID
     ) {
-        propQueue.sync(flags: [.barrier]) {
-            if isFinished { continuation.resume(); return }
+        locker.perform {
+            if _isFinished { continuation.resume(); return }
             continuations[key] = continuation
         }
     }
@@ -197,7 +188,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// - Parameter key: The key in the map.
     @inlinable
     func _removeContinuation(withKey key: UUID) {
-        propQueue.sync(flags: [.barrier]) {
+        locker.perform {
             let continuation = continuations.removeValue(forKey: key)
             continuation?.cancel()
         }

@@ -78,7 +78,7 @@ class CancellationSourceTests: XCTestCase {
         async throws
     {
         let source = await CancellationSource()
-        let task = try await Task(cancellationSource: source) {
+        let task = await Task(cancellationSource: source) {
             try await Self.sleep(seconds: 1)
         }
         await source.cancel()
@@ -89,7 +89,7 @@ class CancellationSourceTests: XCTestCase {
         async throws
     {
         let source = await CancellationSource()
-        let task = try await Task.detached(cancellationSource: source) {
+        let task = await Task.detached(cancellationSource: source) {
             try await Self.sleep(seconds: 1)
         }
         await source.cancel()
@@ -144,8 +144,8 @@ class CancellationSourceTests: XCTestCase {
 
     func createThrowingTaskWithCancellationSource(
         _ source: CancellationSource
-    ) throws -> Task<Void, Error> {
-        return try Task(cancellationSource: source) {
+    ) -> Task<Void, Error> {
+        return Task(cancellationSource: source) {
             try await Self.sleep(seconds: 2)
             XCTFail("Unexpected task progression")
         }
@@ -155,7 +155,7 @@ class CancellationSourceTests: XCTestCase {
         async throws
     {
         let source = await CancellationSource()
-        let task = try createThrowingTaskWithCancellationSource(source)
+        let task = createThrowingTaskWithCancellationSource(source)
         Task {
             try await Self.sleep(seconds: 1)
             await source.cancel()
@@ -167,7 +167,7 @@ class CancellationSourceTests: XCTestCase {
     func createThrowingDetachedTaskWithCancellationSource(
         _ source: CancellationSource
     ) throws -> Task<Void, Error> {
-        return try Task.detached(cancellationSource: source) {
+        return Task.detached(cancellationSource: source) {
             try await Self.sleep(seconds: 2)
             XCTFail("Unexpected task progression")
         }
@@ -185,5 +185,18 @@ class CancellationSourceTests: XCTestCase {
         }
         let value: Void? = try? await task.value
         XCTAssertNil(value)
+    }
+
+    func testDeinit() async throws {
+        let source = await CancellationSource()
+        let task = try createThrowingDetachedTaskWithCancellationSource(source)
+        Task.detached {
+            try await Self.sleep(seconds: 1)
+            await source.cancel()
+        }
+        try? await task.value
+        self.addTeardownBlock { [weak source] in
+            XCTAssertNil(source)
+        }
     }
 }

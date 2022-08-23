@@ -33,7 +33,7 @@ class AsyncObjectTests: XCTestCase {
     func testMultipleObjectWaitMultiple() async throws {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        let op = TaskOperation(queue: .global(qos: .background)) {
+        let op = TaskOperation {
             try await Self.sleep(seconds: 3)
         }
         Task.detached {
@@ -80,7 +80,7 @@ class AsyncObjectTests: XCTestCase {
         var result: TaskTimeoutResult = .success
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        let op = TaskOperation(queue: .global(qos: .background)) {
+        let op = TaskOperation {
             try await Self.sleep(seconds: 4)
         }
         Task.detached {

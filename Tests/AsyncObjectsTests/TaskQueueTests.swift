@@ -706,12 +706,24 @@ class TaskQueueTests: XCTestCase {
             try await Self.sleep(seconds: 2)
         }
         // Make sure previous tasks started
-        try await Self.sleep(forSeconds: 0.01)
+        try await Self.sleep(forSeconds: 0.001)
         await Self.checkExecInterval(durationInSeconds: 2) {
-            queue.addTask {
-                try! await Self.sleep(seconds: 2)
-            }
+            queue.addTask { try! await Self.sleep(seconds: 2) }
             await queue.wait()
+        }
+    }
+
+    func testDeinit() async throws {
+        let queue = TaskQueue()
+        try await queue.exec(flags: .barrier) {
+            try await Self.sleep(seconds: 1)
+        }
+        try await queue.exec {
+            try await Self.sleep(seconds: 1)
+        }
+        try await Self.sleep(forSeconds: 0.001)
+        self.addTeardownBlock { [weak queue] in
+            XCTAssertNil(queue)
         }
     }
 }

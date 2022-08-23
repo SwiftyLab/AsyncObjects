@@ -168,6 +168,18 @@ class AsyncSemaphoreTests: XCTestCase {
         }
         XCTAssertEqual(data.items.count, 10)
     }
+
+    func testDeinit() async throws {
+        let semaphore = AsyncSemaphore()
+        Task.detached {
+            try await Self.sleep(seconds: 1)
+            await semaphore.signal()
+        }
+        await semaphore.wait()
+        self.addTeardownBlock { [weak semaphore] in
+            XCTAssertNil(semaphore)
+        }
+    }
 }
 
 actor TaskTimeoutStore {

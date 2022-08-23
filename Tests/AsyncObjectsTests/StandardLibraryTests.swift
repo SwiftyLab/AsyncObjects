@@ -49,15 +49,15 @@ class StandardLibraryTests: XCTestCase {
     @TaskLocal
     static var traceID: Int = 0
     func testTaskLocalVariable() {
-        func call() {
-            XCTAssertEqual(Self.traceID, 1234)
+        func call(_ value: Int) {
+            XCTAssertEqual(Self.traceID, value)
         }
 
         XCTAssertEqual(Self.traceID, 0)
         // bind the value
         Self.$traceID.withValue(1234) {
             XCTAssertEqual(Self.traceID, 1234)
-            call()
+            call(1234)
 
             // unstructured tasks inherit task locals by copying
             Task {
@@ -67,6 +67,45 @@ class StandardLibraryTests: XCTestCase {
             // detached tasks do not inherit task-local values
             Task.detached {
                 XCTAssertEqual(Self.traceID, 0)
+            }
+        }
+        XCTAssertEqual(Self.traceID, 0)
+    }
+
+    func testNestedTaskLocalVariable() {
+        func call(_ value: Int) {
+            XCTAssertEqual(Self.traceID, value)
+        }
+
+        XCTAssertEqual(Self.traceID, 0)
+        // bind the value
+        Self.$traceID.withValue(1234) {
+            XCTAssertEqual(Self.traceID, 1234)
+            call(1234)
+
+            // unstructured tasks inherit task locals by copying
+            Task {
+                XCTAssertEqual(Self.traceID, 1234)
+            }
+
+            // detached tasks do not inherit task-local values
+            Task.detached {
+                XCTAssertEqual(Self.traceID, 0)
+            }
+
+            Self.$traceID.withValue(12345) {
+                XCTAssertEqual(Self.traceID, 12345)
+                call(12345)
+
+                // unstructured tasks inherit task locals by copying
+                Task {
+                    XCTAssertEqual(Self.traceID, 12345)
+                }
+
+                // detached tasks do not inherit task-local values
+                Task.detached {
+                    XCTAssertEqual(Self.traceID, 0)
+                }
             }
         }
         XCTAssertEqual(Self.traceID, 0)

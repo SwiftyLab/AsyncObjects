@@ -194,4 +194,16 @@ class NonThrowingFutureTests: XCTestCase {
             }
         }
     }
+
+    func testDeinit() async throws {
+        let future = Future<Int, Never>()
+        Task.detached {
+            try await Self.sleep(seconds: 1)
+            await future.fulfill(producing: 5)
+        }
+        let _ = await future.value
+        self.addTeardownBlock { [weak future] in
+            XCTAssertNil(future)
+        }
+    }
 }

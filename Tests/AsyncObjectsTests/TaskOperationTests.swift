@@ -2,12 +2,11 @@ import XCTest
 import Dispatch
 @testable import AsyncObjects
 
-#if canImport(Darwin)
 class TaskOperationTests: XCTestCase {
 
     func testTaskOperation() async throws {
         let queue = OperationQueue()
-        let operation = TaskOperation(queue: .global(qos: .background)) {
+        let operation = TaskOperation {
             (try? await Self.sleep(seconds: 3)) != nil
         }
         XCTAssertTrue(operation.isAsynchronous)
@@ -45,7 +44,7 @@ class TaskOperationTests: XCTestCase {
 
     func testTaskOperationCancellation() async throws {
         let queue = OperationQueue()
-        let operation = TaskOperation(queue: .global(qos: .background)) {
+        let operation = TaskOperation {
             (try? await Self.sleep(seconds: 3)) != nil
         }
         XCTAssertFalse(operation.isExecuting)
@@ -76,7 +75,7 @@ class TaskOperationTests: XCTestCase {
 
     func testThrowingTaskOperation() throws {
         let queue = OperationQueue()
-        let operation = TaskOperation(queue: .global(qos: .background)) {
+        let operation = TaskOperation {
             try await Self.sleep(seconds: 3)
         }
         XCTAssertFalse(operation.isExecuting)
@@ -97,7 +96,7 @@ class TaskOperationTests: XCTestCase {
 
     func testThrowingTaskOperationCancellation() async throws {
         let queue = OperationQueue()
-        let operation = TaskOperation(queue: .global(qos: .background)) {
+        let operation = TaskOperation {
             try await Self.sleep(seconds: 3)
         }
         XCTAssertFalse(operation.isExecuting)
@@ -123,7 +122,7 @@ class TaskOperationTests: XCTestCase {
     }
 
     func testTaskOperationAsyncWait() async throws {
-        let operation = TaskOperation(queue: .global(qos: .background)) {
+        let operation = TaskOperation {
             (try? await Self.sleep(seconds: 3)) != nil
         }
         operation.signal()
@@ -134,7 +133,7 @@ class TaskOperationTests: XCTestCase {
     }
 
     func testTaskOperationAsyncWaitTimeout() async throws {
-        let operation = TaskOperation(queue: .global(qos: .background)) {
+        let operation = TaskOperation {
             (try? await Self.sleep(seconds: 3)) != nil
         }
         operation.signal()
@@ -144,13 +143,34 @@ class TaskOperationTests: XCTestCase {
     }
 
     func testTaskOperationAsyncWaitWithZeroTimeout() async throws {
-        let operation = TaskOperation(queue: .global(qos: .background)) {
-            // Do nothing
-        }
+        let operation = TaskOperation { /* Do nothing */  }
         operation.signal()
         await Self.checkExecInterval(durationInSeconds: 0) {
             await operation.wait(forNanoseconds: 0)
         }
     }
+
+    func testDeinitWithCancellation() async throws {
+        let operation = TaskOperation {
+            do {
+                try await Self.sleep(seconds: 2)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(type(of: error) == CancellationError.self)
+            }
+        }
+        operation.signal()
+        self.addTeardownBlock { [weak operation] in
+            XCTAssertNil(operation)
+        }
+    }
+
+    func testDeinitWithoutCancellation() async throws {
+        let operation = TaskOperation { try await Self.sleep(seconds: 1) }
+        operation.signal()
+        await operation.wait()
+        self.addTeardownBlock { [weak operation] in
+            XCTAssertNil(operation)
+        }
+    }
 }
-#endif

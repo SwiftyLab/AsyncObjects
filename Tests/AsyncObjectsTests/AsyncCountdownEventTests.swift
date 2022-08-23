@@ -158,4 +158,16 @@ class AsyncCountdownEventTests: XCTestCase {
             await event.wait()
         }
     }
+
+    func testDeinit() async throws {
+        let event = AsyncCountdownEvent(until: 0, initial: 1)
+        Task.detached {
+            try await Self.sleep(seconds: 1)
+            await event.signal()
+        }
+        await event.wait()
+        self.addTeardownBlock { [weak event] in
+            XCTAssertNil(event)
+        }
+    }
 }
