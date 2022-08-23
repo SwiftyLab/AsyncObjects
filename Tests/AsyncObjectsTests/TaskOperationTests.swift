@@ -208,4 +208,18 @@ class TaskOperationTests: XCTestCase {
             await operation.wait()
         }
     }
+
+    func testNotStartedError() async throws {
+        let operation = TaskOperation { try await Self.sleep(seconds: 1) }
+        let result = await operation.result
+        switch result {
+        case .success: XCTFail("Unexpected operation result")
+        case .failure(let error):
+            XCTAssertTrue(type(of: error) == EarlyInvokeError.self)
+            print(
+                "[\(#function)] [\(type(of: error))] \(error.localizedDescription)"
+            )
+            XCTAssertFalse(error.localizedDescription.isEmpty)
+        }
+    }
 }

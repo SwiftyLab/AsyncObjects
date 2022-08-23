@@ -93,7 +93,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// Will be success if provided operation completed successfully,
     /// or failure returned with error.
     public var result: Result<R, Error> {
-        get async { (await execTask?.result) ?? .failure(CancellationError()) }
+        get async { (await execTask?.result) ?? .failure(EarlyInvokeError()) }
     }
 
     /// Creates a new operation that executes the provided asynchronous task.
@@ -268,3 +268,11 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         try? await _withPromisedContinuation()
     }
 }
+
+/// An error that indicates that operation result
+/// requested without starting operation.
+///
+/// Error is thrown by ``TaskOperation/result``
+/// if the operation hasn't been started yet with either
+/// ``TaskOperation/start()`` or ``TaskOperation/signal()``.
+public struct EarlyInvokeError: Error, Sendable {}
