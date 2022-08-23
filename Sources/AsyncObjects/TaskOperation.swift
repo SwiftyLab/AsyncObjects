@@ -14,6 +14,13 @@ import Dispatch
 public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     @unchecked Sendable
 {
+    /// The type used to track completion of provided operation and their child tasks.
+    private typealias Tracker = TaskTracker
+    /// The asynchronous action to perform as part of the operation..
+    private let underlyingAction: @Sendable () async throws -> R
+    /// The top-level task that executes asynchronous action provided
+    /// on behalf of the actor where operation started.
+    private var execTask: Task<R, Error>?
     /// The platform dependent lock used to
     /// synchronize data access and modifications.
     @usableFromInline
@@ -23,11 +30,13 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// In case of `nil` priority from `Task.currentPriority`
     /// of task that starts the operation used.
     public let priority: TaskPriority?
-    /// The asynchronous action to perform as part of the operation..
-    private let underlyingAction: @Sendable () async throws -> R
-    /// The top-level task that executes asynchronous action provided
-    /// on behalf of the actor where operation started.
-    private var execTask: Task<R, Error>?
+    /// If completion of child tasks created as part of provided task
+    /// should be tracked.
+    ///
+    /// If true, operation only completes if the provided asynchronous action
+    /// and all of its child task completes. Otherwise, operation completes if the
+    /// provided action itself completes.
+    public let shouldTrackChildTasks: Bool
 
     /// A Boolean value indicating whether the operation executes its task asynchronously.
     ///
@@ -95,6 +104,8 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// to prevent data races.
     ///
     /// - Parameters:
+    ///   - shouldTrackChildTasks: Whether to wait for all the child tasks created
+    ///                            as part of provided asynchronous action.
     ///   - locker: The locker to use to synchronize property read and mutations.
     ///             New lock object is created in case none provided.
     ///   - priority: The priority of the task that operation executes.
@@ -103,11 +114,19 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///   - operation: The asynchronous operation to execute.
     ///
     /// - Returns: The newly created asynchronous operation.
+    ///
+    /// - Important: When specifying to track child tasks to true,
+    ///              be sure that you aren't keeping strong reference
+    ///              to ``TaskTracker/current`` inside your asynchronous operation.
+    ///              Otherwise, operation won't complete as soon asynchronous operation
+    ///              and their child tasks complete.
     public init(
+        trackChildTasks shouldTrackChildTasks: Bool = false,
         synchronizedWith locker: Locker = .init(),
         priority: TaskPriority? = nil,
         operation: @escaping @Sendable () async throws -> R
     ) {
+        self.shouldTrackChildTasks = shouldTrackChildTasks
         self.locker = locker
         self.priority = priority
         self.underlyingAction = operation
@@ -138,11 +157,19 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         guard isExecuting, execTask == nil else { return }
         execTask = Task(priority: priority) { [weak self] in
             guard
-                let action = self?.underlyingAction
+                let action = self?.underlyingAction,
+                let shouldTrackChildTasks = self?.shouldTrackChildTasks
             else { throw CancellationError() }
-            defer { self?._finish() }
-            let result = try await action()
-            return result
+            let final = { @Sendable[weak self] in self?._finish(); return;  }
+            return shouldTrackChildTasks
+                ? try await Tracker.$current.withValue(
+                    .init(onComplete: final),
+                    operation: action
+                )
+                : try await {
+                    defer { final() }
+                    return try await action()
+                }()
         }
     }
 

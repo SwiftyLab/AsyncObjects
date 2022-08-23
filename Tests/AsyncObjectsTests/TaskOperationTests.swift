@@ -173,4 +173,39 @@ class TaskOperationTests: XCTestCase {
             XCTAssertNil(operation)
         }
     }
+
+    func createOperationWithChildTasks(
+        track: Bool = false
+    ) -> TaskOperation<Void> {
+        return TaskOperation(trackChildTasks: track) {
+            Task {
+                try await Self.sleep(seconds: 1)
+            }
+            Task {
+                try await Self.sleep(seconds: 2)
+            }
+            Task {
+                try await Self.sleep(seconds: 3)
+            }
+            Task.detached {
+                try await Self.sleep(seconds: 5)
+            }
+        }
+    }
+
+    func testOperationWithoutTrackingChildTasks() async throws {
+        let operation = createOperationWithChildTasks(track: false)
+        operation.signal()
+        await Self.checkExecInterval(durationInSeconds: 0) {
+            await operation.wait()
+        }
+    }
+
+    func testOperationWithTrackingChildTasks() async throws {
+        let operation = createOperationWithChildTasks(track: true)
+        operation.signal()
+        await Self.checkExecInterval(durationInSeconds: 3) {
+            await operation.wait()
+        }
+    }
 }
