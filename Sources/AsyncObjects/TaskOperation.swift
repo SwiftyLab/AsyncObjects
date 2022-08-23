@@ -18,6 +18,11 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// synchronize data access and modifications.
     @usableFromInline
     let locker: Locker
+    /// The priority of top-level task executed.
+    ///
+    /// In case of `nil` priority from `Task.currentPriority`
+    /// of task that starts the operation used.
+    public let priority: TaskPriority?
     /// The asynchronous action to perform as part of the operation..
     private let underlyingAction: @Sendable () async throws -> R
     /// The top-level task that executes asynchronous action provided
@@ -92,14 +97,19 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// - Parameters:
     ///   - locker: The locker to use to synchronize property read and mutations.
     ///             New lock object is created in case none provided.
+    ///   - priority: The priority of the task that operation executes.
+    ///               Pass `nil` to use the priority from `Task.currentPriority`
+    ///               of task that starts the operation.
     ///   - operation: The asynchronous operation to execute.
     ///
     /// - Returns: The newly created asynchronous operation.
     public init(
         synchronizedWith locker: Locker = .init(),
+        priority: TaskPriority? = nil,
         operation: @escaping @Sendable () async throws -> R
     ) {
         self.locker = locker
+        self.priority = priority
         self.underlyingAction = operation
         super.init()
     }
@@ -126,7 +136,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// as part of a new top-level task on behalf of the current actor.
     public override func main() {
         guard isExecuting, execTask == nil else { return }
-        execTask = Task { [weak self] in
+        execTask = Task(priority: priority) { [weak self] in
             guard
                 let action = self?.underlyingAction
             else { throw CancellationError() }
