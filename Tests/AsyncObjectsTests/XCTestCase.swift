@@ -12,8 +12,11 @@ extension XCTestCase {
         XCTAssertEqual(
             seconds,
             Int(
-                DispatchTime.now().uptimeNanoseconds - time.uptimeNanoseconds
-            ) / Int(1E9)
+                (Double(
+                    DispatchTime.now().uptimeNanoseconds
+                        - time.uptimeNanoseconds
+                ) / 1E9).rounded(.toNearestOrAwayFromZero)
+            )
         )
     }
 
@@ -41,10 +44,11 @@ extension XCTestCase {
     ) async rethrows where R.Bound == Int {
         let time = DispatchTime.now()
         try await task()
-        let duration =
-            Int(
+        let duration = Int(
+            (Double(
                 DispatchTime.now().uptimeNanoseconds - time.uptimeNanoseconds
-            ) / Int(1E9)
+            ) / 1E9).rounded(.toNearestOrAwayFromZero)
+        )
         XCTAssertTrue(
             range.contains(duration),
             "\(duration) not present in \(range)"
