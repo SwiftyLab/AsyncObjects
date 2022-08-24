@@ -3,7 +3,7 @@ import Dispatch
 @testable import AsyncObjects
 
 class TaskOperationTests: XCTestCase {
-
+    #if canImport(Darwin)
     func testTaskOperation() async throws {
         let queue = OperationQueue()
         let operation = TaskOperation {
@@ -120,6 +120,7 @@ class TaskOperationTests: XCTestCase {
         XCTAssertFalse(operation.isExecuting)
         XCTAssertTrue(operation.isCancelled)
     }
+    #endif
 
     func testTaskOperationAsyncWait() async throws {
         let operation = TaskOperation {
