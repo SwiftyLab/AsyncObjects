@@ -114,12 +114,6 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///   - operation: The asynchronous operation to execute.
     ///
     /// - Returns: The newly created asynchronous operation.
-    ///
-    /// - Important: When specifying to track child tasks to true,
-    ///              be sure that you aren't keeping strong reference
-    ///              to ``TaskTracker/current`` inside your asynchronous operation.
-    ///              Otherwise, operation won't complete as soon asynchronous operation
-    ///              and their child tasks complete.
     public init(
         trackChildTasks shouldTrackChildTasks: Bool = false,
         synchronizedWith locker: Locker = .init(),

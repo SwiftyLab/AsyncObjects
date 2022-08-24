@@ -707,7 +707,7 @@ class TaskQueueTests: XCTestCase {
         }
         // Make sure previous tasks started
         try await Self.sleep(forSeconds: 0.001)
-        await Self.checkExecInterval(durationInSeconds: 2) {
+        await Self.checkExecInterval(durationInRange: 1.5..<2.5) {
             queue.addTask { try! await Self.sleep(seconds: 2) }
             await queue.wait()
         }
