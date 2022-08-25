@@ -98,6 +98,7 @@ public final class Locker: Equatable, Hashable, Sendable {
     ///
     /// - Parameter critical: The critical task to perform.
     /// - Returns: The result from the critical task.
+    /// - Throws: Error occurred running critical task.
     @discardableResult
     public func perform<R>(_ critical: () throws -> R) rethrows -> R {
         lock()

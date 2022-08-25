@@ -337,6 +337,8 @@ extension Future where Failure == Error {
     /// Immediately returns if `Future` is fulfilled otherwise waits asynchronously
     /// for `Future` to be fulfilled. If the Future terminates with an error,
     /// the awaiting caller receives the error instead.
+    ///
+    /// - Throws: If future rejected with error or `CancellationError` if cancelled.
     public var value: Output {
         get async throws {
             if let result = result { return try result.get() }

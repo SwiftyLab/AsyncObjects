@@ -131,6 +131,7 @@ public actor CancellationSource {
     /// and propagate cancellation to linked cancellation sources.
     ///
     /// - Parameter nanoseconds: The delay after which cancellation event triggered.
+    /// - Throws: `CancellationError` if cancelled.
     @Sendable
     public func cancel(afterNanoseconds nanoseconds: UInt64) async throws {
         try await Task.sleep(nanoseconds: nanoseconds)
