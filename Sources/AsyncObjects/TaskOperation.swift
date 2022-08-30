@@ -1,4 +1,8 @@
+#if swift(>=5.7)
+import Foundation
+#else
 @preconcurrency import Foundation
+#endif
 import Dispatch
 
 /// An object that bridges asynchronous work under structured concurrency
@@ -14,7 +18,7 @@ import Dispatch
 public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     @unchecked Sendable
 {
-    /// The type used to track completion of provided operation and their child tasks.
+    /// The type used to track completion of provided operation and unstructured tasks created in it.
     private typealias Tracker = TaskTracker
     /// The asynchronous action to perform as part of the operation..
     private let underlyingAction: @Sendable () async throws -> R
@@ -30,13 +34,13 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// In case of `nil` priority from `Task.currentPriority`
     /// of task that starts the operation used.
     public let priority: TaskPriority?
-    /// If completion of child tasks created as part of provided task
+    /// If completion of unstructured tasks created as part of provided task
     /// should be tracked.
     ///
     /// If true, operation only completes if the provided asynchronous action
-    /// and all of its child task completes. Otherwise, operation completes if the
-    /// provided action itself completes.
-    public let shouldTrackChildTasks: Bool
+    /// and all of its created unstructured task completes.
+    /// Otherwise, operation completes if the provided action itself completes.
+    public let shouldTrackUnstructuredTasks: Bool
 
     /// A Boolean value indicating whether the operation executes its task asynchronously.
     ///
@@ -104,8 +108,8 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// to prevent data races.
     ///
     /// - Parameters:
-    ///   - shouldTrackChildTasks: Whether to wait for all the child tasks created
-    ///                            as part of provided asynchronous action.
+    ///   - shouldTrackUnstructuredTasks: Whether to wait for all the unstructured tasks created
+    ///                                   as part of provided asynchronous action.
     ///   - locker: The locker to use to synchronize property read and mutations.
     ///             New lock object is created in case none provided.
     ///   - priority: The priority of the task that operation executes.
@@ -115,12 +119,12 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// - Returns: The newly created asynchronous operation.
     public init(
-        trackChildTasks shouldTrackChildTasks: Bool = false,
+        trackUnstructuredTasks shouldTrackUnstructuredTasks: Bool = false,
         synchronizedWith locker: Locker = .init(),
         priority: TaskPriority? = nil,
         operation: @escaping @Sendable () async throws -> R
     ) {
-        self.shouldTrackChildTasks = shouldTrackChildTasks
+        self.shouldTrackUnstructuredTasks = shouldTrackUnstructuredTasks
         self.locker = locker
         self.priority = priority
         self.underlyingAction = operation
@@ -153,10 +157,10 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         execTask = Task(priority: priority) { [weak self] in
             guard
                 let action = self?.underlyingAction,
-                let shouldTrackChildTasks = self?.shouldTrackChildTasks
+                let trackUnstructuredTasks = self?.shouldTrackUnstructuredTasks
             else { throw CancellationError() }
-            let final = { @Sendable[weak self] in self?._finish(); return;  }
-            return shouldTrackChildTasks
+            let final = { @Sendable[weak self] in self?._finish(); return }
+            return trackUnstructuredTasks
                 ? try await Tracker.$current.withValue(
                     .init(onComplete: final),
                     operation: action

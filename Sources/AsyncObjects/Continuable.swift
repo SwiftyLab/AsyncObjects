@@ -1,7 +1,7 @@
 /// A type that allows to interface between synchronous and asynchronous code,
 /// by representing task state and allowing task resuming with some value or error.
 @usableFromInline
-protocol Continuable: Sendable {
+protocol Continuable {
     /// The type of value to resume the continuation with in case of success.
     associatedtype Success
     /// The type of error to resume the continuation with in case of failure.

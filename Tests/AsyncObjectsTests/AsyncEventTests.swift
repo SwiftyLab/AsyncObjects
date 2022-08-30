@@ -1,6 +1,7 @@
 import XCTest
 @testable import AsyncObjects
 
+@MainActor
 class AsyncEventTests: XCTestCase {
 
     func checkWait(

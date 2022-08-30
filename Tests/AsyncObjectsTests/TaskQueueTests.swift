@@ -1,6 +1,7 @@
 import XCTest
 @testable import AsyncObjects
 
+@MainActor
 class TaskQueueTests: XCTestCase {
     typealias TaskOption = (
         queue: TaskPriority?, task: TaskPriority?, flags: TaskQueue.Flags
@@ -28,7 +29,12 @@ class TaskQueueTests: XCTestCase {
 
     static func checkWaitOnQueue(option: TaskOption) async throws {
         let queue = TaskQueue(priority: option.queue)
-        try await Self.checkExecInterval(durationInSeconds: 1) {
+        try await Self.checkExecInterval(
+            name: "For queue priority: \(option.queue.str), "
+                + "task priority: \(option.task.str) "
+                + "and flags: \(option.flags.rawValue)",
+            durationInSeconds: 1
+        ) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await queue.exec(
@@ -71,7 +77,12 @@ class TaskQueueTests: XCTestCase {
 
     static func checkWaitTimeoutOnQueue(option: TaskOption) async throws {
         let queue = TaskQueue(priority: option.queue)
-        try await Self.checkExecInterval(durationInSeconds: 1) {
+        try await Self.checkExecInterval(
+            name: "For queue priority: \(option.queue.str), "
+                + "task priority: \(option.task.str) "
+                + "and flags: \(option.flags.rawValue)",
+            durationInSeconds: 1
+        ) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await queue.exec(
@@ -724,6 +735,17 @@ class TaskQueueTests: XCTestCase {
         try await Self.sleep(forSeconds: 0.001)
         self.addTeardownBlock { [weak queue] in
             XCTAssertNil(queue)
+        }
+    }
+}
+
+extension Optional where Wrapped == TaskPriority {
+    var str: String {
+        switch self {
+        case .none:
+            return "none"
+        case .some(let wrapped):
+            return "\(wrapped.rawValue)"
         }
     }
 }

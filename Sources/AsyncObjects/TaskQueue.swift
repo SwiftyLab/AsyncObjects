@@ -1,4 +1,8 @@
+#if swift(>=5.7)
+import Foundation
+#else
 @preconcurrency import Foundation
+#endif
 import OrderedCollections
 
 /// An object that acts as a concurrent queue executing submitted tasks concurrently.
@@ -75,7 +79,10 @@ public actor TaskQueue: AsyncObject {
             andWork work: TaskPriority?
         ) -> TaskPriority? {
             let result: TaskPriority?
-            let priorities = [work, context, Task.currentPriority]
+            let priorities =
+                (self.contains(.detached)
+                ? [work, context]
+                : [work, context, Task.currentPriority])
                 .compactMap { $0 }
                 .sorted { $0.rawValue > $1.rawValue }
             if self.contains(.enforce) {
@@ -167,6 +174,11 @@ public actor TaskQueue: AsyncObject {
         atKey key: UUID = .init(),
         _ continuation: Continuation
     ) {
+        guard _wait(whenFlags: flags) else {
+            currentRunning += 1
+            continuation.resume()
+            return
+        }
         queue[key] = (value: continuation, flags: flags)
     }
 
@@ -213,10 +225,9 @@ public actor TaskQueue: AsyncObject {
             queue.removeFirst()
             currentRunning += 1
             continuation.resume()
-            if flags.isBlockEnabled {
-                blocked = true
-                break
-            }
+            guard flags.isBlockEnabled else { continue }
+            blocked = true
+            break
         }
     }
 
@@ -231,7 +242,7 @@ public actor TaskQueue: AsyncObject {
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    func _withPromisedContinuation(flags: Flags = []) async throws {
+    nonisolated func _withPromisedContinuation(flags: Flags = []) async throws {
         let key = UUID()
         try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in
@@ -239,11 +250,13 @@ public actor TaskQueue: AsyncObject {
             }
         } operation: { () -> Continuation.Success in
             try await Continuation.with { continuation in
-                self._queueContinuation(
-                    withFlags: flags,
-                    atKey: key,
-                    continuation
-                )
+                Task { [weak self] in
+                    await self?._queueContinuation(
+                        withFlags: flags,
+                        atKey: key,
+                        continuation
+                    )
+                }
             }
         }
     }
@@ -269,19 +282,16 @@ public actor TaskQueue: AsyncObject {
             fromContext: self.priority,
             andWork: priority
         )
-        let taskInitializer =
-            flags.contains(.detached)
-            ? LocalTask.detached(priority:operation:)
-            : LocalTask.init(priority:operation:)
 
-        let task = taskInitializer(taskPriority, operation)
-        return try await withTaskCancellationHandler(
-            handler: {
-                task.cancel()
-            },
-            operation: {
-                return try await task.value
-            })
+        return flags.contains(.detached)
+            ? try await LocalTask.withCancellableDetachedTask(
+                priority: taskPriority,
+                operation: operation
+            )
+            : try await LocalTask.withCancellableTask(
+                priority: taskPriority,
+                operation: operation
+            )
     }
 
     /// Executes the given operation asynchronously based on the priority
@@ -314,7 +324,8 @@ public actor TaskQueue: AsyncObject {
     ///
     /// - Parameter priority: The default priority of the tasks submitted to queue.
     ///                       Pass `nil` to use the priority from
-    ///                       execution context(`Task.currentPriority`).
+    ///                       execution context(`Task.currentPriority`)
+    ///                       for non-detached tasks.
     ///
     /// - Returns: The newly created concurrent task queue.
     public init(priority: TaskPriority? = nil) {
@@ -332,7 +343,7 @@ public actor TaskQueue: AsyncObject {
     ///
     /// - Parameters:
     ///   - priority: The priority with which operation executed. Pass `nil` to use the priority
-    ///               from execution context(`Task.currentPriority`).
+    ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
     ///   - operation: The operation to perform.
@@ -385,7 +396,7 @@ public actor TaskQueue: AsyncObject {
     ///
     /// - Parameters:
     ///   - priority: The priority with which operation executed. Pass `nil` to use the priority
-    ///               from execution context(`Task.currentPriority`).
+    ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
     ///   - operation: The throwing operation to perform.
@@ -416,7 +427,7 @@ public actor TaskQueue: AsyncObject {
     ///
     /// - Parameters:
     ///   - priority: The priority with which operation executed. Pass `nil` to use the priority
-    ///               from execution context(`Task.currentPriority`).
+    ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
     ///   - operation: The non-throwing operation to perform.
@@ -445,7 +456,7 @@ public actor TaskQueue: AsyncObject {
     ///
     /// - Parameters:
     ///   - priority: The priority with which operation executed. Pass `nil` to use the priority
-    ///               from execution context(`Task.currentPriority`).
+    ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
     ///   - operation: The throwing operation to perform.
@@ -471,7 +482,7 @@ public actor TaskQueue: AsyncObject {
     ///
     /// - Parameters:
     ///   - priority: The priority with which operation executed. Pass `nil` to use the priority
-    ///               from execution context(`Task.currentPriority`).
+    ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
     ///   - operation: The non-throwing operation to perform.

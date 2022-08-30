@@ -52,6 +52,16 @@ public actor CancellationSource {
         linkedSources.append(source)
     }
 
+    /// Propagate cancellation to linked cancellation sources.
+    @inlinable
+    nonisolated func _propagateCancellation() async {
+        await withTaskGroup(of: Void.self) { group in
+            let linkedSources = await linkedSources
+            linkedSources.forEach { group.addTask(operation: $0.cancel) }
+            await group.waitForAll()
+        }
+    }
+
     // MARK: Public
 
     /// Creates a new cancellation source object.
@@ -59,6 +69,49 @@ public actor CancellationSource {
     /// - Returns: The newly created cancellation source.
     public init() { }
 
+    #if swift(>=5.7)
+    /// Creates a new cancellation source object linking to all the provided cancellation sources.
+    ///
+    /// Initiating cancellation in any of the provided cancellation sources
+    /// will ensure newly created cancellation source receive cancellation event.
+    ///
+    /// - Parameter sources: The cancellation sources the newly created object will be linked to.
+    ///
+    /// - Returns: The newly created cancellation source.
+    public nonisolated init(linkedWith sources: [CancellationSource]) async {
+        await withTaskGroup(of: Void.self) { group in
+            sources.forEach { source in
+                group.addTask { await source._addSource(self) }
+            }
+            await group.waitForAll()
+        }
+    }
+
+    /// Creates a new cancellation source object linking to all the provided cancellation sources.
+    ///
+    /// Initiating cancellation in any of the provided cancellation sources
+    /// will ensure newly created cancellation source receive cancellation event.
+    ///
+    /// - Parameter sources: The cancellation sources the newly created object will be linked to.
+    ///
+    /// - Returns: The newly created cancellation source.
+    public init(linkedWith sources: CancellationSource...) async {
+        await self.init(linkedWith: sources)
+    }
+
+    /// Creates a new cancellation source object
+    /// and triggers cancellation event on this object after specified timeout.
+    ///
+    /// - Parameter nanoseconds: The delay after which cancellation event triggered.
+    ///
+    /// - Returns: The newly created cancellation source.
+    public init(cancelAfterNanoseconds nanoseconds: UInt64) {
+        self.init()
+        Task { [weak self] in
+            try await self?.cancel(afterNanoseconds: nanoseconds)
+        }
+    }
+    #else
     /// Creates a new cancellation source object linking to all the provided cancellation sources.
     ///
     /// Initiating cancellation in any of the provided cancellation sources
@@ -100,6 +153,7 @@ public actor CancellationSource {
             try await self?.cancel(afterNanoseconds: nanoseconds)
         }
     }
+    #endif
 
     /// Register task for cooperative cancellation when cancellation event received on cancellation source.
     ///
@@ -120,10 +174,7 @@ public actor CancellationSource {
     public func cancel() async {
         registeredTasks.forEach { $1() }
         registeredTasks = [:]
-        await withTaskGroup(of: Void.self) { group in
-            linkedSources.forEach { group.addTask(operation: $0.cancel) }
-            await group.waitForAll()
-        }
+        await _propagateCancellation()
     }
 
     /// Trigger cancellation event after provided delay,
@@ -143,9 +194,8 @@ public extension Task {
     /// Runs the given non-throwing operation asynchronously as part of a new task on behalf of the current actor,
     /// with the provided cancellation source controlling cooperative cancellation.
     ///
-    /// A child task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
-    /// In the event of cancellation child task is cancelled, while returning the value in the returned task.
-    /// In case you want to register and track the top-level task for cancellation use the async initializer instead.
+    /// A top-level task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
+    /// In the event of cancellation top-level task is cancelled, while returning the value in the returned task.
     ///
     /// - Parameters:
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
@@ -153,6 +203,8 @@ public extension Task {
     ///   - operation: The operation to perform.
     ///
     /// - Returns: The newly created task.
+    /// - Note: In case you want to register and track the top-level task
+    ///         for cancellation use the async initializer instead.
     @discardableResult
     init(
         priority: TaskPriority? = nil,
@@ -169,9 +221,8 @@ public extension Task {
     /// Runs the given throwing operation asynchronously as part of a new task on behalf of the current actor,
     /// with the provided cancellation source controlling cooperative cancellation.
     ///
-    /// A child task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
-    /// In the event of cancellation child task is cancelled, while propagating error in the returned task.
-    /// In case you want to register and track the top-level task for cancellation use the async initializer instead.
+    /// A  top-level task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
+    /// In the event of cancellation  top-level task is cancelled, while propagating error in the returned task.
     ///
     /// - Parameters:
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
@@ -179,6 +230,8 @@ public extension Task {
     ///   - operation: The operation to perform.
     ///
     /// - Returns: The newly created task.
+    /// - Note: In case you want to register and track the top-level task
+    ///         for cancellation use the async initializer instead.
     @discardableResult
     init(
         priority: TaskPriority? = nil,
@@ -195,16 +248,17 @@ public extension Task {
     /// Runs the given non-throwing operation asynchronously as part of a new task,
     /// with the provided cancellation source controlling cooperative cancellation.
     ///
-    /// A child task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
-    /// In the event of cancellation child task is cancelled, while returning the value in the returned task.
-    /// In case you want to register and track the top-level task for cancellation use the async initializer instead.
+    /// A top-level task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
+    /// In the event of cancellation top-level task is cancelled, while returning the value in the returned task.
     ///
     /// - Parameters:
-    ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
+    ///   - priority: The priority of the task.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
     ///
     /// - Returns: The newly created task.
+    /// - Note: In case you want to register and track the top-level task
+    ///         for cancellation use the async initializer instead.
     @discardableResult
     static func detached(
         priority: TaskPriority? = nil,
@@ -221,16 +275,17 @@ public extension Task {
     /// Runs the given throwing operation asynchronously as part of a new task,
     /// with the provided cancellation source controlling cooperative cancellation.
     ///
-    /// A child task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
-    /// In the event of cancellation child task is cancelled, while returning the value in the returned task.
-    /// In case you want to register and track the top-level task for cancellation use the async initializer instead.
+    /// A top-level task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
+    /// In the event of cancellation top-level task is cancelled, while returning the value in the returned task.
     ///
     /// - Parameters:
-    ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
+    ///   - priority: The priority of the task.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
     ///
     /// - Returns: The newly created task.
+    /// - Note: In case you want to register and track the top-level task
+    ///         for cancellation use the async initializer instead.
     @discardableResult
     static func detached(
         priority: TaskPriority? = nil,
@@ -292,7 +347,7 @@ public extension Task {
     /// The created task will be cancelled when cancellation event triggered on the provided cancellation source.
     ///
     /// - Parameters:
-    ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
+    ///   - priority: The priority of the task.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
     ///
@@ -314,7 +369,7 @@ public extension Task {
     /// The created task will be cancelled when cancellation event triggered on the provided cancellation source.
     ///
     /// - Parameters:
-    ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
+    ///   - priority: The priority of the task.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
     ///   - operation: The operation to perform.
     ///

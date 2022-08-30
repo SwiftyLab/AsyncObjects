@@ -1,6 +1,7 @@
 import XCTest
 @testable import AsyncObjects
 
+@MainActor
 class AsyncSemaphoreTests: XCTestCase {
 
     func checkSemaphoreWait(

@@ -1,4 +1,8 @@
+#if swift(>=5.7)
+import Foundation
+#else
 @preconcurrency import Foundation
+#endif
 import OrderedCollections
 
 /// An event object that controls access to a resource between high and low priority tasks
@@ -53,6 +57,11 @@ public actor AsyncCountdownEvent: AsyncObject {
         _ continuation: Continuation,
         withKey key: UUID
     ) {
+        guard !isSet, continuations.isEmpty else {
+            currentCount += 1
+            continuation.resume()
+            return
+        }
         continuations[key] = continuation
     }
 
@@ -71,6 +80,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// - Parameter number: The number to decrement count by.
     @inlinable
     func _decrementCount(by number: UInt = 1) {
+        defer { _resumeContinuations() }
         guard currentCount > 0 else { return }
         currentCount -= number
     }
@@ -94,7 +104,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    func _withPromisedContinuation() async throws {
+    nonisolated func _withPromisedContinuation() async throws {
         let key = UUID()
         try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in
@@ -102,7 +112,9 @@ public actor AsyncCountdownEvent: AsyncObject {
             }
         } operation: { () -> Continuation.Success in
             try await Continuation.with { continuation in
-                self._addContinuation(continuation, withKey: key)
+                Task { [weak self] in
+                    await self?._addContinuation(continuation, withKey: key)
+                }
             }
         }
     }
@@ -176,7 +188,6 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// - Parameter count: The number of signals to register.
     public func signal(repeat count: UInt) {
         _decrementCount(by: count)
-        _resumeContinuations()
     }
 
     /// Waits for, or increments, a countdown event.
@@ -187,7 +198,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// Use this to wait for high priority tasks completion to start low priority ones.
     @Sendable
     public func wait() async {
-        if isSet { currentCount += 1; return }
+        guard !isSet else { currentCount += 1; return }
         try? await _withPromisedContinuation()
     }
 }

@@ -36,7 +36,8 @@ let package = Package(
         ),
         .testTarget(
             name: "AsyncObjectsTests",
-            dependencies: ["AsyncObjects"]
+            dependencies: ["AsyncObjects"],
+            swiftSettings: testingSwiftSettings
         ),
     ]
 )
@@ -72,6 +73,25 @@ var swiftSettings: [SwiftSetting] {
     ] != nil {
         swiftSettings.append(
             .define("ASYNCOBJECTS_USE_CHECKEDCONTINUATION")
+        )
+    }
+
+    return swiftSettings
+}
+
+var testingSwiftSettings: [SwiftSetting] {
+    var swiftSettings: [SwiftSetting] = []
+
+    if ProcessInfo.processInfo.environment[
+        "SWIFTCI_CONCURRENCY_CHECKS"
+    ] != nil {
+        swiftSettings.append(
+            .unsafeFlags([
+                "-Xfrontend",
+                "-warn-concurrency",
+                "-enable-actor-data-race-checks",
+                "-require-explicit-sendable",
+            ])
         )
     }
 

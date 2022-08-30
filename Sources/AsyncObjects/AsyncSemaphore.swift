@@ -1,4 +1,8 @@
+#if swift(>=5.7)
+import Foundation
+#else
 @preconcurrency import Foundation
+#endif
 import OrderedCollections
 
 /// An object that controls access to a resource across multiple task contexts through use of a traditional counting semaphore.
@@ -37,6 +41,7 @@ public actor AsyncSemaphore: AsyncObject {
         _ continuation: Continuation,
         withKey key: UUID
     ) {
+        guard count <= 0 else { continuation.resume(); return }
         continuations[key] = continuation
     }
 
@@ -67,7 +72,7 @@ public actor AsyncSemaphore: AsyncObject {
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    func _withPromisedContinuation() async throws {
+    nonisolated func _withPromisedContinuation() async throws {
         let key = UUID()
         try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in
@@ -75,7 +80,9 @@ public actor AsyncSemaphore: AsyncObject {
             }
         } operation: { () -> Continuation.Success in
             try await Continuation.with { continuation in
-                self._addContinuation(continuation, withKey: key)
+                Task { [weak self] in
+                    await self?._addContinuation(continuation, withKey: key)
+                }
             }
         }
     }
@@ -117,7 +124,7 @@ public actor AsyncSemaphore: AsyncObject {
     @Sendable
     public func wait() async {
         count -= 1
-        if count > 0 { return }
+        guard count <= 0 else { return }
         try? await _withPromisedContinuation()
     }
 }

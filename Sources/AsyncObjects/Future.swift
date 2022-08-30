@@ -1,4 +1,8 @@
+#if swift(>=5.7)
+import Foundation
+#else
 @preconcurrency import Foundation
+#endif
 
 /// An object that eventually produces a single value and then finishes or fails.
 ///
@@ -40,6 +44,7 @@ public actor Future<Output: Sendable, Failure: Error> {
         _ continuation: Continuation,
         withKey key: UUID = .init()
     ) {
+        if let result = result { continuation.resume(with: result); return }
         continuations[key] = continuation
     }
 
@@ -117,6 +122,21 @@ public actor Future<Output: Sendable, Failure: Error> {
 
 // MARK: Non-Throwing Future
 extension Future where Failure == Never {
+    /// Suspends the current task, then calls the given closure with a non-throwing continuation for the current task.
+    ///
+    /// Spins up a new continuation and requests to track it with key by invoking `_addContinuation`.
+    /// This operation doesn't check for cancellation.
+    ///
+    /// - Returns: The value continuation is resumed with.
+    @inlinable
+    nonisolated func _withPromisedContinuation() async -> Output {
+        return await Continuation.with { continuation in
+            Task { [weak self] in
+                await self?._addContinuation(continuation)
+            }
+        }
+    }
+
     /// The published value of the future, delivered asynchronously.
     ///
     /// This property exposes the fulfilled value for the `Future` asynchronously.
@@ -125,7 +145,7 @@ extension Future where Failure == Never {
     public var value: Output {
         get async {
             if let result = result { return try! result.get() }
-            return await Continuation.with { self._addContinuation($0) }
+            return await _withPromisedContinuation()
         }
     }
 
@@ -245,6 +265,7 @@ extension Future where Failure == Never {
                 if let first = await group.next() {
                     promise(.success(first))
                 }
+                group.cancelAll()
             }
         }
     }
@@ -316,7 +337,7 @@ extension Future where Failure == Error {
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    func _withPromisedContinuation() async throws -> Output {
+    nonisolated func _withPromisedContinuation() async throws -> Output {
         let key = UUID()
         let value = try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in
@@ -324,7 +345,9 @@ extension Future where Failure == Error {
             }
         } operation: { () -> Continuation.Success in
             let value = try await Continuation.with { continuation in
-                self._addContinuation(continuation, withKey: key)
+                Task { [weak self] in
+                    await self?._addContinuation(continuation, withKey: key)
+                }
             }
             return value
         }
@@ -480,12 +503,11 @@ extension Future where Failure == Error {
                 do {
                     if let first = try await group.next() {
                         promise(.success(first))
-                        group.cancelAll()
                     }
                 } catch {
                     promise(.failure(error))
-                    group.cancelAll()
                 }
+                group.cancelAll()
             }
         }
     }
@@ -539,7 +561,6 @@ extension Future where Failure == Error {
                     switch item {
                     case .success(let value):
                         promise(.success(value))
-                        group.cancelAll()
                         fulfilled = true
                         break iterateFuture
                     case .failure:
@@ -549,8 +570,8 @@ extension Future where Failure == Error {
 
                 if !fulfilled {
                     promise(.failure(CancellationError()))
-                    group.cancelAll()
                 }
+                group.cancelAll()
             }
         }
     }

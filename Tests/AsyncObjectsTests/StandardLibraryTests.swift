@@ -1,6 +1,7 @@
 import XCTest
 
 /// Tests inner workings of structured concurrency
+@MainActor
 class StandardLibraryTests: XCTestCase {
 
     func testTaskValueFetchingCancelation() async throws {
@@ -47,50 +48,45 @@ class StandardLibraryTests: XCTestCase {
     }
 
     @TaskLocal
-    static var traceID: Int = 0
-    func testTaskLocalVariable() {
+    nonisolated static var traceID: Int = 0
+    func testTaskLocalVariable() async {
         func call(_ value: Int) {
             XCTAssertEqual(Self.traceID, value)
         }
 
         XCTAssertEqual(Self.traceID, 0)
         // bind the value
-        Self.$traceID.withValue(1234) {
+        await Self.$traceID.withValue(1234) {
             XCTAssertEqual(Self.traceID, 1234)
             call(1234)
+
+            await withCheckedContinuation {
+                (continuation: CheckedContinuation<Void, Never>) in
+                XCTAssertEqual(Self.traceID, 1234)
+                // Dispatch queue closure execution doesn't
+                // inherit task context and task locals
+                DispatchQueue.global(qos: .default).async {
+                    XCTAssertEqual(Self.traceID, 0)
+                    continuation.resume()
+                }
+            }
 
             // unstructured tasks inherit task locals by copying
             Task {
                 XCTAssertEqual(Self.traceID, 1234)
+
+                Task {
+                    XCTAssertEqual(Self.traceID, 1234)
+                }
             }
 
             // detached tasks do not inherit task-local values
             Task.detached {
                 XCTAssertEqual(Self.traceID, 0)
-            }
-        }
-        XCTAssertEqual(Self.traceID, 0)
-    }
 
-    func testNestedTaskLocalVariable() {
-        func call(_ value: Int) {
-            XCTAssertEqual(Self.traceID, value)
-        }
-
-        XCTAssertEqual(Self.traceID, 0)
-        // bind the value
-        Self.$traceID.withValue(1234) {
-            XCTAssertEqual(Self.traceID, 1234)
-            call(1234)
-
-            // unstructured tasks inherit task locals by copying
-            Task {
-                XCTAssertEqual(Self.traceID, 1234)
-            }
-
-            // detached tasks do not inherit task-local values
-            Task.detached {
-                XCTAssertEqual(Self.traceID, 0)
+                Task {
+                    XCTAssertEqual(Self.traceID, 0)
+                }
             }
 
             Self.$traceID.withValue(12345) {
@@ -100,11 +96,19 @@ class StandardLibraryTests: XCTestCase {
                 // unstructured tasks inherit task locals by copying
                 Task {
                     XCTAssertEqual(Self.traceID, 12345)
+
+                    Task {
+                        XCTAssertEqual(Self.traceID, 12345)
+                    }
                 }
 
                 // detached tasks do not inherit task-local values
                 Task.detached {
                     XCTAssertEqual(Self.traceID, 0)
+
+                    Task {
+                        XCTAssertEqual(Self.traceID, 0)
+                    }
                 }
             }
         }
@@ -118,7 +122,7 @@ class StandardLibraryTests: XCTestCase {
     }
 
     @TaskLocal
-    static var localRef: TaskLocalClass!
+    nonisolated static var localRef: TaskLocalClass!
     func testTaskLocalVariableWithReferenceType() {
         @Sendable
         func call(label: String, fromFunction function: String = #function) {

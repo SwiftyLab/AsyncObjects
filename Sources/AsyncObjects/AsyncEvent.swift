@@ -1,4 +1,8 @@
+#if swift(>=5.7)
+import Foundation
+#else
 @preconcurrency import Foundation
+#endif
 
 /// An object that controls execution of tasks depending on the signal state.
 ///
@@ -14,7 +18,8 @@ public actor AsyncEvent: AsyncObject {
     @usableFromInline
     private(set) var continuations: [UUID: Continuation] = [:]
     /// Indicates whether current state of event is signalled.
-    private var signalled: Bool
+    @usableFromInline
+    var signalled: Bool
 
     // MARK: Internal
 
@@ -28,6 +33,7 @@ public actor AsyncEvent: AsyncObject {
         _ continuation: Continuation,
         withKey key: UUID
     ) {
+        guard !signalled else { continuation.resume(); return }
         continuations[key] = continuation
     }
 
@@ -50,7 +56,7 @@ public actor AsyncEvent: AsyncObject {
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    func _withPromisedContinuation() async throws {
+    nonisolated func _withPromisedContinuation() async throws {
         let key = UUID()
         try await withTaskCancellationHandler { [weak self] in
             Task { [weak self] in
@@ -58,7 +64,9 @@ public actor AsyncEvent: AsyncObject {
             }
         } operation: { () -> Continuation.Success in
             try await Continuation.with { continuation in
-                self._addContinuation(continuation, withKey: key)
+                Task { [weak self] in
+                    await self?._addContinuation(continuation, withKey: key)
+                }
             }
         }
     }

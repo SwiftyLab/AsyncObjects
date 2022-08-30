@@ -2,9 +2,16 @@ import XCTest
 import Dispatch
 @testable import AsyncObjects
 
+@MainActor
 class TaskOperationTests: XCTestCase {
     #if canImport(Darwin)
+    let runOperationQueueTests = true
+    #else
+    let runOperationQueueTests = false
+    #endif
+
     func testTaskOperation() async throws {
+        try XCTSkipUnless(runOperationQueueTests)
         let queue = OperationQueue()
         let operation = TaskOperation {
             (try? await Self.sleep(seconds: 3)) != nil
@@ -13,26 +20,19 @@ class TaskOperationTests: XCTestCase {
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
         XCTAssertFalse(operation.isCancelled)
-        let time = DispatchTime.now()
         queue.addOperation(operation)
         expectation(
             for: NSPredicate { _, _ in operation.isExecuting },
             evaluatedWith: nil,
             handler: nil
         )
-        await waitForExpectations(timeout: 2)
+        waitForExpectations(timeout: 2)
         await GlobalContinuation<Void, Never>.with { continuation in
             DispatchQueue.global(qos: .default).async {
                 operation.waitUntilFinished()
                 continuation.resume()
             }
         }
-        XCTAssertEqual(
-            3,
-            Int(
-                DispatchTime.now().uptimeNanoseconds - time.uptimeNanoseconds
-            ) / Int(1E9)
-        )
         XCTAssertTrue(operation.isFinished)
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isCancelled)
@@ -43,6 +43,7 @@ class TaskOperationTests: XCTestCase {
     }
 
     func testTaskOperationCancellation() async throws {
+        try XCTSkipUnless(runOperationQueueTests)
         let queue = OperationQueue()
         let operation = TaskOperation {
             (try? await Self.sleep(seconds: 3)) != nil
@@ -56,7 +57,7 @@ class TaskOperationTests: XCTestCase {
             evaluatedWith: nil,
             handler: nil
         )
-        await waitForExpectations(timeout: 2)
+        waitForExpectations(timeout: 2)
         operation.cancel()
         await GlobalContinuation<Void, Never>.with { continuation in
             DispatchQueue.global(qos: .default).async {
@@ -73,7 +74,8 @@ class TaskOperationTests: XCTestCase {
         }
     }
 
-    func testThrowingTaskOperation() throws {
+    func testThrowingTaskOperation() async throws {
+        try XCTSkipUnless(runOperationQueueTests)
         let queue = OperationQueue()
         let operation = TaskOperation {
             try await Self.sleep(seconds: 3)
@@ -88,7 +90,12 @@ class TaskOperationTests: XCTestCase {
             handler: nil
         )
         waitForExpectations(timeout: 2)
-        operation.waitUntilFinished()
+        await GlobalContinuation<Void, Never>.with { continuation in
+            DispatchQueue.global(qos: .default).async {
+                operation.waitUntilFinished()
+                continuation.resume()
+            }
+        }
         XCTAssertTrue(operation.isFinished)
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isCancelled)
@@ -108,7 +115,7 @@ class TaskOperationTests: XCTestCase {
             evaluatedWith: nil,
             handler: nil
         )
-        await waitForExpectations(timeout: 2)
+        waitForExpectations(timeout: 2)
         operation.cancel()
         await GlobalContinuation<Void, Never>.with { continuation in
             DispatchQueue.global(qos: .default).async {
@@ -120,7 +127,6 @@ class TaskOperationTests: XCTestCase {
         XCTAssertFalse(operation.isExecuting)
         XCTAssertTrue(operation.isCancelled)
     }
-    #endif
 
     func testTaskOperationAsyncWait() async throws {
         let operation = TaskOperation {
@@ -178,7 +184,7 @@ class TaskOperationTests: XCTestCase {
     func createOperationWithChildTasks(
         track: Bool = false
     ) -> TaskOperation<Void> {
-        return TaskOperation(trackChildTasks: track) {
+        return TaskOperation(trackUnstructuredTasks: track) {
             Task {
                 try await Self.sleep(seconds: 1)
             }

@@ -2,25 +2,38 @@ import XCTest
 import Dispatch
 @testable import AsyncObjects
 
+@MainActor
 extension XCTestCase {
     static func checkExecInterval(
+        name: String? = nil,
         durationInSeconds seconds: Int = 0,
         for task: () async throws -> Void
     ) async rethrows {
         let time = DispatchTime.now()
         try await task()
-        XCTAssertEqual(
-            seconds,
-            Int(
-                (Double(
-                    DispatchTime.now().uptimeNanoseconds
-                        - time.uptimeNanoseconds
-                ) / 1E9).rounded(.toNearestOrAwayFromZero)
+        let assertions = {
+            XCTAssertEqual(
+                seconds,
+                Int(
+                    (Double(
+                        DispatchTime.now().uptimeNanoseconds
+                            - time.uptimeNanoseconds
+                    ) / 1E9).rounded(.toNearestOrAwayFromZero)
+                )
             )
-        )
+        }
+
+        if let name = name {
+            XCTContext.runActivity(named: name) { activity in
+                assertions()
+            }
+        } else {
+            assertions()
+        }
     }
 
     static func checkExecInterval(
+        name: String? = nil,
         durationInSeconds seconds: Double = 0,
         roundedUpTo digit: UInt = 1,
         for task: () async throws -> Void
@@ -32,13 +45,24 @@ extension XCTestCase {
             Double(
                 DispatchTime.now().uptimeNanoseconds - time.uptimeNanoseconds
             ) * order
-        XCTAssertEqual(
-            seconds,
-            (duration / 1E9).rounded() / order
-        )
+        let assertions = {
+            XCTAssertEqual(
+                seconds,
+                (duration / 1E9).rounded() / order
+            )
+        }
+
+        if let name = name {
+            XCTContext.runActivity(named: name) { activity in
+                assertions()
+            }
+        } else {
+            assertions()
+        }
     }
 
     static func checkExecInterval<R: RangeExpression>(
+        name: String? = nil,
         durationInRange range: R,
         for task: () async throws -> Void
     ) async rethrows where R.Bound == Int {
@@ -49,13 +73,24 @@ extension XCTestCase {
                 DispatchTime.now().uptimeNanoseconds - time.uptimeNanoseconds
             ) / 1E9).rounded(.toNearestOrAwayFromZero)
         )
-        XCTAssertTrue(
-            range.contains(duration),
-            "\(duration) not present in \(range)"
-        )
+        let assertions = {
+            XCTAssertTrue(
+                range.contains(duration),
+                "\(duration) not present in \(range)"
+            )
+        }
+
+        if let name = name {
+            XCTContext.runActivity(named: name) { activity in
+                assertions()
+            }
+        } else {
+            assertions()
+        }
     }
 
     static func checkExecInterval<R: RangeExpression>(
+        name: String? = nil,
         durationInRange range: R,
         for task: () async throws -> Void
     ) async rethrows where R.Bound == Double {
@@ -65,10 +100,20 @@ extension XCTestCase {
             Double(
                 DispatchTime.now().uptimeNanoseconds - time.uptimeNanoseconds
             ) / 1E9
-        XCTAssertTrue(
-            range.contains(duration),
-            "\(duration) not present in \(range)"
-        )
+        let assertions = {
+            XCTAssertTrue(
+                range.contains(duration),
+                "\(duration) not present in \(range)"
+            )
+        }
+
+        if let name = name {
+            XCTContext.runActivity(named: name) { activity in
+                assertions()
+            }
+        } else {
+            assertions()
+        }
     }
 
     static func sleep(seconds: UInt64) async throws {

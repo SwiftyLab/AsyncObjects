@@ -1,6 +1,7 @@
 import XCTest
 @testable import AsyncObjects
 
+@MainActor
 class AsyncCountdownEventTests: XCTestCase {
 
     func testCountdownWaitWithoutIncrement() async throws {
@@ -113,7 +114,7 @@ class AsyncCountdownEventTests: XCTestCase {
         Task.detached {
             try await Self.sleep(seconds: 3)
             await event.reset(to: 2)
-            Self.signalCountdownEvent(event, times: 10)
+            await Self.signalCountdownEvent(event, times: 10)
         }
         await Self.checkExecInterval(durationInSeconds: 4) {
             await event.wait()
@@ -138,7 +139,7 @@ class AsyncCountdownEventTests: XCTestCase {
         Task.detached {
             try await Self.sleep(seconds: 3)
             await event.reset(to: 6)
-            Self.signalCountdownEvent(event, times: 10)
+            await Self.signalCountdownEvent(event, times: 10)
         }
         await Self.checkExecInterval(durationInSeconds: 3) {
             await event.wait(forSeconds: 3)

@@ -2,6 +2,7 @@ import XCTest
 import Dispatch
 @testable import AsyncObjects
 
+@MainActor
 class NonThrowingFutureTests: XCTestCase {
 
     func testFutureFulfilledInitialization() async throws {
