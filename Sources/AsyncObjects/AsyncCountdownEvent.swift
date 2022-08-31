@@ -47,6 +47,15 @@ public actor AsyncCountdownEvent: AsyncObject {
 
     // MARK: Internal
 
+    /// Resume provided continuation with additional changes based on the associated flags.
+    ///
+    /// - Parameter continuation: The queued continuation to resume.
+    @inlinable
+    func _resumeContinuation(_ continuation: Continuation) {
+        currentCount += 1
+        continuation.resume()
+    }
+
     /// Add continuation with the provided key in `continuations` map.
     ///
     /// - Parameters:
@@ -58,8 +67,7 @@ public actor AsyncCountdownEvent: AsyncObject {
         withKey key: UUID
     ) {
         guard !isSet, continuations.isEmpty else {
-            currentCount += 1
-            continuation.resume()
+            _resumeContinuation(continuation)
             return
         }
         continuations[key] = continuation
@@ -90,8 +98,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     func _resumeContinuations() {
         while !continuations.isEmpty && isSet {
             let (_, continuation) = continuations.removeFirst()
-            continuation.resume()
-            self.currentCount += 1
+            _resumeContinuation(continuation)
         }
     }
 

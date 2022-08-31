@@ -162,24 +162,37 @@ public actor TaskQueue: AsyncObject {
             || flags.wait(forCurrent: currentRunning)
     }
 
+    /// Resume provided continuation with additional changes based on the associated flags.
+    ///
+    /// - Parameter continuation: The queued continuation to resume.
+    /// - Returns: Whether queue is free to proceed scheduling other tasks.
+    @inlinable
+    @discardableResult
+    func _resumeQueuedContinuation(
+        _ continuation: QueuedContinuation
+    ) -> Bool {
+        currentRunning += 1
+        continuation.value.resume()
+        guard continuation.flags.isBlockEnabled else { return true }
+        blocked = true
+        return false
+    }
+
     /// Add continuation with the provided key and associated flags to queue.
     ///
     /// - Parameters:
-    ///   - flags: The flags associated with continuation operation.
     ///   - key: The key in the continuation queue.
-    ///   - continuation: The continuation to add to queue.
+    ///   - continuation: The continuation and flags to add to queue.
     @inlinable
     func _queueContinuation(
-        withFlags flags: Flags = [],
         atKey key: UUID = .init(),
-        _ continuation: Continuation
+        _ continuation: QueuedContinuation
     ) {
-        guard _wait(whenFlags: flags) else {
-            currentRunning += 1
-            continuation.resume()
+        guard _wait(whenFlags: continuation.flags) else {
+            _resumeQueuedContinuation(continuation)
             return
         }
-        queue[key] = (value: continuation, flags: flags)
+        queue[key] = continuation
     }
 
     /// Remove continuation associated with provided key from queue.
@@ -218,16 +231,12 @@ public actor TaskQueue: AsyncObject {
     /// and operation flags preconditions satisfied.
     @inlinable
     func _resumeQueuedTasks() {
-        while let (_, (continuation, flags)) = queue.elements.first,
+        while let (_, continuation) = queue.elements.first,
             !blocked,
-            !flags.wait(forCurrent: currentRunning)
+            !continuation.flags.wait(forCurrent: currentRunning)
         {
             queue.removeFirst()
-            currentRunning += 1
-            continuation.resume()
-            guard flags.isBlockEnabled else { continue }
-            blocked = true
-            break
+            guard _resumeQueuedContinuation(continuation) else { break }
         }
     }
 
@@ -252,9 +261,8 @@ public actor TaskQueue: AsyncObject {
             try await Continuation.with { continuation in
                 Task { [weak self] in
                     await self?._queueContinuation(
-                        withFlags: flags,
                         atKey: key,
-                        continuation
+                        (value: continuation, flags: flags)
                     )
                 }
             }
