@@ -18,8 +18,6 @@ import Dispatch
 public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     @unchecked Sendable
 {
-    /// The type used to track completion of provided operation and unstructured tasks created in it.
-    private typealias Tracker = TaskTracker
     /// The asynchronous action to perform as part of the operation..
     private let underlyingAction: @Sendable () async throws -> R
     /// The top-level task that executes asynchronous action provided
@@ -29,18 +27,23 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// synchronize data access and modifications.
     @usableFromInline
     let locker: Locker
+
+    /// A type representing a set of behaviors for the executed
+    /// task type and task completion behavior.
+    ///
+    /// ``TaskOperation`` determines the execution behavior of
+    /// provided action as task based on the provided flags.
+    public typealias Flags = TaskOperationFlags
     /// The priority of top-level task executed.
     ///
     /// In case of `nil` priority from `Task.currentPriority`
     /// of task that starts the operation used.
     public let priority: TaskPriority?
-    /// If completion of unstructured tasks created as part of provided task
-    /// should be tracked.
+    /// A set of behaviors for the executed task type and task completion behavior.
     ///
-    /// If true, operation only completes if the provided asynchronous action
-    /// and all of its created unstructured task completes.
-    /// Otherwise, operation completes if the provided action itself completes.
-    public let shouldTrackUnstructuredTasks: Bool
+    /// Provided flags determine the execution behavior of
+    /// the action as task.
+    public let flags: Flags
 
     /// A Boolean value indicating whether the operation executes its task asynchronously.
     ///
@@ -119,14 +122,14 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// - Returns: The newly created asynchronous operation.
     public init(
-        trackUnstructuredTasks shouldTrackUnstructuredTasks: Bool = false,
         synchronizedWith locker: Locker = .init(),
         priority: TaskPriority? = nil,
+        flags: Flags = [],
         operation: @escaping @Sendable () async throws -> R
     ) {
-        self.shouldTrackUnstructuredTasks = shouldTrackUnstructuredTasks
         self.locker = locker
         self.priority = priority
+        self.flags = flags
         self.underlyingAction = operation
         super.init()
     }
@@ -154,22 +157,12 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// as part of a new top-level task on behalf of the current actor.
     public override func main() {
         guard isExecuting, execTask == nil else { return }
-        execTask = Task(priority: priority) { [weak self] in
-            guard
-                let action = self?.underlyingAction,
-                let trackUnstructuredTasks = self?.shouldTrackUnstructuredTasks
-            else { throw CancellationError() }
-            let final = { @Sendable[weak self] in self?._finish(); return }
-            return trackUnstructuredTasks
-                ? try await Tracker.$current.withValue(
-                    .init(onComplete: final),
-                    operation: action
-                )
-                : try await {
-                    defer { final() }
-                    return try await action()
-                }()
-        }
+        let final = { @Sendable[weak self] in self?._finish(); return }
+        execTask = flags.createTask(
+            priority: priority,
+            operation: underlyingAction,
+            onComplete: final
+        )
     }
 
     /// Advises the operation object that it should stop executing its task.
@@ -275,3 +268,86 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
 /// if the operation hasn't been started yet with either
 /// ``TaskOperation/start()`` or ``TaskOperation/signal()``.
 public struct EarlyInvokeError: Error, Sendable {}
+
+/// A set of behaviors for ``TaskOperation``s,
+/// such as the task type and task completion behavior.
+///
+/// ``TaskOperation`` determines the execution behavior of
+/// provided action as task based on the provided flags.
+public struct TaskOperationFlags: OptionSet, Sendable {
+    /// Indicates to ``TaskOperation``, completion of unstructured tasks
+    /// created as part of provided operation should be tracked.
+    ///
+    /// If provided, GCD operation only completes if the provided asynchronous action
+    /// and all of its created unstructured task completes.
+    /// Otherwise, operation completes if the provided action itself completes.
+    public static let trackUnstructuredTasks = Self.init(rawValue: 1 << 0)
+    /// Indicates to ``TaskOperation`` to disassociate action from the current execution context
+    /// by running as a new detached task.
+    ///
+    /// Provided action is executed asynchronously as part of a new top-level task,
+    /// with the provided task priority and without inheriting actor context that started
+    /// the GCD operation.
+    public static let detached = Self.init(rawValue: 1 << 1)
+
+    /// The type used to track completion of provided operation and unstructured tasks created in it.
+    private typealias Tracker = TaskTracker
+
+    /// Runs the given throwing operation asynchronously as part of a new top-level task
+    /// based on the current flags indicating whether to on behalf of the current actor
+    /// and whether to track unstructured tasks created in provided operation.
+    ///
+    /// - Parameters:
+    ///   - priority: The priority of the task that operation executes.
+    ///               Pass `nil` to use the priority from `Task.currentPriority`
+    ///               of task that starts the operation.
+    ///   - operation: The asynchronous operation to execute.
+    ///   - completion: The action to invoke when task completes.
+    ///
+    /// - Returns: A reference to the task.
+    fileprivate func createTask<R: Sendable>(
+        priority: TaskPriority? = nil,
+        operation: @escaping @Sendable () async throws -> R,
+        onComplete completion: @escaping @Sendable () -> Void
+    ) -> Task<R, Error> {
+        typealias LocalTask = Task<R, Error>
+        typealias ThrowingAction = @Sendable () async throws -> R
+        typealias TaskInitializer = (TaskPriority?, ThrowingAction) -> LocalTask
+
+        let initializer =
+            self.contains(.detached)
+            ? LocalTask.detached
+            : LocalTask.init
+        return initializer(priority) {
+            return self.contains(.trackUnstructuredTasks)
+                ? try await Tracker.$current.withValue(
+                    .init(onComplete: completion),
+                    operation: operation
+                )
+                : try await {
+                    defer { completion() }
+                    return try await operation()
+                }()
+        }
+    }
+
+    /// The corresponding value of the raw type.
+    ///
+    /// A new instance initialized with rawValue will be equivalent to this instance.
+    /// For example:
+    /// ```swift
+    /// print(TaskOperationFlags(rawValue: 1 << 1) == TaskOperationFlags.detached)
+    /// // Prints "true"
+    /// ```
+    public let rawValue: UInt8
+    /// Creates a new flag from the given raw value.
+    ///
+    /// - Parameter rawValue: The raw value of the flag set to create.
+    /// - Returns: The newly created flag set.
+    ///
+    /// - Note: Do not use this method to create flag,
+    ///         use the default flags provided instead.
+    public init(rawValue: UInt8) {
+        self.rawValue = rawValue
+    }
+}

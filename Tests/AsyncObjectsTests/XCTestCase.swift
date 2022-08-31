@@ -4,6 +4,26 @@ import Dispatch
 
 @MainActor
 extension XCTestCase {
+    private static var activitySupported = ProcessInfo.processInfo.environment
+        .keys.contains("__XCODE_BUILT_PRODUCTS_DIR_PATHS")
+
+    private static func runAssertions(
+        with name: String?,
+        _ assertions: () -> Void
+    ) {
+        #if canImport(Darwin)
+        if let name = name, activitySupported {
+            XCTContext.runActivity(named: name) { activity in
+                assertions()
+            }
+        } else {
+            assertions()
+        }
+        #else
+        assertions()
+        #endif
+    }
+
     static func checkExecInterval(
         name: String? = nil,
         durationInSeconds seconds: Int = 0,
@@ -22,14 +42,7 @@ extension XCTestCase {
                 )
             )
         }
-
-        if let name = name {
-            XCTContext.runActivity(named: name) { activity in
-                assertions()
-            }
-        } else {
-            assertions()
-        }
+        runAssertions(with: name, assertions)
     }
 
     static func checkExecInterval(
@@ -51,14 +64,7 @@ extension XCTestCase {
                 (duration / 1E9).rounded() / order
             )
         }
-
-        if let name = name {
-            XCTContext.runActivity(named: name) { activity in
-                assertions()
-            }
-        } else {
-            assertions()
-        }
+        runAssertions(with: name, assertions)
     }
 
     static func checkExecInterval<R: RangeExpression>(
@@ -79,14 +85,7 @@ extension XCTestCase {
                 "\(duration) not present in \(range)"
             )
         }
-
-        if let name = name {
-            XCTContext.runActivity(named: name) { activity in
-                assertions()
-            }
-        } else {
-            assertions()
-        }
+        runAssertions(with: name, assertions)
     }
 
     static func checkExecInterval<R: RangeExpression>(
@@ -106,14 +105,7 @@ extension XCTestCase {
                 "\(duration) not present in \(range)"
             )
         }
-
-        if let name = name {
-            XCTContext.runActivity(named: name) { activity in
-                assertions()
-            }
-        } else {
-            assertions()
-        }
+        runAssertions(with: name, assertions)
     }
 
     static func sleep(seconds: UInt64) async throws {

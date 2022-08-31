@@ -1,7 +1,6 @@
 import XCTest
 
 /// Tests inner workings of structured concurrency
-@MainActor
 class StandardLibraryTests: XCTestCase {
 
     func testTaskValueFetchingCancelation() async throws {

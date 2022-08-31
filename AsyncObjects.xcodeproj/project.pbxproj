@@ -21,7 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		64DDE914E91EBCF451EEB28E /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = 2F994B835A88B84F6C8AE38B /* AsyncObjects.docc */; };
+		15423F4ABF75D8A400B6C633 /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = 92104D54C38BC7BB7060DA49 /* AsyncObjects.docc */; };
 		OBJ_106 /* AsyncCountdownEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AsyncCountdownEvent.swift */; };
 		OBJ_107 /* AsyncEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AsyncEvent.swift */; };
 		OBJ_108 /* AsyncObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* AsyncObject.swift */; };
@@ -30,7 +30,7 @@
 		OBJ_111 /* Continuable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* Continuable.swift */; };
 		OBJ_112 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* Future.swift */; };
 		OBJ_113 /* Locker.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* Locker.swift */; };
-		OBJ_114 /* TaskGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_19 /* TaskGroup.swift */; };
+		OBJ_114 /* Task.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_19 /* Task.swift */; };
 		OBJ_115 /* TaskOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* TaskOperation.swift */; };
 		OBJ_116 /* TaskQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* TaskQueue.swift */; };
 		OBJ_117 /* TaskTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* TaskTracker.swift */; };
@@ -104,7 +104,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		2F994B835A88B84F6C8AE38B /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
+		92104D54C38BC7BB7060DA49 /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
 		OBJ_11 /* AsyncCountdownEvent.swift */ = {isa = PBXFileReference; path = AsyncCountdownEvent.swift; sourceTree = "<group>"; };
 		OBJ_12 /* AsyncEvent.swift */ = {isa = PBXFileReference; path = AsyncEvent.swift; sourceTree = "<group>"; };
 		OBJ_13 /* AsyncObject.swift */ = {isa = PBXFileReference; path = AsyncObject.swift; sourceTree = "<group>"; };
@@ -113,7 +113,7 @@
 		OBJ_16 /* Continuable.swift */ = {isa = PBXFileReference; path = Continuable.swift; sourceTree = "<group>"; };
 		OBJ_17 /* Future.swift */ = {isa = PBXFileReference; path = Future.swift; sourceTree = "<group>"; };
 		OBJ_18 /* Locker.swift */ = {isa = PBXFileReference; path = Locker.swift; sourceTree = "<group>"; };
-		OBJ_19 /* TaskGroup.swift */ = {isa = PBXFileReference; path = TaskGroup.swift; sourceTree = "<group>"; };
+		OBJ_19 /* Task.swift */ = {isa = PBXFileReference; path = Task.swift; sourceTree = "<group>"; };
 		OBJ_20 /* TaskOperation.swift */ = {isa = PBXFileReference; path = TaskOperation.swift; sourceTree = "<group>"; };
 		OBJ_21 /* TaskQueue.swift */ = {isa = PBXFileReference; path = TaskQueue.swift; sourceTree = "<group>"; };
 		OBJ_22 /* TaskTracker.swift */ = {isa = PBXFileReference; path = TaskTracker.swift; sourceTree = "<group>"; };
@@ -220,11 +220,11 @@
 				OBJ_16 /* Continuable.swift */,
 				OBJ_17 /* Future.swift */,
 				OBJ_18 /* Locker.swift */,
-				OBJ_19 /* TaskGroup.swift */,
+				OBJ_19 /* Task.swift */,
 				OBJ_20 /* TaskOperation.swift */,
 				OBJ_21 /* TaskQueue.swift */,
 				OBJ_22 /* TaskTracker.swift */,
-				2F994B835A88B84F6C8AE38B /* AsyncObjects.docc */,
+				92104D54C38BC7BB7060DA49 /* AsyncObjects.docc */,
 			);
 			name = AsyncObjects;
 			path = Sources/AsyncObjects;
@@ -556,11 +556,11 @@
 				OBJ_111 /* Continuable.swift in Sources */,
 				OBJ_112 /* Future.swift in Sources */,
 				OBJ_113 /* Locker.swift in Sources */,
-				OBJ_114 /* TaskGroup.swift in Sources */,
+				OBJ_114 /* Task.swift in Sources */,
 				OBJ_115 /* TaskOperation.swift in Sources */,
 				OBJ_116 /* TaskQueue.swift in Sources */,
 				OBJ_117 /* TaskTracker.swift in Sources */,
-				64DDE914E91EBCF451EEB28E /* AsyncObjects.docc in Sources */,
+				15423F4ABF75D8A400B6C633 /* AsyncObjects.docc in Sources */,
 			);
 		};
 		OBJ_126 /* Sources */ = {
