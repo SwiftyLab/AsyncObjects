@@ -184,7 +184,7 @@ class TaskOperationTests: XCTestCase {
     func createOperationWithChildTasks(
         track: Bool = false
     ) -> TaskOperation<Void> {
-        return TaskOperation(trackUnstructuredTasks: track) {
+        return TaskOperation(flags: track ? .trackUnstructuredTasks : []) {
             Task {
                 try await Self.sleep(seconds: 1)
             }
