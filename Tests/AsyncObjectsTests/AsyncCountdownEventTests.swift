@@ -155,7 +155,7 @@ class AsyncCountdownEventTests: XCTestCase {
             await event.reset(to: 2)
         }
         Self.signalCountdownEvent(event, times: 10)
-        await Self.checkExecInterval(durationInRange: 2.5...3.1) {
+        await Self.checkExecInterval(durationInRange: 2.5...3.2) {
             await event.wait()
         }
     }
@@ -169,6 +169,51 @@ class AsyncCountdownEventTests: XCTestCase {
         await event.wait()
         self.addTeardownBlock { [weak event] in
             XCTAssertNil(event)
+        }
+    }
+
+    func testWaitCancellationWhenTaskCancelled() async throws {
+        let event = AsyncCountdownEvent(initial: 1)
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                await event.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testWaitCancellationForAlreadyCancelledTask() async throws {
+        let event = AsyncCountdownEvent(initial: 1)
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                do {
+                    try await Self.sleep(seconds: 5)
+                    XCTFail("Unexpected task progression")
+                } catch {}
+                XCTAssertTrue(Task.isCancelled)
+                await event.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testConcurrentAccess() async {
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<10 {
+                group.addTask {
+                    let event = AsyncCountdownEvent(initial: 1)
+                    await Self.checkExecInterval(durationInSeconds: 0) {
+                        await withTaskGroup(of: Void.self) { group in
+                            group.addTask { await event.wait() }
+                            group.addTask { await event.signal() }
+                            await group.waitForAll()
+                        }
+                    }
+                }
+                await group.waitForAll()
+            }
         }
     }
 }

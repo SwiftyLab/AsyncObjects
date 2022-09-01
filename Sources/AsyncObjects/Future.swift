@@ -24,7 +24,10 @@ public actor Future<Output: Sendable, Failure: Error> {
     public typealias FutureResult = Result<Output, Failure>
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = GlobalContinuation<Output, Failure>
+    typealias Continuation = SafeContinuation<GlobalContinuation<Output, Failure>>
+    /// The platform dependent lock used to synchronize continuations tracking.
+    @usableFromInline
+    let locker: Locker = .init()
     /// The continuations stored with an associated key for all the suspended task
     /// that are waiting for future to be fulfilled.
     @usableFromInline
@@ -44,6 +47,7 @@ public actor Future<Output: Sendable, Failure: Error> {
         _ continuation: Continuation,
         withKey key: UUID = .init()
     ) {
+        guard !continuation.resumed else { return }
         if let result = result { continuation.resume(with: result); return }
         continuations[key] = continuation
     }
@@ -322,8 +326,7 @@ extension Future where Failure == Error {
     /// - Parameter key: The key in the map.
     @inlinable
     func _removeContinuation(withKey key: UUID) {
-        let continuation = continuations.removeValue(forKey: key)
-        continuation?.cancel()
+        continuations.removeValue(forKey: key)
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
@@ -339,19 +342,17 @@ extension Future where Failure == Error {
     @inlinable
     nonisolated func _withPromisedContinuation() async throws -> Output {
         let key = UUID()
-        let value = try await withTaskCancellationHandler { [weak self] in
+        return try await Continuation.withCancellation(
+            synchronizedWith: locker
+        ) {
             Task { [weak self] in
                 await self?._removeContinuation(withKey: key)
             }
-        } operation: { () -> Continuation.Success in
-            let value = try await Continuation.with { continuation in
-                Task { [weak self] in
-                    await self?._addContinuation(continuation, withKey: key)
-                }
+        } operation: { continuation in
+            Task { [weak self] in
+                await self?._addContinuation(continuation, withKey: key)
             }
-            return value
         }
-        return value
     }
 
     /// The published value of the future or an error, delivered asynchronously.

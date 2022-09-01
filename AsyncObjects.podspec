@@ -41,5 +41,6 @@ Pod::Spec.new do |s|
 
   s.test_spec do |ts|
     ts.source_files = "Tests/#{s.name}Tests/**/*.swift"
+    ts.scheme = { :parallelizable => true }
   end
 end

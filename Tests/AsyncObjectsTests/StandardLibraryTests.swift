@@ -151,4 +151,21 @@ class StandardLibraryTests: XCTestCase {
         call(label: "End")
         XCTAssertNil(Self.localRef)
     }
+
+    func testCancellationHandlerFromAlreadyCancelledTask() async throws {
+        let task = Task {
+            do {
+                try await Self.sleep(seconds: 5)
+            } catch {
+                await withTaskCancellationHandler {
+                    XCTAssertTrue(Task.isCancelled)
+                    print("[\(#function)] cancellable operation started")
+                } onCancel: {
+                    print("[\(#function)] cancellation handler called")
+                }
+            }
+        }
+        task.cancel()
+        await task.value
+    }
 }

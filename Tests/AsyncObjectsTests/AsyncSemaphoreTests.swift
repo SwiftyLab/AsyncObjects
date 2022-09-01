@@ -181,6 +181,51 @@ class AsyncSemaphoreTests: XCTestCase {
             XCTAssertNil(semaphore)
         }
     }
+
+    func testWaitCancellationWhenTaskCancelled() async throws {
+        let semaphore = AsyncSemaphore()
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                await semaphore.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testWaitCancellationForAlreadyCancelledTask() async throws {
+        let semaphore = AsyncSemaphore()
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                do {
+                    try await Self.sleep(seconds: 5)
+                    XCTFail("Unexpected task progression")
+                } catch {}
+                XCTAssertTrue(Task.isCancelled)
+                await semaphore.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testConcurrentAccess() async {
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<10 {
+                group.addTask {
+                    let semaphore = AsyncSemaphore(value: 1)
+                    await Self.checkExecInterval(durationInSeconds: 0) {
+                        await withTaskGroup(of: Void.self) { group in
+                            group.addTask { await semaphore.wait() }
+                            group.addTask { await semaphore.signal() }
+                            await group.waitForAll()
+                        }
+                    }
+                }
+                await group.waitForAll()
+            }
+        }
+    }
 }
 
 actor TaskTimeoutStore {

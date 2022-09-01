@@ -86,4 +86,49 @@ class AsyncEventTests: XCTestCase {
             XCTAssertNil(event)
         }
     }
+
+    func testWaitCancellationWhenTaskCancelled() async throws {
+        let event = AsyncEvent(signaledInitially: false)
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                await event.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testWaitCancellationForAlreadyCancelledTask() async throws {
+        let event = AsyncEvent(signaledInitially: false)
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                do {
+                    try await Self.sleep(seconds: 5)
+                    XCTFail("Unexpected task progression")
+                } catch {}
+                XCTAssertTrue(Task.isCancelled)
+                await event.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testConcurrentAccess() async {
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<10 {
+                group.addTask {
+                    let event = AsyncEvent(signaledInitially: false)
+                    await Self.checkExecInterval(durationInSeconds: 0) {
+                        await withTaskGroup(of: Void.self) { group in
+                            group.addTask { await event.wait() }
+                            group.addTask { await event.signal() }
+                            await group.waitForAll()
+                        }
+                    }
+                }
+                await group.waitForAll()
+            }
+        }
+    }
 }

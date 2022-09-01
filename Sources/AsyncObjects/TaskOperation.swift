@@ -190,7 +190,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     // MARK: AsyncObject
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = GlobalContinuation<Void, Error>
+    typealias Continuation = SafeContinuation<GlobalContinuation<Void, Error>>
     /// The continuations stored with an associated key for all the suspended task that are waiting for operation completion.
     @usableFromInline
     private(set) var continuations: [UUID: Continuation] = [:]
@@ -206,7 +206,8 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         withKey key: UUID
     ) {
         locker.perform {
-            if _isFinished { continuation.resume(); return }
+            guard !continuation.resumed else { return }
+            if isFinished { continuation.resume(); return }
             continuations[key] = continuation
         }
     }
@@ -217,10 +218,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// - Parameter key: The key in the map.
     @inlinable
     func _removeContinuation(withKey key: UUID) {
-        locker.perform {
-            let continuation = continuations.removeValue(forKey: key)
-            continuation?.cancel()
-        }
+        locker.perform { continuations.removeValue(forKey: key) }
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
@@ -234,11 +232,11 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     @inlinable
     func _withPromisedContinuation() async throws {
         let key = UUID()
-        try await withTaskCancellationHandler { [weak self] in
-            self?._removeContinuation(withKey: key)
-        } operation: { () -> Continuation.Success in
-            try await Continuation.with { continuation in
-                self._addContinuation(continuation, withKey: key)
+        try await Continuation.withCancellation(synchronizedWith: locker) {
+            Task { [weak self] in self?._removeContinuation(withKey: key) }
+        } operation: { continuation in
+            Task { [weak self] in
+                self?._addContinuation(continuation, withKey: key)
             }
         }
     }
@@ -267,6 +265,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
 /// Error is thrown by ``TaskOperation/result``
 /// if the operation hasn't been started yet with either
 /// ``TaskOperation/start()`` or ``TaskOperation/signal()``.
+@frozen
 public struct EarlyInvokeError: Error, Sendable {}
 
 /// A set of behaviors for ``TaskOperation``s,
@@ -274,6 +273,7 @@ public struct EarlyInvokeError: Error, Sendable {}
 ///
 /// ``TaskOperation`` determines the execution behavior of
 /// provided action as task based on the provided flags.
+@frozen
 public struct TaskOperationFlags: OptionSet, Sendable {
     /// Indicates to ``TaskOperation``, completion of unstructured tasks
     /// created as part of provided operation should be tracked.

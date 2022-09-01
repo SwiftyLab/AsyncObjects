@@ -737,6 +737,74 @@ class TaskQueueTests: XCTestCase {
             XCTAssertNil(queue)
         }
     }
+
+    func testWaitCancellationWhenTaskCancelled() async throws {
+        let queue = TaskQueue()
+        queue.addTask(flags: .barrier) {
+            try await Self.sleep(seconds: 10)
+        }
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                await queue.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testWaitCancellationForAlreadyCancelledTask() async throws {
+        let queue = TaskQueue()
+        queue.addTask(flags: .barrier) {
+            try await Self.sleep(seconds: 10)
+        }
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                do {
+                    try await Self.sleep(seconds: 5)
+                    XCTFail("Unexpected task progression")
+                } catch {}
+                XCTAssertTrue(Task.isCancelled)
+                await queue.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testBarrierTaskCancellationWhenTaskCancelled() async throws {
+        let queue = TaskQueue()
+        queue.addTask(flags: .barrier) {
+            try await Self.sleep(seconds: 10)
+        }
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                await queue.exec(flags: .barrier) {}
+                await queue.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testBarrierTaskCancellationForAlreadyCancelledTask() async throws {
+        let queue = TaskQueue()
+        queue.addTask(flags: .barrier) {
+            try await Self.sleep(seconds: 10)
+        }
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                do {
+                    try await Self.sleep(seconds: 5)
+                    XCTFail("Unexpected task progression")
+                } catch {}
+                XCTAssertTrue(Task.isCancelled)
+                await queue.exec(flags: .barrier) {}
+                await queue.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
 }
 
 extension Optional where Wrapped == TaskPriority {

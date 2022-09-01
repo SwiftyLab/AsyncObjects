@@ -13,7 +13,10 @@ import Foundation
 public actor AsyncEvent: AsyncObject {
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = GlobalContinuation<Void, Error>
+    typealias Continuation = SafeContinuation<GlobalContinuation<Void, Error>>
+    /// The platform dependent lock used to synchronize continuations tracking.
+    @usableFromInline
+    let locker: Locker = .init()
     /// The continuations stored with an associated key for all the suspended task that are waiting for event signal.
     @usableFromInline
     private(set) var continuations: [UUID: Continuation] = [:]
@@ -33,6 +36,7 @@ public actor AsyncEvent: AsyncObject {
         _ continuation: Continuation,
         withKey key: UUID
     ) {
+        guard !continuation.resumed else { return }
         guard !signalled else { continuation.resume(); return }
         continuations[key] = continuation
     }
@@ -43,8 +47,7 @@ public actor AsyncEvent: AsyncObject {
     /// - Parameter key: The key in the map.
     @inlinable
     func _removeContinuation(withKey key: UUID) {
-        let continuation = continuations.removeValue(forKey: key)
-        continuation?.cancel()
+        continuations.removeValue(forKey: key)
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
@@ -58,15 +61,13 @@ public actor AsyncEvent: AsyncObject {
     @inlinable
     nonisolated func _withPromisedContinuation() async throws {
         let key = UUID()
-        try await withTaskCancellationHandler { [weak self] in
+        try await Continuation.withCancellation(synchronizedWith: locker) {
             Task { [weak self] in
                 await self?._removeContinuation(withKey: key)
             }
-        } operation: { () -> Continuation.Success in
-            try await Continuation.with { continuation in
-                Task { [weak self] in
-                    await self?._addContinuation(continuation, withKey: key)
-                }
+        } operation: { continuation in
+            Task { [weak self] in
+                await self?._addContinuation(continuation, withKey: key)
             }
         }
     }

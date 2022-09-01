@@ -229,4 +229,49 @@ class TaskOperationTests: XCTestCase {
             XCTAssertFalse(error.localizedDescription.isEmpty)
         }
     }
+
+    func testWaitCancellationWhenTaskCancelled() async throws {
+        let operation = TaskOperation { try await Self.sleep(seconds: 10) }
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                await operation.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testWaitCancellationForAlreadyCancelledTask() async throws {
+        let operation = TaskOperation { try await Self.sleep(seconds: 10) }
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                do {
+                    try await Self.sleep(seconds: 5)
+                    XCTFail("Unexpected task progression")
+                } catch {}
+                XCTAssertTrue(Task.isCancelled)
+                await operation.wait()
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testConcurrentAccess() async {
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<10 {
+                group.addTask {
+                    let operation = TaskOperation {}
+                    await Self.checkExecInterval(durationInSeconds: 0) {
+                        await withTaskGroup(of: Void.self) { group in
+                            group.addTask { await operation.wait() }
+                            group.addTask { operation.signal() }
+                            await group.waitForAll()
+                        }
+                    }
+                }
+                await group.waitForAll()
+            }
+        }
+    }
 }

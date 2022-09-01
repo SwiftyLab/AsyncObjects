@@ -207,4 +207,22 @@ class NonThrowingFutureTests: XCTestCase {
             XCTAssertNil(future)
         }
     }
+
+    func testConcurrentAccess() async throws {
+        await withTaskGroup(of: Void.self) { group in
+            for i in 0..<10 {
+                group.addTask {
+                    let future = Future<Int, Never>()
+                    await Self.checkExecInterval(durationInSeconds: 0) {
+                        await withTaskGroup(of: Void.self) { group in
+                            group.addTask { let _ = await future.value }
+                            group.addTask { await future.fulfill(producing: i) }
+                            await group.waitForAll()
+                        }
+                    }
+                }
+                await group.waitForAll()
+            }
+        }
+    }
 }

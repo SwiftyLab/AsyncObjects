@@ -427,4 +427,60 @@ class ThrowingFutureTests: XCTestCase {
             XCTAssertNil(future)
         }
     }
+
+    func testWaitCancellationWhenTaskCancelled() async throws {
+        let future = Future<Int, Error>()
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                do {
+                    let _ = try await future.value
+                    XCTFail("Unexpected task progression")
+                } catch {
+                    XCTAssertTrue(type(of: error) == CancellationError.self)
+                }
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testWaitCancellationForAlreadyCancelledTask() async throws {
+        let future = Future<Int, Error>()
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 0) {
+                do {
+                    try await Self.sleep(seconds: 5)
+                    XCTFail("Unexpected task progression")
+                } catch {}
+                XCTAssertTrue(Task.isCancelled)
+                do {
+                    let _ = try await future.value
+                    XCTFail("Unexpected task progression")
+                } catch {
+                    XCTAssertTrue(type(of: error) == CancellationError.self)
+                }
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testConcurrentAccess() async throws {
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for i in 0..<10 {
+                group.addTask {
+                    let future = Future<Int, Error>()
+                    try await Self.checkExecInterval(durationInSeconds: 0) {
+                        try await withThrowingTaskGroup(of: Void.self) {
+                            group in
+                            group.addTask { let _ = try await future.value }
+                            group.addTask { await future.fulfill(producing: i) }
+                            try await group.waitForAll()
+                        }
+                    }
+                }
+                try await group.waitForAll()
+            }
+        }
+    }
 }

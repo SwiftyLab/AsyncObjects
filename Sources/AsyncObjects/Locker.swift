@@ -1,3 +1,4 @@
+import Foundation
 #if canImport(Darwin)
 @_implementationOnly import Darwin
 #elseif canImport(Glibc)
@@ -14,7 +15,7 @@
 /// attempts to unlock from a different thread will cause an assertion aborting the process.
 /// This lock must not be accessed from multiple processes or threads via shared or multiply-mapped memory,
 /// the lock implementation relies on the address of the lock value and owning process.
-public final class Locker: Equatable, Hashable, Sendable {
+public final class Locker: Equatable, Hashable, NSCopying, Sendable {
     #if canImport(Darwin)
     /// A type representing data for an unfair lock.
     typealias Primitive = os_unfair_lock
@@ -61,11 +62,19 @@ public final class Locker: Equatable, Hashable, Sendable {
         platformLock.deinitialize(count: 1)
     }
 
+    #if swift(>=5.7)
     /// Acquires exclusive lock.
     ///
     /// If a thread has already acquired lock and hasn't released lock yet,
     /// other threads will wait for lock to be released and then acquire lock
     /// in order of their request.
+    ///
+    /// - Warning: This method doesn't check if current thread
+    ///            has already acquired lock, and will cause runtime error
+    ///            if called repeatedly from same thread without releasing
+    ///            with ``unlock()`` beforehand. Use the ``perform(_:)``
+    ///            method for safer handling of locking and unlocking.
+    @available(*, noasync, message: "use perform(_:) instead")
     public func lock() {
         #if canImport(Darwin)
         os_unfair_lock_lock(platformLock)
@@ -74,13 +83,25 @@ public final class Locker: Equatable, Hashable, Sendable {
         #elseif canImport(WinSDK)
         AcquireSRWLockExclusive(platformLock)
         #endif
+        // Track if thread is locked
+        let threadDictionary = Thread.current.threadDictionary
+        threadDictionary.setObject(true, forKey: self)
     }
 
     /// Releases exclusive lock.
     ///
     /// A lock must be unlocked only from the same thread in which it was locked.
     /// Attempting to unlock from a different thread causes a runtime error.
+    ///
+    /// - Warning: This method doesn't check if current thread
+    ///            has already acquired lock, and will cause runtime error
+    ///            if called from a thread calling ``lock()`` beforehand.
+    ///            Use the ``perform(_:)`` method for safer handling
+    ///            of locking and unlocking.
+    @available(*, noasync, message: "use perform(_:) instead")
     public func unlock() {
+        let threadDictionary = Thread.current.threadDictionary
+        threadDictionary.removeObject(forKey: self)
         #if canImport(Darwin)
         os_unfair_lock_unlock(platformLock)
         #elseif canImport(Glibc)
@@ -89,6 +110,53 @@ public final class Locker: Equatable, Hashable, Sendable {
         ReleaseSRWLockExclusive(platformLock)
         #endif
     }
+    #else
+    /// Acquires exclusive lock.
+    ///
+    /// If a thread has already acquired lock and hasn't released lock yet,
+    /// other threads will wait for lock to be released and then acquire lock
+    /// in order of their request.
+    ///
+    /// - Warning: This method doesn't check if current thread
+    ///            has already acquired lock, and will cause runtime error
+    ///            if called repeatedly from same thread without releasing
+    ///            with ``unlock()`` beforehand. Use the ``perform(_:)``
+    ///            method for safer handling of locking and unlocking.
+    public func lock() {
+        #if canImport(Darwin)
+        os_unfair_lock_lock(platformLock)
+        #elseif canImport(Glibc)
+        pthread_mutex_lock(platformLock)
+        #elseif canImport(WinSDK)
+        AcquireSRWLockExclusive(platformLock)
+        #endif
+        // Track if thread is locked
+        let threadDictionary = Thread.current.threadDictionary
+        threadDictionary.setObject(true, forKey: self)
+    }
+
+    /// Releases exclusive lock.
+    ///
+    /// A lock must be unlocked only from the same thread in which it was locked.
+    /// Attempting to unlock from a different thread causes a runtime error.
+    ///
+    /// - Warning: This method doesn't check if current thread
+    ///            has already acquired lock, and will cause runtime error
+    ///            if called from a thread calling ``lock()`` beforehand.
+    ///            Use the ``perform(_:)`` method for safer handling
+    ///            of locking and unlocking.
+    public func unlock() {
+        let threadDictionary = Thread.current.threadDictionary
+        threadDictionary.removeObject(forKey: self)
+        #if canImport(Darwin)
+        os_unfair_lock_unlock(platformLock)
+        #elseif canImport(Glibc)
+        pthread_mutex_unlock(platformLock)
+        #elseif canImport(WinSDK)
+        ReleaseSRWLockExclusive(platformLock)
+        #endif
+    }
+    #endif
 
     /// Performs a critical piece of work synchronously after acquiring the lock
     /// and releases lock when task completes.
@@ -96,15 +164,34 @@ public final class Locker: Equatable, Hashable, Sendable {
     /// Use this to perform critical tasks or provide access to critical resource
     /// that require exclusivity among other concurrent tasks.
     ///
+    /// This method checks if thread has already acquired lock and performs task
+    /// without releasing the lock. This allows safer lock management eliminating
+    /// potential runtime errors, than manually invoking ``lock()`` and ``unlock()``.
+    ///
     /// - Parameter critical: The critical task to perform.
     /// - Returns: The result from the critical task.
     /// - Throws: Error occurred running critical task.
     @discardableResult
     public func perform<R>(_ critical: () throws -> R) rethrows -> R {
+        let threadDictionary = Thread.current.threadDictionary
+        guard
+            !(threadDictionary[self] as? Bool ?? false)
+        else { return try critical() }
+
         lock()
         defer { unlock() }
         return try critical()
     }
+
+    /// Returns current instance that’s a copy of the receiver.
+    ///
+    /// Implementation provided to help to track locking status
+    /// for threads for the current lock object.
+    ///
+    /// - Parameter zone: This parameter is ignored. Memory zones
+    ///                   are no longer used by Objective-C.
+    /// - Returns: Returns current instance object.
+    public func copy(with zone: NSZone? = nil) -> Any { self }
 
     /// Returns a Boolean value indicating whether two locks are equal.
     ///

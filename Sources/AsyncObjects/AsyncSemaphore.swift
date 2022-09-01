@@ -16,14 +16,17 @@ import OrderedCollections
 public actor AsyncSemaphore: AsyncObject {
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = GlobalContinuation<Void, Error>
+    typealias Continuation = SafeContinuation<GlobalContinuation<Void, Error>>
+    /// The platform dependent lock used to synchronize continuations tracking.
+    @usableFromInline
+    let locker: Locker = .init()
     /// The continuations stored with an associated key for all the suspended task that are waiting for access to resource.
     @usableFromInline
     private(set) var continuations: OrderedDictionary<UUID, Continuation> = [:]
     /// Pool size for concurrent resource access.
     /// Has value provided during initialization incremented by one.
     @usableFromInline
-    private(set) var limit: UInt
+    let limit: UInt
     /// Current count of semaphore.
     /// Can have maximum value up to `limit`.
     @usableFromInline
@@ -41,6 +44,8 @@ public actor AsyncSemaphore: AsyncObject {
         _ continuation: Continuation,
         withKey key: UUID
     ) {
+        count -= 1
+        guard !continuation.resumed else { return }
         guard count <= 0 else { continuation.resume(); return }
         continuations[key] = continuation
     }
@@ -51,8 +56,7 @@ public actor AsyncSemaphore: AsyncObject {
     /// - Parameter key: The key in the map.
     @inlinable
     func _removeContinuation(withKey key: UUID) {
-        let continuation = continuations.removeValue(forKey: key)
-        continuation?.cancel()
+        continuations.removeValue(forKey: key)
         _incrementCount()
     }
 
@@ -74,15 +78,13 @@ public actor AsyncSemaphore: AsyncObject {
     @inlinable
     nonisolated func _withPromisedContinuation() async throws {
         let key = UUID()
-        try await withTaskCancellationHandler { [weak self] in
+        try await Continuation.withCancellation(synchronizedWith: locker) {
             Task { [weak self] in
                 await self?._removeContinuation(withKey: key)
             }
-        } operation: { () -> Continuation.Success in
-            try await Continuation.with { continuation in
-                Task { [weak self] in
-                    await self?._addContinuation(continuation, withKey: key)
-                }
+        } operation: { continuation in
+            Task { [weak self] in
+                await self?._addContinuation(continuation, withKey: key)
             }
         }
     }
@@ -123,8 +125,7 @@ public actor AsyncSemaphore: AsyncObject {
     /// current task is suspended until a signal occurs.
     @Sendable
     public func wait() async {
-        count -= 1
-        guard count <= 0 else { return }
+        guard count <= 1 else { count -= 1; return }
         try? await _withPromisedContinuation()
     }
 }

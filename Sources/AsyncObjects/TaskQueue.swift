@@ -132,11 +132,14 @@ public actor TaskQueue: AsyncObject {
 
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = GlobalContinuation<Void, Error>
+    typealias Continuation = SafeContinuation<GlobalContinuation<Void, Error>>
     /// A mechanism to queue tasks in ``TaskQueue``, to be resumed when queue is freed
     /// and provided flags are satisfied.
     @usableFromInline
     typealias QueuedContinuation = (value: Continuation, flags: Flags)
+    /// The platform dependent lock used to synchronize continuations tracking.
+    @usableFromInline
+    let locker: Locker = .init()
     /// The list of tasks currently queued and would be resumed one by one when current barrier task ends.
     @usableFromInline
     private(set) var queue: OrderedDictionary<UUID, QueuedContinuation> = [:]
@@ -188,6 +191,7 @@ public actor TaskQueue: AsyncObject {
         atKey key: UUID = .init(),
         _ continuation: QueuedContinuation
     ) {
+        guard !continuation.value.resumed else { return }
         guard _wait(whenFlags: continuation.flags) else {
             _resumeQueuedContinuation(continuation)
             return
@@ -200,8 +204,7 @@ public actor TaskQueue: AsyncObject {
     /// - Parameter key: The key in the continuation queue.
     @inlinable
     func _dequeueContinuation(withKey key: UUID) {
-        let continuation = queue.removeValue(forKey: key)
-        continuation?.value.cancel()
+        queue.removeValue(forKey: key)
     }
 
     /// Unblock queue allowing other queued tasks to run
@@ -253,18 +256,18 @@ public actor TaskQueue: AsyncObject {
     @inlinable
     nonisolated func _withPromisedContinuation(flags: Flags = []) async throws {
         let key = UUID()
-        try await withTaskCancellationHandler { [weak self] in
+        try await Continuation.withCancellation(
+            synchronizedWith: locker
+        ) {
             Task { [weak self] in
                 await self?._dequeueContinuation(withKey: key)
             }
-        } operation: { () -> Continuation.Success in
-            try await Continuation.with { continuation in
-                Task { [weak self] in
-                    await self?._queueContinuation(
-                        atKey: key,
-                        (value: continuation, flags: flags)
-                    )
-                }
+        } operation: { continuation in
+            Task { [weak self] in
+                await self?._queueContinuation(
+                    atKey: key,
+                    (value: continuation, flags: flags)
+                )
             }
         }
     }
