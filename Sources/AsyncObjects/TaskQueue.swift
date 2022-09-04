@@ -513,16 +513,16 @@ public actor TaskQueue: AsyncObject {
 
     /// Signalling on queue does nothing.
     /// Only added to satisfy ``AsyncObject`` requirements.
-    public func signal() {
-        // Do nothing
-    }
+    public nonisolated func signal() { /* Do nothing */  }
 
     /// Waits for execution turn on queue.
     ///
     /// Only waits asynchronously, if queue is locked by a barrier task,
     /// until the suspended task's turn comes to be resumed.
+    ///
+    /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async {
-        await exec { /*Do nothing*/  }
+    public func wait() async throws {
+        try await exec { try await Task.sleep(nanoseconds: 0) }
     }
 }

@@ -62,12 +62,21 @@ public actor CancellationSource {
         }
     }
 
+    /// Trigger cancellation event, initiate cooperative cancellation of registered tasks
+    /// and propagate cancellation to linked cancellation sources.
+    @Sendable
+    public func _cancel() async {
+        registeredTasks.forEach { $1() }
+        registeredTasks = [:]
+        await _propagateCancellation()
+    }
+
     // MARK: Public
 
     /// Creates a new cancellation source object.
     ///
     /// - Returns: The newly created cancellation source.
-    public init() { }
+    public init() {}
 
     #if swift(>=5.7)
     /// Creates a new cancellation source object linking to all the provided cancellation sources.
@@ -78,12 +87,15 @@ public actor CancellationSource {
     /// - Parameter sources: The cancellation sources the newly created object will be linked to.
     ///
     /// - Returns: The newly created cancellation source.
-    public nonisolated init(linkedWith sources: [CancellationSource]) async {
-        await withTaskGroup(of: Void.self) { group in
-            sources.forEach { source in
-                group.addTask { await source._addSource(self) }
+    public init(linkedWith sources: [CancellationSource]) {
+        self.init()
+        Task {
+            await withTaskGroup(of: Void.self) { group in
+                sources.forEach { source in
+                    group.addTask { await source._addSource(self) }
+                }
+                await group.waitForAll()
             }
-            await group.waitForAll()
         }
     }
 
@@ -95,8 +107,8 @@ public actor CancellationSource {
     /// - Parameter sources: The cancellation sources the newly created object will be linked to.
     ///
     /// - Returns: The newly created cancellation source.
-    public init(linkedWith sources: CancellationSource...) async {
-        await self.init(linkedWith: sources)
+    public init(linkedWith sources: CancellationSource...) {
+        self.init(linkedWith: sources)
     }
 
     /// Creates a new cancellation source object
@@ -120,12 +132,15 @@ public actor CancellationSource {
     /// - Parameter sources: The cancellation sources the newly created object will be linked to.
     ///
     /// - Returns: The newly created cancellation source.
-    public init(linkedWith sources: [CancellationSource]) async {
-        await withTaskGroup(of: Void.self) { group in
-            sources.forEach { source in
-                group.addTask { await source._addSource(self) }
+    public convenience init(linkedWith sources: [CancellationSource]) {
+        self.init()
+        Task {
+            await withTaskGroup(of: Void.self) { group in
+                sources.forEach { source in
+                    group.addTask { await source._addSource(self) }
+                }
+                await group.waitForAll()
             }
-            await group.waitForAll()
         }
     }
 
@@ -137,8 +152,8 @@ public actor CancellationSource {
     /// - Parameter sources: The cancellation sources the newly created object will be linked to.
     ///
     /// - Returns: The newly created cancellation source.
-    public convenience init(linkedWith sources: CancellationSource...) async {
-        await self.init(linkedWith: sources)
+    public convenience init(linkedWith sources: CancellationSource...) {
+        self.init(linkedWith: sources)
     }
 
     /// Creates a new cancellation source object
@@ -160,9 +175,11 @@ public actor CancellationSource {
     /// If task completes before cancellation event is triggered, it is automatically unregistered.
     ///
     /// - Parameter task: The task to register.
-    public func register<Success, Failure>(task: Task<Success, Failure>) {
-        _add(task: task)
+    public nonisolated func register<Success, Failure>(
+        task: Task<Success, Failure>
+    ) {
         Task { [weak self] in
+            await self?._add(task: task)
             let _ = await task.result
             await self?._remove(task: task)
         }
@@ -171,10 +188,8 @@ public actor CancellationSource {
     /// Trigger cancellation event, initiate cooperative cancellation of registered tasks
     /// and propagate cancellation to linked cancellation sources.
     @Sendable
-    public func cancel() async {
-        registeredTasks.forEach { $1() }
-        registeredTasks = [:]
-        await _propagateCancellation()
+    public nonisolated func cancel() {
+        Task { await _cancel() }
     }
 
     /// Trigger cancellation event after provided delay,
@@ -186,119 +201,11 @@ public actor CancellationSource {
     @Sendable
     public func cancel(afterNanoseconds nanoseconds: UInt64) async throws {
         try await Task.sleep(nanoseconds: nanoseconds)
-        await cancel()
+        await _cancel()
     }
 }
 
 public extension Task {
-    /// Runs the given non-throwing operation asynchronously as part of a new task on behalf of the current actor,
-    /// with the provided cancellation source controlling cooperative cancellation.
-    ///
-    /// A top-level task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
-    /// In the event of cancellation top-level task is cancelled, while returning the value in the returned task.
-    ///
-    /// - Parameters:
-    ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
-    ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
-    ///   - operation: The operation to perform.
-    ///
-    /// - Returns: The newly created task.
-    /// - Note: In case you want to register and track the top-level task
-    ///         for cancellation use the async initializer instead.
-    @discardableResult
-    init(
-        priority: TaskPriority? = nil,
-        cancellationSource: CancellationSource,
-        operation: @escaping @Sendable () async -> Success
-    ) where Failure == Never {
-        self.init(priority: priority) {
-            let task = Self.init(priority: priority, operation: operation)
-            await cancellationSource.register(task: task)
-            return await task.value
-        }
-    }
-
-    /// Runs the given throwing operation asynchronously as part of a new task on behalf of the current actor,
-    /// with the provided cancellation source controlling cooperative cancellation.
-    ///
-    /// A  top-level task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
-    /// In the event of cancellation  top-level task is cancelled, while propagating error in the returned task.
-    ///
-    /// - Parameters:
-    ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
-    ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
-    ///   - operation: The operation to perform.
-    ///
-    /// - Returns: The newly created task.
-    /// - Note: In case you want to register and track the top-level task
-    ///         for cancellation use the async initializer instead.
-    @discardableResult
-    init(
-        priority: TaskPriority? = nil,
-        cancellationSource: CancellationSource,
-        operation: @escaping @Sendable () async throws -> Success
-    ) where Failure == Error {
-        self.init(priority: priority) {
-            let task = Self.init(priority: priority, operation: operation)
-            await cancellationSource.register(task: task)
-            return try await task.value
-        }
-    }
-
-    /// Runs the given non-throwing operation asynchronously as part of a new task,
-    /// with the provided cancellation source controlling cooperative cancellation.
-    ///
-    /// A top-level task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
-    /// In the event of cancellation top-level task is cancelled, while returning the value in the returned task.
-    ///
-    /// - Parameters:
-    ///   - priority: The priority of the task.
-    ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
-    ///   - operation: The operation to perform.
-    ///
-    /// - Returns: The newly created task.
-    /// - Note: In case you want to register and track the top-level task
-    ///         for cancellation use the async initializer instead.
-    @discardableResult
-    static func detached(
-        priority: TaskPriority? = nil,
-        cancellationSource: CancellationSource,
-        operation: @escaping @Sendable () async -> Success
-    ) -> Self where Failure == Never {
-        return Task.detached(priority: priority) {
-            let task = Self.init(priority: priority, operation: operation)
-            await cancellationSource.register(task: task)
-            return await task.value
-        }
-    }
-
-    /// Runs the given throwing operation asynchronously as part of a new task,
-    /// with the provided cancellation source controlling cooperative cancellation.
-    ///
-    /// A top-level task with the provided operation is created, cancellation of which is controlled by provided cancellation source.
-    /// In the event of cancellation top-level task is cancelled, while returning the value in the returned task.
-    ///
-    /// - Parameters:
-    ///   - priority: The priority of the task.
-    ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
-    ///   - operation: The operation to perform.
-    ///
-    /// - Returns: The newly created task.
-    /// - Note: In case you want to register and track the top-level task
-    ///         for cancellation use the async initializer instead.
-    @discardableResult
-    static func detached(
-        priority: TaskPriority? = nil,
-        cancellationSource: CancellationSource,
-        operation: @escaping @Sendable () async throws -> Success
-    ) -> Self where Failure == Error {
-        return Task.detached(priority: priority) {
-            let task = Self.init(priority: priority, operation: operation)
-            await cancellationSource.register(task: task)
-            return try await task.value
-        }
-    }
-
     /// Runs the given non-throwing operation asynchronously as part of a new top-level task on behalf of the current actor,
     /// with the provided cancellation source controlling cooperative cancellation.
     ///
@@ -315,9 +222,9 @@ public extension Task {
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
         operation: @escaping @Sendable () async -> Success
-    ) async where Failure == Never {
+    ) where Failure == Never {
         self.init(priority: priority, operation: operation)
-        await cancellationSource.register(task: self)
+        cancellationSource.register(task: self)
     }
 
     /// Runs the given throwing operation asynchronously as part of a new top-level task on behalf of the current actor,
@@ -336,9 +243,9 @@ public extension Task {
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
         operation: @escaping @Sendable () async throws -> Success
-    ) async where Failure == Error {
+    ) where Failure == Error {
         self.init(priority: priority, operation: operation)
-        await cancellationSource.register(task: self)
+        cancellationSource.register(task: self)
     }
 
     /// Runs the given non-throwing operation asynchronously as part of a new top-level task,
@@ -357,9 +264,9 @@ public extension Task {
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
         operation: @escaping @Sendable () async -> Success
-    ) async -> Self where Failure == Never {
+    ) -> Self where Failure == Never {
         let task = Task.detached(priority: priority, operation: operation)
-        await cancellationSource.register(task: task)
+        cancellationSource.register(task: task)
         return task
     }
 
@@ -379,9 +286,9 @@ public extension Task {
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
         operation: @escaping @Sendable () async throws -> Success
-    ) async -> Self where Failure == Error {
+    ) -> Self where Failure == Error {
         let task = Task.detached(priority: priority, operation: operation)
-        await cancellationSource.register(task: task)
+        cancellationSource.register(task: task)
         return task
     }
 }

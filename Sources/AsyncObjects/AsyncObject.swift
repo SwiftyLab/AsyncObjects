@@ -1,51 +1,29 @@
-import Foundation
-
-/// A result value indicating whether a task finished before a specified time.
-@frozen
-public enum TaskTimeoutResult: Hashable, Sendable {
-    /// Indicates that a task successfully finished
-    /// before the specified time elapsed.
-    case success
-    /// Indicates that a task failed to finish
-    /// before the specified time elapsed.
-    case timedOut
-}
-
 /// An object type that can provide synchronization across multiple task contexts
 ///
 /// Waiting asynchronously can be done by calling ``wait()`` method,
 /// while object decides when to resume task. Similarly, ``signal()`` can be used
 /// to indicate resuming suspended tasks.
+@rethrows
 public protocol AsyncObject: Sendable {
     /// Signals the object for task synchronization.
     ///
     /// Object might resume suspended tasks
     /// or synchronize tasks differently.
     @Sendable
-    func signal() async
+    func signal()
     /// Waits for the object to green light task execution.
     ///
     /// Waits asynchronously suspending current  task, instead of blocking any thread.
     /// Async object has to resume the task at a later time depending on its requirement.
     ///
+    /// - Throws: `CancellationError` if cancelled.
     /// - Note: Method might return immediately depending upon the synchronization object requirement.
     @Sendable
-    func wait() async
-    /// Waits for the object to green light task execution within the duration.
-    ///
-    /// Waits asynchronously suspending current  task, instead of blocking any thread within the duration.
-    /// Async object has to resume the task at a later time depending on its requirement.
-    /// Depending upon whether wait succeeds or timeout expires result is returned.
-    ///
-    /// - Parameter duration: The duration in nano seconds to wait until.
-    /// - Returns: The result indicating whether wait completed or timed out.
-    /// - Note: Method might return immediately depending upon the synchronization object requirement.
-    @discardableResult
-    @Sendable
-    func wait(forNanoseconds duration: UInt64) async -> TaskTimeoutResult
+    func wait() async throws
 }
 
-public extension AsyncObject where Self: AnyObject {
+// TODO: add clock based timeout for Swift >=5.7
+public extension AsyncObject {
     /// Waits for the object to green light task execution within the duration.
     ///
     /// Waits asynchronously suspending current  task, instead of blocking any thread.
@@ -53,16 +31,13 @@ public extension AsyncObject where Self: AnyObject {
     /// Async object has to resume the task at a later time depending on its requirement.
     ///
     /// - Parameter duration: The duration in nano seconds to wait until.
-    /// - Returns: The result indicating whether wait completed or timed out.
+    /// - Throws: `CancellationError` if cancelled or `DurationTimeoutError` if timed out.
     /// - Note: Method might return immediately depending upon the synchronization object requirement.
-    @discardableResult
     @Sendable
-    func wait(forNanoseconds duration: UInt64) async -> TaskTimeoutResult {
-        return await waitForTaskCompletion(
+    func wait(forNanoseconds duration: UInt64) async throws {
+        return try await waitForTaskCompletion(
             withTimeoutInNanoseconds: duration
-        ) { [weak self] in
-            await self?.wait()
-        }
+        ) { try await self.wait() }
     }
 }
 
@@ -72,12 +47,13 @@ public extension AsyncObject where Self: AnyObject {
 /// and returns only when all the invocation completes.
 ///
 /// - Parameter objects: The objects to wait for.
+/// - Throws: `CancellationError` if cancelled.
 @inlinable
 @Sendable
-public func waitForAll(_ objects: [any AsyncObject]) async {
-    await withTaskGroup(of: Void.self) { group in
+public func waitForAll(_ objects: [any AsyncObject]) async throws {
+    try await withThrowingTaskGroup(of: Void.self) { group in
         objects.forEach { group.addTask(operation: $0.wait) }
-        await group.waitForAll()
+        try await group.waitForAll()
     }
 }
 
@@ -87,10 +63,11 @@ public func waitForAll(_ objects: [any AsyncObject]) async {
 /// and returns only when all the invocation completes.
 ///
 /// - Parameter objects: The objects to wait for.
+/// - Throws: `CancellationError` if cancelled.
 @inlinable
 @Sendable
-public func waitForAll(_ objects: any AsyncObject...) async {
-    await waitForAll(objects)
+public func waitForAll(_ objects: any AsyncObject...) async throws {
+    try await waitForAll(objects)
 }
 
 /// Waits for multiple objects to green light task execution
@@ -103,15 +80,17 @@ public func waitForAll(_ objects: any AsyncObject...) async {
 /// - Parameters:
 ///   - objects: The objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
-/// - Returns: The result indicating whether wait completed or timed out.
+///
+/// - Throws: `CancellationError` if cancelled
+///           or `DurationTimeoutError` if timed out.
 @inlinable
 @Sendable
 public func waitForAll(
     _ objects: [any AsyncObject],
     forNanoseconds duration: UInt64
-) async -> TaskTimeoutResult {
-    return await waitForTaskCompletion(withTimeoutInNanoseconds: duration) {
-        await waitForAll(objects)
+) async throws {
+    return try await waitForTaskCompletion(withTimeoutInNanoseconds: duration) {
+        try await waitForAll(objects)
     }
 }
 
@@ -125,14 +104,16 @@ public func waitForAll(
 /// - Parameters:
 ///   - objects: The objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
-/// - Returns: The result indicating whether wait completed or timed out.
+///
+/// - Throws: `CancellationError` if cancelled
+///            or `DurationTimeoutError` if timed out.
 @inlinable
 @Sendable
 public func waitForAll(
     _ objects: any AsyncObject...,
     forNanoseconds duration: UInt64
-) async -> TaskTimeoutResult {
-    return await waitForAll(objects, forNanoseconds: duration)
+) async throws {
+    return try await waitForAll(objects, forNanoseconds: duration)
 }
 
 /// Waits for multiple objects to green light task execution
@@ -144,12 +125,17 @@ public func waitForAll(
 /// - Parameters:
 ///   - objects: The objects to wait for.
 ///   - count: The number of objects to wait for.
+///
+/// - Throws: `CancellationError` if cancelled.
 @inlinable
 @Sendable
-public func waitForAny(_ objects: [any AsyncObject], count: Int = 1) async {
-    await withTaskGroup(of: Void.self) { group in
+public func waitForAny(
+    _ objects: [any AsyncObject],
+    count: Int = 1
+) async throws {
+    try await withThrowingTaskGroup(of: Void.self) { group in
         objects.forEach { group.addTask(operation: $0.wait) }
-        for _ in 0..<count { await group.next() }
+        for _ in 0..<count { try await group.next() }
         group.cancelAll()
     }
 }
@@ -163,10 +149,15 @@ public func waitForAny(_ objects: [any AsyncObject], count: Int = 1) async {
 /// - Parameters:
 ///   - objects: The objects to wait for.
 ///   - count: The number of objects to wait for.
+///
+/// - Throws: `CancellationError` if cancelled.
 @inlinable
 @Sendable
-public func waitForAny(_ objects: any AsyncObject..., count: Int = 1) async {
-    await waitForAny(objects, count: count)
+public func waitForAny(
+    _ objects: any AsyncObject...,
+    count: Int = 1
+) async throws {
+    try await waitForAny(objects, count: count)
 }
 
 /// Waits for multiple objects to green light task execution
@@ -180,16 +171,18 @@ public func waitForAny(_ objects: any AsyncObject..., count: Int = 1) async {
 ///   - objects: The objects to wait for.
 ///   - count: The number of objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
-/// - Returns: The result indicating whether wait completed or timed out.
+///
+/// - Throws: `CancellationError` if cancelled
+///           or `DurationTimeoutError` if timed out.
 @inlinable
 @Sendable
 public func waitForAny(
     _ objects: [any AsyncObject],
     count: Int = 1,
     forNanoseconds duration: UInt64
-) async -> TaskTimeoutResult {
-    return await waitForTaskCompletion(withTimeoutInNanoseconds: duration) {
-        await waitForAny(objects, count: count)
+) async throws {
+    return try await waitForTaskCompletion(withTimeoutInNanoseconds: duration) {
+        try await waitForAny(objects, count: count)
     }
 }
 
@@ -204,15 +197,17 @@ public func waitForAny(
 ///   - objects: The objects to wait for.
 ///   - count: The number of objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
-/// - Returns: The result indicating whether wait completed or timed out.
+///
+/// - Throws: `CancellationError` if cancelled
+///           or `DurationTimeoutError` if timed out.
 @inlinable
 @Sendable
 public func waitForAny(
     _ objects: any AsyncObject...,
     count: Int = 1,
     forNanoseconds duration: UInt64
-) async -> TaskTimeoutResult {
-    return await waitForAny(objects, count: count, forNanoseconds: duration)
+) async throws {
+    return try await waitForAny(objects, count: count, forNanoseconds: duration)
 }
 
 /// Waits for the provided task to be completed within the timeout duration.
@@ -223,30 +218,65 @@ public func waitForAny(
 /// - Parameters:
 ///   - task: The task to execute and wait for completion.
 ///   - timeout: The duration in nano seconds to wait until.
-/// - Returns: The result indicating whether task execution completed
-///            or timed out.
+///
+/// - Throws: `CancellationError` if cancelled
+///           or `DurationTimeoutError` if timed out.
 @Sendable
 public func waitForTaskCompletion(
     withTimeoutInNanoseconds timeout: UInt64,
-    _ task: @escaping @Sendable () async -> Void
-) async -> TaskTimeoutResult {
-    var timedOut = true
-    await withTaskGroup(of: Bool.self) { group in
+    _ task: @escaping @Sendable () async throws -> Void
+) async throws {
+    try await withThrowingTaskGroup(of: Void.self) { group in
         await GlobalContinuation<Void, Never>.with { continuation in
             group.addTask {
                 continuation.resume()
-                await task()
-                return !Task.isCancelled
+                try await task()
             }
         }
         group.addTask {
             await Task.yield()
-            return (try? await Task.sleep(nanoseconds: timeout + 1_000)) == nil
+            try await Task.sleep(nanoseconds: timeout + 1_000)
+            throw DurationTimeoutError(for: timeout, tolerance: 1_000)
         }
-        if let result = await group.next() {
-            timedOut = !result
-        }
-        group.cancelAll()
+        defer { group.cancelAll() }
+        try await group.next()
     }
-    return timedOut ? .timedOut : .success
+}
+
+/// An error that indicates a task was timed out for provided duration
+/// and task specific tolerance.
+///
+/// This error is also thrown automatically by
+/// ``waitForTaskCompletion(withTimeoutInNanoseconds:_:)``,
+/// if the task execution exceeds provided time out duration.
+///
+/// While ``duration`` is user configurable, ``tolerance`` is task specific.
+@frozen
+public struct DurationTimeoutError: Error, Sendable {
+    /// The duration  in nano seconds that was provided for timeout operation.
+    ///
+    /// The total timeout duration takes consideration
+    /// of both provided duration and operation specific tolerance:
+    ///
+    /// total timeout duration = ``duration`` + ``tolerance``
+    public let duration: UInt64
+    /// The additional tolerance in nano seconds used for timeout operation.
+    ///
+    /// The total timeout duration takes consideration
+    /// of both provided duration and operation specific tolerance:
+    ///
+    /// total timeout duration = ``duration`` + ``tolerance``
+    public let tolerance: UInt64
+
+    /// Creates a new timeout error based on provided duration and task specific tolerance.
+    ///
+    /// - Parameters:
+    ///   - duration: The provided timeout duration in nano seconds.
+    ///   - tolerance: The task specific additional margin in nano seconds.
+    ///
+    /// - Returns: The newly created timeout error.
+    public init(for duration: UInt64, tolerance: UInt64 = 0) {
+        self.duration = duration
+        self.tolerance = tolerance
+    }
 }

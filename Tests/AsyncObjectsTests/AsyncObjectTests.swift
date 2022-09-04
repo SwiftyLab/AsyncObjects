@@ -9,11 +9,11 @@ class AsyncObjectTests: XCTestCase {
         let mutex = AsyncSemaphore()
         Task.detached {
             try await Self.sleep(seconds: 1)
-            await event.signal()
-            await mutex.signal()
+            event.signal()
+            mutex.signal()
         }
-        await Self.checkExecInterval(durationInSeconds: 1) {
-            await waitForAll(event, mutex)
+        try await Self.checkExecInterval(durationInSeconds: 1) {
+            try await waitForAll(event, mutex)
         }
     }
 
@@ -22,12 +22,12 @@ class AsyncObjectTests: XCTestCase {
         let mutex = AsyncSemaphore()
         Task.detached {
             try await Self.sleep(seconds: 1)
-            await event.signal()
+            event.signal()
             try await Self.sleep(seconds: 1)
-            await mutex.signal()
+            mutex.signal()
         }
-        await Self.checkExecInterval(durationInSeconds: 1) {
-            await waitForAny(event, mutex)
+        try await Self.checkExecInterval(durationInSeconds: 1) {
+            try await waitForAny(event, mutex)
         }
     }
 
@@ -39,46 +39,52 @@ class AsyncObjectTests: XCTestCase {
         }
         Task.detached {
             try await Self.sleep(seconds: 1)
-            await event.signal()
+            event.signal()
         }
         Task.detached {
             try await Self.sleep(seconds: 2)
-            await mutex.signal()
+            mutex.signal()
         }
         op.signal()
-        await Self.checkExecInterval(durationInSeconds: 2) {
-            await waitForAny(event, mutex, op, count: 2)
+        try await Self.checkExecInterval(durationInSeconds: 2) {
+            try await waitForAny(event, mutex, op, count: 2)
         }
     }
 
     func testMultipleObjectWaitAllWithTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        var result: TaskTimeoutResult = .success
         await Self.checkExecInterval(durationInSeconds: 1) {
-            result = await waitForAll(
-                event, mutex,
-                forNanoseconds: UInt64(1E9)
-            )
+            do {
+                try await waitForAll(
+                    event, mutex,
+                    forNanoseconds: UInt64(1E9)
+                )
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
+            }
         }
-        XCTAssertEqual(result, .timedOut)
     }
 
     func testMultipleObjectWaitAnyWithTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        var result: TaskTimeoutResult = .success
         await Self.checkExecInterval(durationInSeconds: 1) {
-            result = await waitForAny(
-                event, mutex,
-                forNanoseconds: UInt64(1E9)
-            )
+            do {
+                try await waitForAny(
+                    event, mutex,
+                    count: 2,
+                    forNanoseconds: UInt64(1E9)
+                )
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
+            }
         }
-        XCTAssertEqual(result, .timedOut)
     }
 
     func testMultipleObjectWaitMultipleWithTimeout() async throws {
-        var result: TaskTimeoutResult = .success
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         let op = TaskOperation {
@@ -86,57 +92,57 @@ class AsyncObjectTests: XCTestCase {
         }
         Task.detached {
             try await Self.sleep(seconds: 1)
-            await event.signal()
+            event.signal()
         }
         Task.detached {
             try await Self.sleep(seconds: 3)
-            await mutex.signal()
+            mutex.signal()
         }
         op.signal()
         await Self.checkExecInterval(durationInSeconds: 2) {
-            result = await waitForAny(
-                event, mutex, op,
-                count: 2,
-                forNanoseconds: UInt64(2E9)
-            )
+            do {
+                try await waitForAny(
+                    event, mutex, op,
+                    count: 2,
+                    forNanoseconds: UInt64(2E9)
+                )
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
+            }
         }
-        XCTAssertEqual(result, .timedOut)
     }
 
     func testMultipleObjectWaitAllWithoutTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        var result: TaskTimeoutResult = .timedOut
         Task.detached {
             try await Self.sleep(seconds: 1)
-            await event.signal()
-            await mutex.signal()
+            event.signal()
+            mutex.signal()
         }
-        await Self.checkExecInterval(durationInSeconds: 1) {
-            result = await waitForAll(
+        try await Self.checkExecInterval(durationInSeconds: 1) {
+            try await waitForAll(
                 event, mutex,
                 forNanoseconds: UInt64(2E9)
             )
         }
-        XCTAssertEqual(result, .success)
     }
 
     func testMultipleObjectWaitAnyWithoutTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        var result: TaskTimeoutResult = .timedOut
         Task.detached {
             try await Self.sleep(seconds: 1)
-            await event.signal()
+            event.signal()
             try await Self.sleep(seconds: 1)
-            await mutex.signal()
+            mutex.signal()
         }
-        await Self.checkExecInterval(durationInSeconds: 1) {
-            result = await waitForAny(
+        try await Self.checkExecInterval(durationInSeconds: 1) {
+            try await waitForAny(
                 event, mutex,
                 forNanoseconds: UInt64(2E9)
             )
         }
-        XCTAssertEqual(result, .success)
     }
 }

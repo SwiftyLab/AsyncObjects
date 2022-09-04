@@ -15,7 +15,22 @@ import OrderedCollections
 /// You can indicate high priority usage of resource by using ``increment(by:)`` method,
 /// and indicate free of resource by calling ``signal(repeat:)`` or ``signal()`` methods.
 /// For low priority resource usage or detect resource idling use ``wait()`` method
-/// or its timeout variation ``wait(forNanoseconds:)``.
+/// or its timeout variation ``wait(forNanoseconds:)``:
+///
+/// ```swift
+/// // create event with initial count and count down limit
+/// let event = AsyncCountdownEvent()
+/// // increment countdown count from high priority tasks
+/// event.increment(by: 1)
+///
+/// // wait for countdown signal from low priority tasks, fails only if task cancelled
+/// try await event.wait()
+/// // or wait with some timeout
+/// try await event.wait(forNanoseconds: 1_000_000_000)
+///
+/// // signal countdown after completing high priority tasks
+/// event.signal()
+/// ```
 ///
 /// Use the ``limit`` parameter to indicate concurrent low priority usage, i.e. if limit set to zero,
 /// only one low priority usage allowed at one time.
@@ -42,7 +57,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// Can be changed after initialization
     /// by using ``reset(to:)`` method.
-    public private(set) var initialCount: UInt
+    public var initialCount: UInt
     /// Indicates whether countdown event current count is within ``limit``.
     ///
     /// Queued tasks are resumed from suspension when event is set and until current count exceeds limit.
@@ -130,6 +145,31 @@ public actor AsyncCountdownEvent: AsyncObject {
         }
     }
 
+    /// Increments the countdown event current count by the specified value.
+    ///
+    /// - Parameter count: The value by which to increase ``currentCount``.
+    @inlinable
+    func _increment(by count: UInt = 1) {
+        self.currentCount += count
+    }
+
+    /// Resets current count to initial count.
+    @inlinable
+    func _reset() {
+        self.currentCount = initialCount
+        _resumeContinuations()
+    }
+
+    /// Resets initial count and current count to specified value.
+    ///
+    /// - Parameter count: The new initial count.
+    @inlinable
+    func _reset(to count: UInt) {
+        initialCount = count
+        self.currentCount = count
+        _resumeContinuations()
+    }
+
     // MARK: Public
 
     /// Creates new countdown event with the limit count down up to and an initial count.
@@ -158,17 +198,16 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// Use this to indicate usage of resource from high priority tasks.
     ///
     /// - Parameter count: The value by which to increase ``currentCount``.
-    public func increment(by count: UInt = 1) {
-        self.currentCount += count
+    public nonisolated func increment(by count: UInt = 1) {
+        Task { await _increment(by: count) }
     }
 
     /// Resets current count to initial count.
     ///
     /// If the current count becomes less or equal to limit, multiple queued tasks
     /// are resumed from suspension until current count exceeds limit.
-    public func reset() {
-        self.currentCount = initialCount
-        _resumeContinuations()
+    public nonisolated func reset() {
+        Task { await _reset() }
     }
 
     /// Resets initial count and current count to specified value.
@@ -177,18 +216,16 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// are resumed from suspension until current count exceeds limit.
     ///
     /// - Parameter count: The new initial count.
-    public func reset(to count: UInt) {
-        initialCount = count
-        self.currentCount = count
-        _resumeContinuations()
+    public nonisolated func reset(to count: UInt) {
+        Task { await _reset(to: count) }
     }
 
     /// Registers a signal (decrements) with the countdown event.
     ///
     /// Decrement the countdown. If the current count becomes less or equal to limit,
     /// one queued task is resumed from suspension.
-    public func signal() {
-        signal(repeat: 1)
+    public nonisolated func signal() {
+        Task { await _decrementCount(by: 1) }
     }
 
     /// Registers multiple signals (decrements by provided count) with the countdown event.
@@ -197,8 +234,8 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// multiple queued tasks are resumed from suspension until current count exceeds limit.
     ///
     /// - Parameter count: The number of signals to register.
-    public func signal(repeat count: UInt) {
-        _decrementCount(by: count)
+    public nonisolated func signal(repeat count: UInt) {
+        Task { await _decrementCount(by: count) }
     }
 
     /// Waits for, or increments, a countdown event.
@@ -207,9 +244,11 @@ public actor AsyncCountdownEvent: AsyncObject {
     /// Otherwise, current task is suspended until either a signal occurs or event is reset.
     ///
     /// Use this to wait for high priority tasks completion to start low priority ones.
+    ///
+    /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async {
+    public func wait() async throws {
         guard _wait() else { currentCount += 1; return }
-        try? await _withPromisedContinuation()
+        try await _withPromisedContinuation()
     }
 }

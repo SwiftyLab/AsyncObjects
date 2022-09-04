@@ -14,7 +14,21 @@ import Dispatch
 /// You can start the operation by adding it to an `OperationQueue`,
 /// or by manually calling the ``signal()`` or ``start()`` method.
 /// Wait for operation completion asynchronously by calling ``wait()`` method
-/// or its timeout variation ``wait(forNanoseconds:)``.
+/// or its timeout variation ``wait(forNanoseconds:)``:
+///
+/// ```swift
+/// // create operation with async action
+/// let operation = TaskOperation { try await Task.sleep(nanoseconds: 1_000_000_000) }
+/// // start operation to execute action
+/// operation.start() // operation.signal()
+///
+/// // wait for operation completion asynchrnously, fails only if task cancelled
+/// try await operation.wait()
+/// // or wait with some timeout
+/// try await operation.wait(forNanoseconds: 1_000_000_000)
+/// // or wait synchronously for completion
+/// operation.waitUntilFinished()
+/// ```
 public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     @unchecked Sendable
 {
@@ -252,10 +266,12 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// Only waits asynchronously, if operation is executing,
     /// until it is completed or cancelled.
+    ///
+    /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async {
+    public func wait() async throws {
         guard !isFinished else { return }
-        try? await _withPromisedContinuation()
+        try await _withPromisedContinuation()
     }
 }
 

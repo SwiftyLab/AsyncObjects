@@ -12,7 +12,18 @@ import OrderedCollections
 ///
 /// You increment a semaphore count by calling the ``signal()`` method
 /// and decrement a semaphore count by calling ``wait()`` method
-/// or its timeout variation ``wait(forNanoseconds:)``.
+/// or its timeout variation ``wait(forNanoseconds:)``:
+///
+/// ```swift
+/// // create limiting concurrent access count
+/// let semaphore = AsyncSemaphore(value: 1)
+/// // wait for semaphore access, fails only if task cancelled
+/// try await semaphore.wait()
+/// // or wait with some timeout
+/// try await semaphore.wait(forNanoseconds: 1_000_000_000)
+/// // release after executing critical async tasks
+/// defer { semaphore.signal() }
+/// ```
 public actor AsyncSemaphore: AsyncObject {
     /// The suspended tasks continuation type.
     @usableFromInline
@@ -89,6 +100,15 @@ public actor AsyncSemaphore: AsyncObject {
         }
     }
 
+    /// Signals (increments) and releases a semaphore.
+    @inlinable
+    func _signal() {
+        _incrementCount()
+        guard !continuations.isEmpty else { return }
+        let (_, continuation) = continuations.removeFirst()
+        continuation.resume()
+    }
+
     // MARK: Public
 
     /// Creates new counting semaphore with an initial value.
@@ -98,7 +118,6 @@ public actor AsyncSemaphore: AsyncObject {
     /// Passing a value greater than zero is useful for managing a finite pool of resources, where the pool size is equal to the value.
     ///
     /// - Parameter count: The starting value for the semaphore.
-    ///
     /// - Returns: The newly created semaphore.
     public init(value count: UInt = 0) {
         self.limit = count + 1
@@ -110,22 +129,21 @@ public actor AsyncSemaphore: AsyncObject {
     /// Signals (increments) a semaphore.
     ///
     /// Increment the counting semaphore.
-    /// If the previous value was less than zero,
-    /// current task is resumed from suspension.
-    public func signal() {
-        _incrementCount()
-        guard !continuations.isEmpty else { return }
-        let (_, continuation) = continuations.removeFirst()
-        continuation.resume()
+    /// If any previous task is waiting for access to semaphore,
+    /// then the task is resumed from suspension.
+    public nonisolated func signal() {
+        Task { await _signal() }
     }
 
     /// Waits for, or decrements, a semaphore.
     ///
     /// Decrement the counting semaphore. If the resulting value is less than zero,
     /// current task is suspended until a signal occurs.
+    ///
+    /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async {
+    public func wait() async throws {
         guard count <= 1 else { count -= 1; return }
-        try? await _withPromisedContinuation()
+        try await _withPromisedContinuation()
     }
 }

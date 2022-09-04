@@ -9,7 +9,19 @@ import Foundation
 /// An async event suspends tasks if current state is non-signaled and resumes execution when event is signalled.
 ///
 /// You can signal event by calling the ``signal()`` method and reset signal by calling ``reset()``.
-/// Wait for event signal by calling ``wait()`` method or its timeout variation ``wait(forNanoseconds:)``.
+/// Wait for event signal by calling ``wait()`` method or its timeout variation ``wait(forNanoseconds:)``:
+///
+/// ```swift
+/// // create event with initial state (signalled or not)
+/// let event = AsyncEvent(signaledInitially: false)
+/// // wait for event to be signalled, fails only if task cancelled
+/// try await event.wait()
+/// // or wait with some timeout
+/// try await event.wait(forNanoseconds: 1_000_000_000)
+///
+/// // signal event after completing some task
+/// event.signal()
+/// ```
 public actor AsyncEvent: AsyncObject {
     /// The suspended tasks continuation type.
     @usableFromInline
@@ -72,13 +84,27 @@ public actor AsyncEvent: AsyncObject {
         }
     }
 
+    /// Resets signal of event.
+    @inlinable
+    func _reset() {
+        signalled = false
+    }
+
+    /// Signals the event and resumes all the tasks
+    /// suspended and waiting for signal.
+    @inlinable
+    func _signal() {
+        continuations.forEach { $0.value.resume() }
+        continuations = [:]
+        signalled = true
+    }
+
     // MARK: Public
 
     /// Creates a new event with signal state provided.
     /// By default, event is initially in signalled state.
     ///
     /// - Parameter signalled: The signal state for event.
-    ///
     /// - Returns: The newly created event.
     public init(signaledInitially signalled: Bool = true) {
         self.signalled = signalled
@@ -89,26 +115,26 @@ public actor AsyncEvent: AsyncObject {
     /// Resets signal of event.
     ///
     /// After reset, tasks have to wait for event signal to complete.
-    public func reset() {
-        signalled = false
+    public nonisolated func reset() {
+        Task { await _reset() }
     }
 
     /// Signals the event.
     ///
     /// Resumes all the tasks suspended and waiting for signal.
-    public func signal() {
-        continuations.forEach { $0.value.resume() }
-        continuations = [:]
-        signalled = true
+    public nonisolated func signal() {
+        Task { await _signal() }
     }
 
     /// Waits for event signal, or proceeds if already signalled.
     ///
     /// Only waits asynchronously, if event is in non-signaled state,
     /// until event is signalled.
+    ///
+    /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async {
+    public func wait() async throws {
         guard !signalled else { return }
-        try? await _withPromisedContinuation()
+        try await _withPromisedContinuation()
     }
 }

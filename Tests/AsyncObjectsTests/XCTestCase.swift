@@ -118,10 +118,9 @@ extension XCTestCase {
 }
 
 extension AsyncObject {
-    @discardableResult
     @Sendable
     @inlinable
-    func wait(forSeconds seconds: UInt64) async -> TaskTimeoutResult {
-        return await self.wait(forNanoseconds: seconds * 1_000_000_000)
+    func wait(forSeconds seconds: UInt64) async throws {
+        return try await self.wait(forNanoseconds: seconds * 1_000_000_000)
     }
 }
