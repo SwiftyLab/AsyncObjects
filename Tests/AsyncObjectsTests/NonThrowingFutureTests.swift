@@ -204,6 +204,7 @@ class NonThrowingFutureTests: XCTestCase {
         }
         let _ = await future.value
         self.addTeardownBlock { [weak future] in
+            try await Self.sleep(seconds: 1)
             XCTAssertNil(future)
         }
     }

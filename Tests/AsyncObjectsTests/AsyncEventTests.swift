@@ -81,6 +81,7 @@ class AsyncEventTests: XCTestCase {
         }
         try await event.wait()
         self.addTeardownBlock { [weak event] in
+            try await Self.sleep(seconds: 1)
             XCTAssertNil(event)
         }
     }

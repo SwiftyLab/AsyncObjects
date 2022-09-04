@@ -210,6 +210,7 @@ class CancellationSourceTests: XCTestCase {
         }
         try? await task.value
         self.addTeardownBlock { [weak source] in
+            try await Self.sleep(seconds: 1)
             XCTAssertNil(source)
         }
     }

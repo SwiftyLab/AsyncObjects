@@ -183,6 +183,7 @@ class AsyncSemaphoreTests: XCTestCase {
         }
         try await semaphore.wait()
         self.addTeardownBlock { [weak semaphore] in
+            try await Self.sleep(seconds: 1)
             XCTAssertNil(semaphore)
         }
     }

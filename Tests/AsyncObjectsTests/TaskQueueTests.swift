@@ -743,6 +743,7 @@ class TaskQueueTests: XCTestCase {
         }
         try await Self.sleep(forSeconds: 0.001)
         self.addTeardownBlock { [weak queue] in
+            try await Self.sleep(seconds: 1)
             XCTAssertNil(queue)
         }
     }

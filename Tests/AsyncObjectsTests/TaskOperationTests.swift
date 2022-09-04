@@ -173,6 +173,7 @@ class TaskOperationTests: XCTestCase {
         }
         operation.signal()
         self.addTeardownBlock { [weak operation] in
+            try await Self.sleep(seconds: 1)
             XCTAssertNil(operation)
         }
     }
@@ -182,6 +183,7 @@ class TaskOperationTests: XCTestCase {
         operation.signal()
         try await operation.wait()
         self.addTeardownBlock { [weak operation] in
+            try await Self.sleep(seconds: 1)
             XCTAssertNil(operation)
         }
     }
