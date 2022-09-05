@@ -79,6 +79,7 @@ class AsyncSemaphoreTests: XCTestCase {
     func testSignaledSemaphoreWaitWithTasksGreaterThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
         semaphore.signal()
+        try await Self.sleep(forSeconds: 0.001)
         try await checkSemaphoreWait(
             for: semaphore,
             taskCount: 4,
