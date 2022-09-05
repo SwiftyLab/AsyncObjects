@@ -72,7 +72,7 @@ class ThrowingFutureTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = await Future.all(future1, future2, future3)
+        let allFuture = Future.all(future1, future2, future3)
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
@@ -102,7 +102,7 @@ class ThrowingFutureTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = await Future.all(future1, future2, future3)
+        let allFuture = Future.all(future1, future2, future3)
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
@@ -140,7 +140,7 @@ class ThrowingFutureTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = await Future.allSettled(future1, future2, future3)
+        let allFuture = Future.allSettled(future1, future2, future3)
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
@@ -177,7 +177,7 @@ class ThrowingFutureTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = await Future.allSettled(future1, future2, future3)
+        let allFuture = Future.allSettled(future1, future2, future3)
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
@@ -219,7 +219,7 @@ class ThrowingFutureTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = await Future.race(future1, future2, future3)
+        let allFuture = Future.race(future1, future2, future3)
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
@@ -251,7 +251,7 @@ class ThrowingFutureTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = await Future.race(future1, future2, future3)
+        let allFuture = Future.race(future1, future2, future3)
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
@@ -289,7 +289,7 @@ class ThrowingFutureTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = await Future.any(future1, future2, future3)
+        let allFuture = Future.any(future1, future2, future3)
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
@@ -321,7 +321,7 @@ class ThrowingFutureTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = await Future.any(future1, future2, future3)
+        let allFuture = Future.any(future1, future2, future3)
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
@@ -353,7 +353,7 @@ class ThrowingFutureTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = await Future.any(future1, future2, future3)
+        let allFuture = Future.any(future1, future2, future3)
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
@@ -388,7 +388,7 @@ class ThrowingFutureTests: XCTestCase {
     }
 
     func testConstructingAnyFutureFromZeroFutures() async {
-        let future = await Future<Int, Error>.any()
+        let future = Future<Int, Error>.any()
         let result = await future.result
         switch result {
         case .failure(let error):
@@ -398,13 +398,13 @@ class ThrowingFutureTests: XCTestCase {
     }
 
     func testConstructingAllFutureFromZeroFutures() async throws {
-        let future = await Future<Int, Error>.all()
+        let future = Future<Int, Error>.all()
         let value = try await future.value
         XCTAssertTrue(value.isEmpty)
     }
 
     func testConstructingAllSettledFutureFromZeroFutures() async throws {
-        let future = await Future<Int, Error>.allSettled()
+        let future = Future<Int, Error>.allSettled()
         let value = await future.value
         XCTAssertTrue(value.isEmpty)
     }

@@ -18,11 +18,14 @@ import Dispatch
 ///
 /// ```swift
 /// // create operation with async action
-/// let operation = TaskOperation { try await Task.sleep(nanoseconds: 1_000_000_000) }
+/// let operation = TaskOperation {
+///   try await Task.sleep(nanoseconds: 1_000_000_000)
+/// }
 /// // start operation to execute action
 /// operation.start() // operation.signal()
 ///
-/// // wait for operation completion asynchrnously, fails only if task cancelled
+/// // wait for operation completion asynchronously,
+/// // fails only if task cancelled
 /// try await operation.wait()
 /// // or wait with some timeout
 /// try await operation.wait(forNanoseconds: 1_000_000_000)
@@ -40,7 +43,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// The platform dependent lock used to
     /// synchronize data access and modifications.
     @usableFromInline
-    let locker: Locker
+    internal let locker: Locker
 
     /// A type representing a set of behaviors for the executed
     /// task type and task completion behavior.
@@ -72,7 +75,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
 
     /// Private store for boolean value indicating whether the operation is currently executing.
     @usableFromInline
-    var _isExecuting: Bool = false
+    internal var _isExecuting: Bool = false
     /// A Boolean value indicating whether the operation is currently executing.
     ///
     /// The value of this property is true if the operation is currently executing
@@ -89,7 +92,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
 
     /// Private store for boolean value indicating whether the operation has finished executing its task.
     @usableFromInline
-    var _isFinished: Bool = false
+    internal var _isFinished: Bool = false
     /// A Boolean value indicating whether the operation has finished executing its task.
     ///
     /// The value of this property is true if the operation is finished executing or cancelled
@@ -196,7 +199,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// Must be called either when operation completes or cancelled.
     @inlinable
-    func _finish() {
+    internal func _finish() {
         isExecuting = false
         isFinished = true
     }
@@ -204,10 +207,12 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     // MARK: AsyncObject
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = SafeContinuation<GlobalContinuation<Void, Error>>
+    internal typealias Continuation = SafeContinuation<
+        GlobalContinuation<Void, Error>
+    >
     /// The continuations stored with an associated key for all the suspended task that are waiting for operation completion.
     @usableFromInline
-    private(set) var continuations: [UUID: Continuation] = [:]
+    internal private(set) var continuations: [UUID: Continuation] = [:]
 
     /// Add continuation with the provided key in `continuations` map.
     ///
@@ -215,7 +220,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    func _addContinuation(
+    internal func _addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -231,7 +236,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    func _removeContinuation(withKey key: UUID) {
+    internal func _removeContinuation(withKey key: UUID) {
         locker.perform { continuations.removeValue(forKey: key) }
     }
 
@@ -244,7 +249,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    func _withPromisedContinuation() async throws {
+    internal func _withPromisedContinuation() async throws {
         let key = UUID()
         try await Continuation.withCancellation(synchronizedWith: locker) {
             Task { [weak self] in self?._removeContinuation(withKey: key) }

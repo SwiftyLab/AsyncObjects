@@ -10,6 +10,7 @@ class CancellationSourceTests: XCTestCase {
             try await Self.sleep(seconds: 1)
         }
         source.register(task: task)
+        try await Self.sleep(forSeconds: 0.001)
         source.cancel()
         try await Self.sleep(forSeconds: 0.001)
         XCTAssertTrue(task.isCancelled)

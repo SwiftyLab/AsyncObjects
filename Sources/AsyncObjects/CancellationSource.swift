@@ -1,5 +1,3 @@
-import Foundation
-
 /// An object that controls cooperative cancellation of multiple registered tasks and linked object registered tasks.
 ///
 /// An async event suspends tasks if current state is non-signaled and resumes execution when event is signalled.
@@ -10,12 +8,32 @@ import Foundation
 /// and the cancellation event will be propagated to linked cancellation sources,
 /// which in turn cancels their registered tasks and further propagates cancellation.
 ///
+/// ```swift
+/// // create a root cancellation source
+/// let source = CancellationSource()
+/// // or a child cancellation source linked with multiple parents
+/// let childSource = CancellationSource(linkedWith: source)
+///
+/// // create task registered with cancellation source
+/// let task = Task(cancellationSource: source) {
+///   try await Task.sleep(nanoseconds: 1_000_000_000)
+/// }
+/// // or register already created task with cancellation source
+/// source.register(task: task)
+///
+/// // cancel all registered tasks and tasks registered
+/// // in linked cancellation sources
+/// source.cancel()
+/// // or cancel after some time (fails if calling task cancelled)
+/// try await source.cancel(afterNanoseconds: 1_000_000_000)
+/// ```
+///
 /// - Warning: Cancellation sources propagate cancellation event to other linked cancellation sources.
 ///            In case of circular dependency between cancellation sources, app will go into infinite recursion.
 public actor CancellationSource {
     /// All the registered tasks for cooperative cancellation.
     @usableFromInline
-    private(set) var registeredTasks: [AnyHashable: () -> Void] = [:]
+    internal private(set) var registeredTasks: [AnyHashable: () -> Void] = [:]
     /// All the linked cancellation sources that cancellation event will be propagated.
     ///
     /// - TODO: Store weak reference for cancellation sources.
@@ -23,7 +41,7 @@ public actor CancellationSource {
     /// private var linkedSources: NSHashTable<CancellationSource> = .weakObjects()
     /// ```
     @usableFromInline
-    private(set) var linkedSources: [CancellationSource] = []
+    internal private(set) var linkedSources: [CancellationSource] = []
 
     // MARK: Internal
 
@@ -31,7 +49,7 @@ public actor CancellationSource {
     ///
     /// - Parameter task: The task to register.
     @inlinable
-    func _add<Success, Failure>(task: Task<Success, Failure>) {
+    internal func _add<Success, Failure>(task: Task<Success, Failure>) {
         guard !task.isCancelled else { return }
         registeredTasks[task] = { task.cancel() }
     }
@@ -40,7 +58,7 @@ public actor CancellationSource {
     ///
     /// - Parameter task: The task to remove.
     @inlinable
-    func _remove<Success, Failure>(task: Task<Success, Failure>) {
+    internal func _remove<Success, Failure>(task: Task<Success, Failure>) {
         registeredTasks.removeValue(forKey: task)
     }
 
@@ -48,13 +66,13 @@ public actor CancellationSource {
     ///
     /// - Parameter task: The source to link.
     @inlinable
-    func _addSource(_ source: CancellationSource) {
+    internal func _addSource(_ source: CancellationSource) {
         linkedSources.append(source)
     }
 
     /// Propagate cancellation to linked cancellation sources.
     @inlinable
-    nonisolated func _propagateCancellation() async {
+    internal nonisolated func _propagateCancellation() async {
         await withTaskGroup(of: Void.self) { group in
             let linkedSources = await linkedSources
             linkedSources.forEach { group.addTask(operation: $0.cancel) }
@@ -64,8 +82,7 @@ public actor CancellationSource {
 
     /// Trigger cancellation event, initiate cooperative cancellation of registered tasks
     /// and propagate cancellation to linked cancellation sources.
-    @Sendable
-    public func _cancel() async {
+    internal func _cancel() async {
         registeredTasks.forEach { $1() }
         registeredTasks = [:]
         await _propagateCancellation()
@@ -175,6 +192,7 @@ public actor CancellationSource {
     /// If task completes before cancellation event is triggered, it is automatically unregistered.
     ///
     /// - Parameter task: The task to register.
+    @Sendable
     public nonisolated func register<Success, Failure>(
         task: Task<Success, Failure>
     ) {

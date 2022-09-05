@@ -14,7 +14,8 @@ import Foundation
 /// ```swift
 /// // create event with initial state (signalled or not)
 /// let event = AsyncEvent(signaledInitially: false)
-/// // wait for event to be signalled, fails only if task cancelled
+/// // wait for event to be signalled,
+/// // fails only if task cancelled
 /// try await event.wait()
 /// // or wait with some timeout
 /// try await event.wait(forNanoseconds: 1_000_000_000)
@@ -25,16 +26,18 @@ import Foundation
 public actor AsyncEvent: AsyncObject {
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = SafeContinuation<GlobalContinuation<Void, Error>>
+    internal typealias Continuation = SafeContinuation<
+        GlobalContinuation<Void, Error>
+    >
     /// The platform dependent lock used to synchronize continuations tracking.
     @usableFromInline
-    let locker: Locker = .init()
+    internal let locker: Locker = .init()
     /// The continuations stored with an associated key for all the suspended task that are waiting for event signal.
     @usableFromInline
-    private(set) var continuations: [UUID: Continuation] = [:]
+    internal private(set) var continuations: [UUID: Continuation] = [:]
     /// Indicates whether current state of event is signalled.
     @usableFromInline
-    var signalled: Bool
+    internal private(set) var signalled: Bool
 
     // MARK: Internal
 
@@ -44,7 +47,7 @@ public actor AsyncEvent: AsyncObject {
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    func _addContinuation(
+    internal func _addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -58,7 +61,7 @@ public actor AsyncEvent: AsyncObject {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    func _removeContinuation(withKey key: UUID) {
+    internal func _removeContinuation(withKey key: UUID) {
         continuations.removeValue(forKey: key)
     }
 
@@ -71,7 +74,7 @@ public actor AsyncEvent: AsyncObject {
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    nonisolated func _withPromisedContinuation() async throws {
+    internal nonisolated func _withPromisedContinuation() async throws {
         let key = UUID()
         try await Continuation.withCancellation(synchronizedWith: locker) {
             Task { [weak self] in
@@ -86,14 +89,14 @@ public actor AsyncEvent: AsyncObject {
 
     /// Resets signal of event.
     @inlinable
-    func _reset() {
+    internal func _reset() {
         signalled = false
     }
 
     /// Signals the event and resumes all the tasks
     /// suspended and waiting for signal.
     @inlinable
-    func _signal() {
+    internal func _signal() {
         continuations.forEach { $0.value.resume() }
         continuations = [:]
         signalled = true
@@ -115,6 +118,7 @@ public actor AsyncEvent: AsyncObject {
     /// Resets signal of event.
     ///
     /// After reset, tasks have to wait for event signal to complete.
+    @Sendable
     public nonisolated func reset() {
         Task { await _reset() }
     }
@@ -122,6 +126,7 @@ public actor AsyncEvent: AsyncObject {
     /// Signals the event.
     ///
     /// Resumes all the tasks suspended and waiting for signal.
+    @Sendable
     public nonisolated func signal() {
         Task { await _signal() }
     }

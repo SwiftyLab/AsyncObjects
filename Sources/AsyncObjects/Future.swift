@@ -14,6 +14,31 @@ import Foundation
 /// by using ``fulfill(with:)`` method. In the success case,
 /// the future’s downstream subscriber receives the element prior to the publishing stream finishing normally.
 /// If the result is an error, publishing terminates with that error.
+///
+/// ```swift
+/// // create a new unfulfilled future that is cancellable
+/// let future = Future<Int, Error>()
+/// // or create a new unfulfilled future
+/// // that is assured to be fulfilled
+/// let future = Future<Int, Never>()
+/// // or create a future passing callback
+/// // that fulfills the future
+/// let future = Future<Int, Never> { promise in
+///     DispatchQueue.global(qos: .background)
+///         .asyncAfter(deadline: .now() + 2) {
+///             promise(.success(5))
+///         }
+/// }
+///
+/// // wait for future to be fulfilled with some value
+/// // or cancelled with some error
+/// let value = try await future.value
+///
+/// // fulfill future with some value
+/// await future.fulfill(producing: 5)
+/// // or cancel future with error
+/// await future.fulfill(throwing: CancellationError())
+/// ```
 public actor Future<Output: Sendable, Failure: Error> {
     /// A type that represents a closure to invoke in the future, when an element or error is available.
     ///
@@ -24,14 +49,16 @@ public actor Future<Output: Sendable, Failure: Error> {
     public typealias FutureResult = Result<Output, Failure>
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = SafeContinuation<GlobalContinuation<Output, Failure>>
+    internal typealias Continuation = SafeContinuation<
+        GlobalContinuation<Output, Failure>
+    >
     /// The platform dependent lock used to synchronize continuations tracking.
     @usableFromInline
-    let locker: Locker = .init()
+    internal let locker: Locker = .init()
     /// The continuations stored with an associated key for all the suspended task
     /// that are waiting for future to be fulfilled.
     @usableFromInline
-    private(set) var continuations: [UUID: Continuation] = [:]
+    internal private(set) var continuations: [UUID: Continuation] = [:]
     /// The underlying `Result` that indicates either future fulfilled or rejected.
     ///
     /// If future isn't fulfilled or rejected, the value is `nil`.
@@ -43,7 +70,7 @@ public actor Future<Output: Sendable, Failure: Error> {
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    func _addContinuation(
+    internal func _addContinuation(
         _ continuation: Continuation,
         withKey key: UUID = .init()
     ) {
@@ -56,7 +83,7 @@ public actor Future<Output: Sendable, Failure: Error> {
     /// any other variation of this methods.
     ///
     /// - Returns: The newly created future.
-    public init() { }
+    public init() {}
 
     /// Create an already fulfilled promise with the provided `Result`.
     ///
@@ -67,6 +94,7 @@ public actor Future<Output: Sendable, Failure: Error> {
         self.result = result
     }
 
+    #if swift(>=5.7)
     /// Creates a future that invokes a promise closure when the publisher emits an element.
     ///
     /// - Parameters:
@@ -76,11 +104,41 @@ public actor Future<Output: Sendable, Failure: Error> {
     /// - Returns: The newly created future.
     public init(
         attemptToFulfill: @Sendable @escaping (
-            @escaping Future<Output, Failure>.Promise
+            @escaping Promise
         ) async -> Void
-    ) async {
-        Task { await attemptToFulfill(self.fulfill(with:)) }
+    ) {
+        self.init()
+        Task {
+            await attemptToFulfill { result in
+                Task { [weak self] in
+                    await self?.fulfill(with: result)
+                }
+            }
+        }
     }
+    #else
+    /// Creates a future that invokes a promise closure when the publisher emits an element.
+    ///
+    /// - Parameters:
+    ///   - attemptToFulfill: A ``Future/Promise`` that the publisher invokes
+    ///                       when the publisher emits an element or terminates with an error.
+    ///
+    /// - Returns: The newly created future.
+    public convenience init(
+        attemptToFulfill: @Sendable @escaping (
+            @escaping Promise
+        ) async -> Void
+    ) {
+        self.init()
+        Task {
+            await attemptToFulfill { result in
+                Task { [weak self] in
+                    await self?.fulfill(with: result)
+                }
+            }
+        }
+    }
+    #endif
 
     deinit {
         guard Failure.self is Error.Protocol else { return }
@@ -133,7 +191,7 @@ extension Future where Failure == Never {
     ///
     /// - Returns: The value continuation is resumed with.
     @inlinable
-    nonisolated func _withPromisedContinuation() async -> Output {
+    internal nonisolated func _withPromisedContinuation() async -> Output {
         return await Continuation.with { continuation in
             Task { [weak self] in
                 await self?._addContinuation(continuation)
@@ -164,10 +222,10 @@ extension Future where Failure == Never {
     ///            combining provided futures.
     public static func all(
         _ futures: [Future<Output, Failure>]
-    ) async -> Future<[Output], Failure> {
+    ) -> Future<[Output], Failure> {
         typealias IndexedOutput = (index: Int, value: Output)
         guard !futures.isEmpty else { return .init(with: .success([])) }
-        return await .init { promise in
+        return .init { promise in
             await withTaskGroup(of: IndexedOutput.self) { group in
                 var result: [IndexedOutput] = []
                 result.reserveCapacity(futures.count)
@@ -195,8 +253,8 @@ extension Future where Failure == Never {
     ///            combining provided futures.
     public static func all(
         _ futures: Future<Output, Failure>...
-    ) async -> Future<[Output], Failure> {
-        return await Self.all(futures)
+    ) -> Future<[Output], Failure> {
+        return Self.all(futures)
     }
 
     /// Combines into a single future, for all futures to have settled.
@@ -211,10 +269,10 @@ extension Future where Failure == Never {
     ///            combining provided futures.
     public static func allSettled(
         _ futures: [Future<Output, Failure>]
-    ) async -> Future<[FutureResult], Never> {
+    ) -> Future<[FutureResult], Never> {
         typealias IndexedOutput = (index: Int, value: FutureResult)
         guard !futures.isEmpty else { return .init(with: .success([])) }
-        return await .init { promise in
+        return .init { promise in
             await withTaskGroup(of: IndexedOutput.self) { group in
                 var result: [IndexedOutput] = []
                 result.reserveCapacity(futures.count)
@@ -245,8 +303,8 @@ extension Future where Failure == Never {
     ///            combining provided futures.
     public static func allSettled(
         _ futures: Future<Output, Failure>...
-    ) async -> Future<[FutureResult], Never> {
-        return await Self.allSettled(futures)
+    ) -> Future<[FutureResult], Never> {
+        return Self.allSettled(futures)
     }
 
     /// Takes multiple futures and, returns a single future that fulfills with the value
@@ -260,8 +318,8 @@ extension Future where Failure == Never {
     ///            if no future provided.
     public static func race(
         _ futures: [Future<Output, Failure>]
-    ) async -> Future<Output, Failure> {
-        return await .init { promise in
+    ) -> Future<Output, Failure> {
+        return .init { promise in
             await withTaskGroup(of: Output.self) { group in
                 futures.forEach { future in
                     group.addTask { await future.value }
@@ -285,8 +343,8 @@ extension Future where Failure == Never {
     ///            if no future provided.
     public static func race(
         _ futures: Future<Output, Failure>...
-    ) async -> Future<Output, Failure> {
-        return await Self.race(futures)
+    ) -> Future<Output, Failure> {
+        return Self.race(futures)
     }
 
     /// Takes multiple futures and, returns a single future that fulfills with the value as soon as one of the futures fulfills.
@@ -299,8 +357,8 @@ extension Future where Failure == Never {
     ///            or a forever pending future if no future provided.
     public static func any(
         _ futures: [Future<Output, Failure>]
-    ) async -> Future<Output, Failure> {
-        return await Self.race(futures)
+    ) -> Future<Output, Failure> {
+        return Self.race(futures)
     }
 
     /// Takes multiple futures and, returns a single future that fulfills with the value as soon as one of the futures fulfills.
@@ -313,8 +371,8 @@ extension Future where Failure == Never {
     ///            or a forever pending future if no future provided.
     public static func any(
         _ futures: Future<Output, Failure>...
-    ) async -> Future<Output, Failure> {
-        return await Self.any(futures)
+    ) -> Future<Output, Failure> {
+        return Self.any(futures)
     }
 }
 
@@ -325,7 +383,7 @@ extension Future where Failure == Error {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    func _removeContinuation(withKey key: UUID) {
+    internal func _removeContinuation(withKey key: UUID) {
         continuations.removeValue(forKey: key)
     }
 
@@ -340,7 +398,8 @@ extension Future where Failure == Error {
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    nonisolated func _withPromisedContinuation() async throws -> Output {
+    internal nonisolated func _withPromisedContinuation() async throws -> Output
+    {
         let key = UUID()
         return try await Continuation.withCancellation(
             synchronizedWith: locker
@@ -383,10 +442,10 @@ extension Future where Failure == Error {
     ///            combining provided futures.
     public static func all(
         _ futures: [Future<Output, Failure>]
-    ) async -> Future<[Output], Failure> {
+    ) -> Future<[Output], Failure> {
         typealias IndexedOutput = (index: Int, value: Output)
         guard !futures.isEmpty else { return .init(with: .success([])) }
-        return await .init { promise in
+        return .init { promise in
             await withThrowingTaskGroup(of: IndexedOutput.self) { group in
                 var result: [IndexedOutput] = []
                 result.reserveCapacity(futures.count)
@@ -423,8 +482,8 @@ extension Future where Failure == Error {
     ///            combining provided futures.
     public static func all(
         _ futures: Future<Output, Failure>...
-    ) async -> Future<[Output], Failure> {
-        return await Self.all(futures)
+    ) -> Future<[Output], Failure> {
+        return Self.all(futures)
     }
 
     /// Combines into a single future, for all futures to have settled (each may fulfill or reject).
@@ -439,10 +498,10 @@ extension Future where Failure == Error {
     ///            combining provided futures.
     public static func allSettled(
         _ futures: [Future<Output, Failure>]
-    ) async -> Future<[FutureResult], Never> {
+    ) -> Future<[FutureResult], Never> {
         typealias IndexedOutput = (index: Int, value: FutureResult)
         guard !futures.isEmpty else { return .init(with: .success([])) }
-        return await .init { promise in
+        return .init { promise in
             await withTaskGroup(of: IndexedOutput.self) { group in
                 var result: [IndexedOutput] = []
                 result.reserveCapacity(futures.count)
@@ -478,8 +537,8 @@ extension Future where Failure == Error {
     ///            combining provided futures.
     public static func allSettled(
         _ futures: Future<Output, Failure>...
-    ) async -> Future<[FutureResult], Never> {
-        return await Self.allSettled(futures)
+    ) -> Future<[FutureResult], Never> {
+        return Self.allSettled(futures)
     }
 
     /// Takes multiple futures and, returns a single future that fulfills with the value
@@ -495,8 +554,8 @@ extension Future where Failure == Error {
     ///            if no future provided.
     public static func race(
         _ futures: [Future<Output, Failure>]
-    ) async -> Future<Output, Failure> {
-        return await .init { promise in
+    ) -> Future<Output, Failure> {
+        return .init { promise in
             await withThrowingTaskGroup(of: Output.self) { group in
                 futures.forEach { future in
                     group.addTask { try await future.value }
@@ -526,8 +585,8 @@ extension Future where Failure == Error {
     ///            if no future provided.
     public static func race(
         _ futures: Future<Output, Failure>...
-    ) async -> Future<Output, Failure> {
-        return await Self.race(futures)
+    ) -> Future<Output, Failure> {
+        return Self.race(futures)
     }
 
     /// Takes multiple futures and, returns a single future that fulfills with the value as soon as one of the futures fulfills.
@@ -542,9 +601,9 @@ extension Future where Failure == Error {
     ///            or a future rejected with `CancellationError` if no future provided.
     public static func any(
         _ futures: [Future<Output, Failure>]
-    ) async -> Future<Output, Failure> {
+    ) -> Future<Output, Failure> {
         guard !futures.isEmpty else { return .init(with: .cancelled) }
-        return await .init { promise in
+        return .init { promise in
             await withTaskGroup(of: FutureResult.self) { group in
                 futures.forEach { future in
                     group.addTask {
@@ -589,8 +648,8 @@ extension Future where Failure == Error {
     ///            or a future rejected with `CancellationError` if no future provided.
     public static func any(
         _ futures: Future<Output, Failure>...
-    ) async -> Future<Output, Failure> {
-        return await Self.any(futures)
+    ) -> Future<Output, Failure> {
+        return Self.any(futures)
     }
 }
 

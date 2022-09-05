@@ -16,7 +16,8 @@ public protocol AsyncObject: Sendable {
     /// Waits asynchronously suspending current  task, instead of blocking any thread.
     /// Async object has to resume the task at a later time depending on its requirement.
     ///
-    /// - Throws: `CancellationError` if cancelled.
+    /// Might throw some error or never throws depending on implementation.
+    ///
     /// - Note: Method might return immediately depending upon the synchronization object requirement.
     @Sendable
     func wait() async throws

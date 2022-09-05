@@ -23,7 +23,8 @@ import OrderedCollections
 /// // increment countdown count from high priority tasks
 /// event.increment(by: 1)
 ///
-/// // wait for countdown signal from low priority tasks, fails only if task cancelled
+/// // wait for countdown signal from low priority tasks,
+/// // fails only if task cancelled
 /// try await event.wait()
 /// // or wait with some timeout
 /// try await event.wait(forNanoseconds: 1_000_000_000)
@@ -37,13 +38,19 @@ import OrderedCollections
 public actor AsyncCountdownEvent: AsyncObject {
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = SafeContinuation<GlobalContinuation<Void, Error>>
+    internal typealias Continuation = SafeContinuation<
+        GlobalContinuation<Void, Error>
+    >
     /// The platform dependent lock used to synchronize continuations tracking.
     @usableFromInline
-    let locker: Locker = .init()
+    internal let locker: Locker = .init()
     /// The continuations stored with an associated key for all the suspended task that are waiting to be resumed.
     @usableFromInline
-    private(set) var continuations: OrderedDictionary<UUID, Continuation> = [:]
+    internal private(set) var continuations:
+        OrderedDictionary<
+            UUID,
+            Continuation
+        > = [:]
     /// The limit up to which the countdown counts and triggers event.
     ///
     /// By default this is set to zero and can be changed during initialization.
@@ -69,13 +76,13 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// - Returns: Whether to wait to be resumed later.
     @inlinable
-    func _wait() -> Bool { !isSet || !continuations.isEmpty }
+    internal func _wait() -> Bool { !isSet || !continuations.isEmpty }
 
     /// Resume provided continuation with additional changes based on the associated flags.
     ///
     /// - Parameter continuation: The queued continuation to resume.
     @inlinable
-    func _resumeContinuation(_ continuation: Continuation) {
+    internal func _resumeContinuation(_ continuation: Continuation) {
         currentCount += 1
         continuation.resume()
     }
@@ -86,7 +93,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    func _addContinuation(
+    internal func _addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -100,7 +107,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    func _removeContinuation(withKey key: UUID) {
+    internal func _removeContinuation(withKey key: UUID) {
         continuations.removeValue(forKey: key)
     }
 
@@ -108,7 +115,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// - Parameter number: The number to decrement count by.
     @inlinable
-    func _decrementCount(by number: UInt = 1) {
+    internal func _decrementCount(by number: UInt = 1) {
         defer { _resumeContinuations() }
         guard currentCount > 0 else { return }
         currentCount -= number
@@ -116,7 +123,7 @@ public actor AsyncCountdownEvent: AsyncObject {
 
     /// Resume previously waiting continuations for countdown event.
     @inlinable
-    func _resumeContinuations() {
+    internal func _resumeContinuations() {
         while !continuations.isEmpty && isSet {
             let (_, continuation) = continuations.removeFirst()
             _resumeContinuation(continuation)
@@ -132,7 +139,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    nonisolated func _withPromisedContinuation() async throws {
+    internal nonisolated func _withPromisedContinuation() async throws {
         let key = UUID()
         try await Continuation.withCancellation(synchronizedWith: locker) {
             Task { [weak self] in
@@ -149,13 +156,13 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// - Parameter count: The value by which to increase ``currentCount``.
     @inlinable
-    func _increment(by count: UInt = 1) {
+    internal func _increment(by count: UInt = 1) {
         self.currentCount += count
     }
 
     /// Resets current count to initial count.
     @inlinable
-    func _reset() {
+    internal func _reset() {
         self.currentCount = initialCount
         _resumeContinuations()
     }
@@ -164,7 +171,7 @@ public actor AsyncCountdownEvent: AsyncObject {
     ///
     /// - Parameter count: The new initial count.
     @inlinable
-    func _reset(to count: UInt) {
+    internal func _reset(to count: UInt) {
         initialCount = count
         self.currentCount = count
         _resumeContinuations()

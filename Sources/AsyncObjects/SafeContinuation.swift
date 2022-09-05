@@ -205,7 +205,7 @@ public final class SafeContinuation<C: Continuable>: Continuable {
 }
 
 extension SafeContinuation: ThrowingContinuable where C: ThrowingContinuable {
-    /// Suspends the current task, then calls the given operation with a``SafeContinuation``
+    /// Suspends the current task, then calls the given operation with a ``SafeContinuation``
     /// for the current task with a cancellation handler that’s immediately invoked if the current task is canceled.
     ///
     /// This differs from the operation cooperatively checking for cancellation and reacting to it in that

@@ -17,7 +17,8 @@ import OrderedCollections
 /// ```swift
 /// // create limiting concurrent access count
 /// let semaphore = AsyncSemaphore(value: 1)
-/// // wait for semaphore access, fails only if task cancelled
+/// // wait for semaphore access,
+/// // fails only if task cancelled
 /// try await semaphore.wait()
 /// // or wait with some timeout
 /// try await semaphore.wait(forNanoseconds: 1_000_000_000)
@@ -27,21 +28,27 @@ import OrderedCollections
 public actor AsyncSemaphore: AsyncObject {
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = SafeContinuation<GlobalContinuation<Void, Error>>
+    internal typealias Continuation = SafeContinuation<
+        GlobalContinuation<Void, Error>
+    >
     /// The platform dependent lock used to synchronize continuations tracking.
     @usableFromInline
-    let locker: Locker = .init()
+    internal let locker: Locker = .init()
     /// The continuations stored with an associated key for all the suspended task that are waiting for access to resource.
     @usableFromInline
-    private(set) var continuations: OrderedDictionary<UUID, Continuation> = [:]
+    internal private(set) var continuations:
+        OrderedDictionary<
+            UUID,
+            Continuation
+        > = [:]
     /// Pool size for concurrent resource access.
     /// Has value provided during initialization incremented by one.
     @usableFromInline
-    let limit: UInt
+    internal let limit: UInt
     /// Current count of semaphore.
     /// Can have maximum value up to `limit`.
     @usableFromInline
-    private(set) var count: Int
+    internal private(set) var count: Int
 
     // MARK: Internal
 
@@ -51,7 +58,7 @@ public actor AsyncSemaphore: AsyncObject {
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    func _addContinuation(
+    internal func _addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -66,14 +73,14 @@ public actor AsyncSemaphore: AsyncObject {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    func _removeContinuation(withKey key: UUID) {
+    internal func _removeContinuation(withKey key: UUID) {
         continuations.removeValue(forKey: key)
         _incrementCount()
     }
 
     /// Increments semaphore count within limit provided.
     @inlinable
-    func _incrementCount() {
+    internal func _incrementCount() {
         guard count < limit else { return }
         count += 1
     }
@@ -87,7 +94,7 @@ public actor AsyncSemaphore: AsyncObject {
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    nonisolated func _withPromisedContinuation() async throws {
+    internal nonisolated func _withPromisedContinuation() async throws {
         let key = UUID()
         try await Continuation.withCancellation(synchronizedWith: locker) {
             Task { [weak self] in
@@ -102,7 +109,7 @@ public actor AsyncSemaphore: AsyncObject {
 
     /// Signals (increments) and releases a semaphore.
     @inlinable
-    func _signal() {
+    internal func _signal() {
         _incrementCount()
         guard !continuations.isEmpty else { return }
         let (_, continuation) = continuations.removeFirst()
@@ -131,6 +138,7 @@ public actor AsyncSemaphore: AsyncObject {
     /// Increment the counting semaphore.
     /// If any previous task is waiting for access to semaphore,
     /// then the task is resumed from suspension.
+    @Sendable
     public nonisolated func signal() {
         Task { await _signal() }
     }
