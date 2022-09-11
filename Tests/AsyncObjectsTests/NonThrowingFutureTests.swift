@@ -7,7 +7,7 @@ class NonThrowingFutureTests: XCTestCase {
 
     func testFutureFulfilledInitialization() async throws {
         let future = Future<Int, Never>(with: .success(5))
-        let value = await future.value
+        let value = await future.get()
         XCTAssertEqual(value, 5)
     }
 
@@ -15,7 +15,7 @@ class NonThrowingFutureTests: XCTestCase {
         let future = Future<Int, Never>()
         await withTaskGroup(of: Void.self) { group in
             group.addTask {
-                let value = await future.value
+                let value = await future.get()
                 XCTAssertEqual(value, 5)
             }
             group.addTask {
@@ -33,7 +33,7 @@ class NonThrowingFutureTests: XCTestCase {
                     promise(.success(5))
                 }
         }
-        let value = await future.value
+        let value = await future.get()
         XCTAssertEqual(value, 5)
     }
 
@@ -45,7 +45,7 @@ class NonThrowingFutureTests: XCTestCase {
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    let value = await allFuture.value
+                    let value = await allFuture.get()
                     XCTAssertEqual(value, [1, 3, 2])
                 }
                 // Make sure previous tasks started
@@ -75,7 +75,7 @@ class NonThrowingFutureTests: XCTestCase {
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    let values = await allFuture.value
+                    let values = await allFuture.get()
                     for (index, item) in values.enumerated() {
                         switch item {
                         case .success(let value):
@@ -113,7 +113,7 @@ class NonThrowingFutureTests: XCTestCase {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     await Self.checkExecInterval(durationInSeconds: 1) {
-                        let value = await allFuture.value
+                        let value = await allFuture.get()
                         XCTAssertEqual(value, 1)
                     }
                 }
@@ -145,7 +145,7 @@ class NonThrowingFutureTests: XCTestCase {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     await Self.checkExecInterval(durationInSeconds: 1) {
-                        let value = await allFuture.value
+                        let value = await allFuture.get()
                         XCTAssertEqual(value, 1)
                     }
                 }
@@ -170,20 +170,20 @@ class NonThrowingFutureTests: XCTestCase {
 
     func testConstructingAllFutureFromZeroFutures() async {
         let future = Future<Int, Never>.all()
-        let value = await future.value
+        let value = await future.get()
         XCTAssertTrue(value.isEmpty)
     }
 
     func testConstructingAllSettledFutureFromZeroFutures() async {
         let future = Future<Int, Never>.allSettled()
-        let value = await future.value
+        let value = await future.get()
         XCTAssertTrue(value.isEmpty)
     }
 
     func testMultipleTimesFutureFulfilled() async throws {
         let future = Future<Int, Never>(with: .success(5))
         await future.fulfill(producing: 10)
-        let value = await future.value
+        let value = await future.get()
         XCTAssertEqual(value, 5)
     }
 
@@ -202,7 +202,7 @@ class NonThrowingFutureTests: XCTestCase {
             try await Self.sleep(seconds: 1)
             await future.fulfill(producing: 5)
         }
-        let _ = await future.value
+        let _ = await future.get()
         self.addTeardownBlock { [weak future] in
             try await Self.sleep(seconds: 1)
             XCTAssertNil(future)
@@ -216,7 +216,7 @@ class NonThrowingFutureTests: XCTestCase {
                     let future = Future<Int, Never>()
                     await Self.checkExecInterval(durationInSeconds: 0) {
                         await withTaskGroup(of: Void.self) { group in
-                            group.addTask { let _ = await future.value }
+                            group.addTask { let _ = await future.get() }
                             group.addTask { await future.fulfill(producing: i) }
                             await group.waitForAll()
                         }

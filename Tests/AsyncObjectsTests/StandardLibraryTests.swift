@@ -1,4 +1,5 @@
 import XCTest
+@testable import AsyncObjects
 
 /// Tests inner workings of structured concurrency
 class StandardLibraryTests: XCTestCase {

@@ -7,7 +7,7 @@ class ThrowingFutureTests: XCTestCase {
 
     func testFutureFulfilledInitialization() async throws {
         let future = Future<Int, Error>(with: .success(5))
-        let value = try await future.value
+        let value = try await future.get()
         XCTAssertEqual(value, 5)
     }
 
@@ -15,7 +15,7 @@ class ThrowingFutureTests: XCTestCase {
         let future = Future<Int, Error>()
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask {
-                let value = try await future.value
+                let value = try await future.get()
                 XCTAssertEqual(value, 5)
             }
             group.addTask {
@@ -31,7 +31,7 @@ class ThrowingFutureTests: XCTestCase {
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask {
                 do {
-                    let _ = try await future.value
+                    let _ = try await future.get()
                     XCTFail("Unexpected task progression")
                 } catch {
                     XCTAssertTrue(type(of: error) == CancellationError.self)
@@ -49,7 +49,7 @@ class ThrowingFutureTests: XCTestCase {
         let future = Future<Int, Error>()
         let waitTask = Task {
             do {
-                let _ = try await future.value
+                let _ = try await future.get()
                 XCTFail("Future fulfillments wait not cancelled")
             } catch {
                 XCTAssertTrue(type(of: error) == CancellationError.self)
@@ -76,7 +76,7 @@ class ThrowingFutureTests: XCTestCase {
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    let value = try await allFuture.value
+                    let value = try await allFuture.get()
                     XCTAssertEqual(value, [1, 2, 3])
                 }
                 // Make sure previous tasks started
@@ -108,7 +108,7 @@ class ThrowingFutureTests: XCTestCase {
                 await group.addTaskAndStart {
                     await Self.checkExecInterval(durationInSeconds: 2) {
                         do {
-                            let _ = try await allFuture.value
+                            let _ = try await allFuture.get()
                             XCTFail("Future fulfillment did not fail")
                         } catch {
                             XCTAssertTrue(
@@ -144,7 +144,7 @@ class ThrowingFutureTests: XCTestCase {
         try await Self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    let values = await allFuture.value
+                    let values = await allFuture.get()
                     for (index, item) in values.enumerated() {
                         switch item {
                         case .success(let value):
@@ -182,7 +182,7 @@ class ThrowingFutureTests: XCTestCase {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     await Self.checkExecInterval(durationInSeconds: 3) {
-                        let values = await allFuture.value
+                        let values = await allFuture.get()
                         for (index, item) in values.enumerated() {
                             switch item {
                             case .success(let value):
@@ -224,7 +224,7 @@ class ThrowingFutureTests: XCTestCase {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await Self.checkExecInterval(durationInSeconds: 1) {
-                        let value = try await allFuture.value
+                        let value = try await allFuture.get()
                         XCTAssertEqual(value, 1)
                     }
                 }
@@ -257,7 +257,7 @@ class ThrowingFutureTests: XCTestCase {
                 await group.addTaskAndStart {
                     await Self.checkExecInterval(durationInSeconds: 1) {
                         do {
-                            let _ = try await allFuture.value
+                            let _ = try await allFuture.get()
                             XCTFail("Future fulfillment did not fail")
                         } catch {
                             XCTAssertTrue(
@@ -294,7 +294,7 @@ class ThrowingFutureTests: XCTestCase {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await Self.checkExecInterval(durationInSeconds: 1) {
-                        let value = try await allFuture.value
+                        let value = try await allFuture.get()
                         XCTAssertEqual(value, 1)
                     }
                 }
@@ -326,7 +326,7 @@ class ThrowingFutureTests: XCTestCase {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
                     try await Self.checkExecInterval(durationInSeconds: 2) {
-                        let value = try await allFuture.value
+                        let value = try await allFuture.get()
                         XCTAssertEqual(value, 2)
                     }
                 }
@@ -359,7 +359,7 @@ class ThrowingFutureTests: XCTestCase {
                 await group.addTaskAndStart {
                     await Self.checkExecInterval(durationInSeconds: 3) {
                         do {
-                            let _ = try await allFuture.value
+                            let _ = try await allFuture.get()
                             XCTFail("Future fulfillment did not fail")
                         } catch {
                             XCTAssertTrue(
@@ -399,20 +399,20 @@ class ThrowingFutureTests: XCTestCase {
 
     func testConstructingAllFutureFromZeroFutures() async throws {
         let future = Future<Int, Error>.all()
-        let value = try await future.value
+        let value = try await future.get()
         XCTAssertTrue(value.isEmpty)
     }
 
     func testConstructingAllSettledFutureFromZeroFutures() async throws {
         let future = Future<Int, Error>.allSettled()
-        let value = await future.value
+        let value = await future.get()
         XCTAssertTrue(value.isEmpty)
     }
 
     func testMultipleTimesFutureFulfilled() async throws {
         let future = Future<Int, Error>(with: .success(5))
         await future.fulfill(producing: 10)
-        let value = try await future.value
+        let value = try await future.get()
         XCTAssertEqual(value, 5)
     }
 
@@ -422,7 +422,7 @@ class ThrowingFutureTests: XCTestCase {
             try await Self.sleep(seconds: 1)
             await future.fulfill(producing: 5)
         }
-        let _ = try await future.value
+        let _ = try await future.get()
         self.addTeardownBlock { [weak future] in
             try await Self.sleep(seconds: 1)
             XCTAssertNil(future)
@@ -434,7 +434,7 @@ class ThrowingFutureTests: XCTestCase {
         let task = Task.detached {
             await Self.checkExecInterval(durationInSeconds: 0) {
                 do {
-                    let _ = try await future.value
+                    let _ = try await future.get()
                     XCTFail("Unexpected task progression")
                 } catch {
                     XCTAssertTrue(type(of: error) == CancellationError.self)
@@ -455,7 +455,7 @@ class ThrowingFutureTests: XCTestCase {
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
                 do {
-                    let _ = try await future.value
+                    let _ = try await future.get()
                     XCTFail("Unexpected task progression")
                 } catch {
                     XCTAssertTrue(type(of: error) == CancellationError.self)
@@ -474,7 +474,7 @@ class ThrowingFutureTests: XCTestCase {
                     try await Self.checkExecInterval(durationInSeconds: 0) {
                         try await withThrowingTaskGroup(of: Void.self) {
                             group in
-                            group.addTask { let _ = try await future.value }
+                            group.addTask { let _ = try await future.get() }
                             group.addTask { await future.fulfill(producing: i) }
                             try await group.waitForAll()
                         }

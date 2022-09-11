@@ -35,7 +35,7 @@ import OrderedCollections
 ///
 /// Use the ``limit`` parameter to indicate concurrent low priority usage, i.e. if limit set to zero,
 /// only one low priority usage allowed at one time.
-public actor AsyncCountdownEvent: AsyncObject {
+public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     /// The suspended tasks continuation type.
     @usableFromInline
     internal typealias Continuation = SafeContinuation<
@@ -127,28 +127,6 @@ public actor AsyncCountdownEvent: AsyncObject {
         while !continuations.isEmpty && isSet {
             let (_, continuation) = continuations.removeFirst()
             _resumeContinuation(continuation)
-        }
-    }
-
-    /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
-    /// Continuation can be cancelled with error if current task is cancelled, by invoking `_removeContinuation`.
-    ///
-    /// Spins up a new continuation and requests to track it with key by invoking `_addContinuation`.
-    /// This operation cooperatively checks for cancellation and reacting to it by invoking `_removeContinuation`.
-    /// Continuation can be resumed with error and some cleanup code can be run here.
-    ///
-    /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
-    @inlinable
-    internal nonisolated func _withPromisedContinuation() async throws {
-        let key = UUID()
-        try await Continuation.withCancellation(synchronizedWith: locker) {
-            Task { [weak self] in
-                await self?._removeContinuation(withKey: key)
-            }
-        } operation: { continuation in
-            Task { [weak self] in
-                await self?._addContinuation(continuation, withKey: key)
-            }
         }
     }
 

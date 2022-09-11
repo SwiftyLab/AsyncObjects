@@ -11,13 +11,13 @@
 /// Only first resume operation is considered and rest are all ignored.
 /// While there is no checks for missing resume operations,
 /// `CheckedContinuation` can be used as underlying continuation value for additional runtime checks.
-public final class SafeContinuation<C: Continuable>: Continuable {
+@usableFromInline
+internal final class SafeContinuation<C: Continuable>: SynchronizedContinuable {
     /// Tracks the status of continuation resuming for ``SafeContinuation``.
     ///
     /// Depending upon ``SafeContinuation`` status the ``SafeContinuation/resume(with:)``
     /// invocation effect is determined. Only first resume operation is considered and rest are all ignored.
-    @frozen
-    public enum Status {
+    enum Status {
         /// Indicates continuation is waiting to be resumed.
         ///
         /// Resuming ``SafeContinuation`` with this status returns control immediately to the caller.
@@ -54,7 +54,8 @@ public final class SafeContinuation<C: Continuable>: Continuable {
 
     /// Checks whether continuation is already resumed
     /// or to be resumed with provided value.
-    public var resumed: Bool {
+    @usableFromInline
+    var resumed: Bool {
         return locker.perform {
             switch status {
             case .waiting:
@@ -68,6 +69,9 @@ public final class SafeContinuation<C: Continuable>: Continuable {
 
     /// Creates a safe continuation from provided continuation.
     ///
+    /// The provided  platform lock is used to synchronize
+    /// continuation state.
+    ///
     /// - Parameters:
     ///   - status: The initial ``Status`` of provided continuation.
     ///   - value: The continuation value to store. After passing the continuation
@@ -78,7 +82,7 @@ public final class SafeContinuation<C: Continuable>: Continuable {
     /// - Returns: The newly created safe continuation.
     /// - Important: After passing the continuation with this method,
     ///              don’t use it outside of this object.
-    public init(
+    init(
         status: Status = .waiting,
         with value: C? = nil,
         synchronizedWith locker: Locker = .init()
@@ -92,6 +96,25 @@ public final class SafeContinuation<C: Continuable>: Continuable {
         default:
             self.status = status
         }
+    }
+
+    /// Creates a safe continuation from provided continuation.
+    ///
+    /// The provided  platform lock is used to synchronize
+    /// continuation state.
+    ///
+    /// - Parameters:
+    ///   - value: The continuation value to store. After passing the continuation
+    ///            with this method, don’t use it outside of this object.
+    ///   - locker: The platform lock to use to synchronize continuation state.
+    ///             New lock object is created in case none provided.
+    ///
+    /// - Returns: The newly created safe continuation.
+    /// - Important: After passing the continuation with this method,
+    ///              don’t use it outside of this object.
+    @usableFromInline
+    convenience init(with value: C?, synchronizedWith locker: Locker) {
+        self.init(status: .waiting, with: value, synchronizedWith: locker)
     }
 
     /// Store the provided continuation if no continuation was provided during initialization.
@@ -111,7 +134,7 @@ public final class SafeContinuation<C: Continuable>: Continuable {
     ///
     /// - Important: After passing the continuation with this method,
     ///              don’t use it outside of this object.
-    public func add(
+    func add(
         continuation: C,
         status: Status = .waiting,
         file: StaticString = #file,
@@ -137,41 +160,20 @@ public final class SafeContinuation<C: Continuable>: Continuable {
         }
     }
 
-    /// Resume the task awaiting the continuation by having it return normally from its suspension point.
+    /// Store the provided continuation if no continuation was provided during initialization.
     ///
-    /// A continuation must be resumed at least once. If the continuation has already resumed,
-    /// then calling this method has no effect.
+    /// Use this method to pass continuation if continuation can't be provided during initialization.
+    /// If continuation provided already during initialization, invoking this method will cause runtime exception.
     ///
-    /// After calling this method, control immediately returns to the caller.
-    /// The task continues executing when its executor schedules it.
+    /// - Parameters:
+    ///   - continuation: The continuation value to store. After passing the continuation
+    ///                   with this method, don’t use it outside of this object.
     ///
-    /// - Parameter value: The value to return from the continuation.
-    public func resume(returning value: C.Success) {
-        self.resume(with: .success(value))
-    }
-
-    /// Resume the task that’s awaiting the continuation by returning.
-    ///
-    /// A continuation must be resumed at least once. If the continuation has already resumed,
-    /// then calling this method has no effect.
-    ///
-    /// After calling this method, control immediately returns to the caller.
-    /// The task continues executing when its executor schedules it.
-    public func resume() where C.Success == Void {
-        self.resume(returning: ())
-    }
-
-    /// Resume the task awaiting the continuation by having it throw an error from its suspension point.
-    ///
-    /// A continuation must be resumed at least once. If the continuation has already resumed,
-    /// then calling this method has no effect.
-    ///
-    /// After calling this method, control immediately returns to the caller.
-    /// The task continues executing when its executor schedules it.
-    ///
-    /// - Parameter error: The error to throw from the continuation.
-    public func resume(throwing error: C.Failure) {
-        self.resume(with: .failure(error))
+    /// - Important: After passing the continuation with this method,
+    ///              don’t use it outside of this object.
+    @usableFromInline
+    func add(continuation: C) {
+        self.add(continuation: continuation, status: .waiting)
     }
 
     /// Resume the task awaiting the continuation by having it either return normally
@@ -184,7 +186,8 @@ public final class SafeContinuation<C: Continuable>: Continuable {
     /// The task continues executing when its executor schedules it.
     ///
     /// - Parameter result: A value to either return or throw from the continuation.
-    public func resume(with result: Result<C.Success, C.Failure>) {
+    @usableFromInline
+    func resume(with result: Result<C.Success, C.Failure>) {
         locker.perform {
             let finalResult: Result<C.Success, C.Failure>
             switch (status, value) {
@@ -200,103 +203,6 @@ public final class SafeContinuation<C: Continuable>: Continuable {
             }
             value!.resume(with: finalResult)
             status = .resumed
-        }
-    }
-}
-
-extension SafeContinuation: ThrowingContinuable where C: ThrowingContinuable {
-    /// Suspends the current task, then calls the given operation with a ``SafeContinuation``
-    /// for the current task with a cancellation handler that’s immediately invoked if the current task is canceled.
-    ///
-    /// This differs from the operation cooperatively checking for cancellation and reacting to it in that
-    /// the cancellation handler is always and immediately invoked after resuming continuation with
-    /// `CancellationError` when the task is canceled. For example, even if the operation
-    /// is running code that never checks for cancellation and provided continuation to operation hasn't been resumed,
-    /// a cancellation handler still runs cancelling the continuation and provides a chance to run some cleanup code.
-    ///
-    /// - Parameters:
-    ///   - locker: The platform lock to use to synchronize continuation state.
-    ///             New lock object is created in case none provided.
-    ///   - function: A string identifying the declaration
-    ///               that is the notional source for the continuation,
-    ///               used to identify the continuation in runtime diagnostics
-    ///               related to misuse of this continuation.
-    ///   - handler: A handler immediately invoked if task is cancelled.
-    ///   - operation: A closure that takes an ``SafeContinuation`` parameter.
-    ///                You must resume the continuation at least once.
-    ///
-    /// - Returns: The value passed to the continuation by the operation.
-    /// - Throws: If cancelled or `resume(throwing:)` is called on the continuation,
-    ///           this function throws that error.
-    public static func withCancellation(
-        synchronizedWith locker: Locker = .init(),
-        function: String = #function,
-        handler: @escaping @Sendable () -> Void,
-        operation: @escaping (SafeContinuation<C>) -> Void
-    ) async throws -> C.Success where C.Success: Sendable {
-        let safeContinuation = SafeContinuation(synchronizedWith: locker)
-        return try await withTaskCancellationHandler {
-            return try await C.with(function: function) { continuation in
-                safeContinuation.add(continuation: continuation)
-                operation(safeContinuation)
-            }
-        } onCancel: { [weak safeContinuation] in
-            safeContinuation?.cancel()
-            handler()
-        }
-    }
-
-    /// Suspends the current task, then calls the given closure with a ``SafeContinuation`` for the current task.
-    ///
-    /// The continuation must be resumed exactly once, subsequent resumes will cause runtime error.
-    /// ``SafeContinuation`` allows accessing and resuming the same continuations in concurrent code
-    /// by keeping track of underlying continuation value state.
-    ///
-    /// - Parameters:
-    ///   - function: A string identifying the declaration
-    ///               that is the notional source for the continuation,
-    ///               used to identify the continuation in runtime diagnostics
-    ///               related to misuse of this continuation.
-    ///   - fn: A closure that takes a ``SafeContinuation`` parameter.
-    ///         You must resume the continuation at least once.
-    ///
-    /// - Returns: The value passed to the continuation by the closure.
-    /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
-    @inlinable
-    public static func with(
-        function: String = #function,
-        _ body: (SafeContinuation<C>) -> Void
-    ) async throws -> C.Success {
-        return try await C.with(function: function) { continuation in
-            body(SafeContinuation(with: continuation))
-        }
-    }
-}
-
-extension SafeContinuation: NonThrowingContinuable
-where C: NonThrowingContinuable {
-    /// Suspends the current task, then calls the given closure with a ``SafeContinuation`` for the current task.
-    ///
-    /// The continuation must be resumed exactly once, subsequent resumes will cause runtime error.
-    /// ``SafeContinuation`` allows accessing and resuming the same continuations in concurrent code
-    /// by keeping track of underlying continuation value state.
-    ///
-    /// - Parameters:
-    ///   - function: A string identifying the declaration
-    ///               that is the notional source for the continuation,
-    ///               used to identify the continuation in runtime diagnostics
-    ///               related to misuse of this continuation.
-    ///   - fn: A closure that takes a ``SafeContinuation`` parameter.
-    ///         You must resume the continuation exactly once.
-    ///
-    /// - Returns: The value passed to the continuation by the closure.
-    @inlinable
-    public static func with(
-        function: String = #function,
-        _ body: (SafeContinuation<C>) -> Void
-    ) async -> C.Success {
-        return await C.with(function: function) { continuation in
-            body(SafeContinuation(with: continuation))
         }
     }
 }

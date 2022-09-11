@@ -150,13 +150,34 @@ class SafeContinuationTests: XCTestCase {
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
                 do {
-                    try await SafeContinuation<C>
-                        .withCancellation {
-                        } operation: { _ in
-                        }
+                    try await SafeContinuation<C>.withCancellation {
+                    } operation: { _ in
+                    }
                     XCTFail("Unexpected task progression")
                 } catch {
                     XCTAssertTrue(type(of: error) == CancellationError.self)
+                }
+            }
+        }
+        task.cancel()
+        await task.value
+    }
+
+    func testNonCancellableContinuation() async throws {
+        typealias C = GlobalContinuation<Void, Never>
+        let task = Task.detached {
+            await Self.checkExecInterval(durationInSeconds: 1) {
+                do {
+                    try await Self.sleep(seconds: 5)
+                    XCTFail("Unexpected task progression")
+                } catch {}
+                XCTAssertTrue(Task.isCancelled)
+                await SafeContinuation<C>.withCancellation {
+                } operation: { continuation in
+                    Task {
+                        defer { continuation.resume() }
+                        try await Self.sleep(seconds: 1)
+                    }
                 }
             }
         }

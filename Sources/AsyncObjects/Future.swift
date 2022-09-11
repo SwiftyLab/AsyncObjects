@@ -204,11 +204,9 @@ extension Future where Failure == Never {
     /// This property exposes the fulfilled value for the `Future` asynchronously.
     /// Immediately returns if `Future` is fulfilled otherwise waits asynchronously
     /// for `Future` to be fulfilled.
-    public var value: Output {
-        get async {
-            if let result = result { return try! result.get() }
-            return await _withPromisedContinuation()
-        }
+    public func get() async -> Output {
+        if let result = result { return try! result.get() }
+        return await _withPromisedContinuation()
     }
 
     /// Combines into a single future, for all futures to be fulfilled.
@@ -230,7 +228,12 @@ extension Future where Failure == Never {
                 var result: [IndexedOutput] = []
                 result.reserveCapacity(futures.count)
                 for (index, future) in futures.enumerated() {
-                    group.addTask { (index: index, value: await future.value) }
+                    group.addTask {
+                        return (
+                            index: index,
+                            value: await future.get()
+                        )
+                    }
                 }
                 for await item in group { result.append(item) }
                 promise(
@@ -278,7 +281,10 @@ extension Future where Failure == Never {
                 result.reserveCapacity(futures.count)
                 for (index, future) in futures.enumerated() {
                     group.addTask {
-                        (index: index, value: .success(await future.value))
+                        return (
+                            index: index,
+                            value: .success(await future.get())
+                        )
                     }
                 }
                 for await item in group { result.append(item) }
@@ -322,7 +328,7 @@ extension Future where Failure == Never {
         return .init { promise in
             await withTaskGroup(of: Output.self) { group in
                 futures.forEach { future in
-                    group.addTask { await future.value }
+                    group.addTask { await future.get() }
                 }
                 if let first = await group.next() {
                     promise(.success(first))
@@ -422,11 +428,9 @@ extension Future where Failure == Error {
     /// the awaiting caller receives the error instead.
     ///
     /// - Throws: If future rejected with error or `CancellationError` if cancelled.
-    public var value: Output {
-        get async throws {
-            if let result = result { return try result.get() }
-            return try await _withPromisedContinuation()
-        }
+    public func get() async throws -> Output {
+        if let result = result { return try result.get() }
+        return try await _withPromisedContinuation()
     }
 
     /// Combines into a single future, for all futures to be fulfilled, or for any to be rejected.
@@ -451,7 +455,7 @@ extension Future where Failure == Error {
                 result.reserveCapacity(futures.count)
                 for (index, future) in futures.enumerated() {
                     group.addTask {
-                        (index: index, value: try await future.value)
+                        (index: index, value: try await future.get())
                     }
                 }
                 do {
@@ -508,7 +512,7 @@ extension Future where Failure == Error {
                 for (index, future) in futures.enumerated() {
                     group.addTask {
                         do {
-                            let value = try await future.value
+                            let value = try await future.get()
                             return (index: index, value: .success(value))
                         } catch {
                             return (index: index, value: .failure(error))
@@ -558,7 +562,7 @@ extension Future where Failure == Error {
         return .init { promise in
             await withThrowingTaskGroup(of: Output.self) { group in
                 futures.forEach { future in
-                    group.addTask { try await future.value }
+                    group.addTask { try await future.get() }
                 }
                 do {
                     if let first = try await group.next() {
@@ -608,7 +612,7 @@ extension Future where Failure == Error {
                 futures.forEach { future in
                     group.addTask {
                         do {
-                            let value = try await future.value
+                            let value = try await future.get()
                             return .success(value)
                         } catch {
                             return .failure(error)
