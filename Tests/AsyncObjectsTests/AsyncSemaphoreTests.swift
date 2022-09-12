@@ -32,29 +32,31 @@ class AsyncSemaphoreTests: XCTestCase {
         durationInSeconds seconds: Int = 0
     ) async throws {
         let semaphore = AsyncSemaphore(value: value)
-        let store = TaskTimeoutStore()
         try await Self.checkExecInterval(durationInSeconds: seconds) {
-            try await withThrowingTaskGroup(of: Void.self) { group in
+            try await withThrowingTaskGroup(of: Bool.self) { group in
                 for _ in 0..<count {
                     group.addTask {
+                        let success: Bool
                         do {
                             try await semaphore.wait(forNanoseconds: timeout)
-                            await store.addSuccess()
+                            success = true
                         } catch {
-                            await store.addFailure()
+                            success = false
                         }
                         try await Self.sleep(seconds: delay)
                         semaphore.signal()
+                        return success
                     }
                 }
-                try await group.waitForAll()
+
+                var (successes, failures) = (0 as UInt, 0 as UInt)
+                for try await success in group {
+                    if success { successes += 1 } else { failures += 1 }
+                }
+                XCTAssertEqual(successes, value)
+                XCTAssertEqual(failures, UInt(count) - value)
             }
         }
-        let (successes, failures) = (
-            await store.successes, await store.failures
-        )
-        XCTAssertEqual(successes, value)
-        XCTAssertEqual(failures, UInt(count) - value)
     }
 
     func testSemaphoreWaitWithTasksLessThanCount() async throws {
@@ -233,19 +235,6 @@ class AsyncSemaphoreTests: XCTestCase {
                 try await group.waitForAll()
             }
         }
-    }
-}
-
-actor TaskTimeoutStore {
-    var successes: UInt = 0
-    var failures: UInt = 0
-
-    func addSuccess() {
-        successes += 1
-    }
-
-    func addFailure() {
-        failures += 1
     }
 }
 
