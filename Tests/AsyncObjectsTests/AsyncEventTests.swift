@@ -27,7 +27,7 @@ class AsyncEventTests: XCTestCase {
     func testEventLockAndWait() async throws {
         let event = AsyncEvent()
         event.reset()
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         try await checkWait(for: event)
     }
 

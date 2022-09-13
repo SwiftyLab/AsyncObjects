@@ -26,8 +26,7 @@ class AsyncCountdownEventTests: XCTestCase {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for i in 0..<count {
                     group.addTask {
-                        let duration = UInt64(Double(i + 1) * 5E8)
-                        try await Task.sleep(nanoseconds: duration)
+                        try await Self.sleep(seconds: (Double(i) + 1) * 0.5)
                         event.signal(repeat: 1)
                     }
                 }
@@ -39,7 +38,7 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitWithIncrement() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         Self.signalCountdownEvent(event, times: 10)
         try await Self.checkExecInterval(durationInSeconds: 5) {
             try await event.wait()
@@ -49,7 +48,7 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitTimeoutWithIncrement() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         Self.signalCountdownEvent(event, times: 10)
         await Self.checkExecInterval(durationInSeconds: 3) {
             do {
@@ -64,9 +63,9 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitWithLimitAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3)
         event.increment(by: 10)
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         Self.signalCountdownEvent(event, times: 10)
-        try await Self.checkExecInterval(durationInRange: 3.5..<4) {
+        try await Self.checkExecInterval(durationInRange: 3.5..<4.3) {
             try await event.wait()
         }
     }
@@ -74,7 +73,7 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitTimeoutWithLimitAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3)
         event.increment(by: 10)
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         Self.signalCountdownEvent(event, times: 10)
         await Self.checkExecInterval(durationInSeconds: 2) {
             do {
@@ -89,9 +88,9 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitWithLimitInitialCountAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3, initial: 2)
         event.increment(by: 10)
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         Self.signalCountdownEvent(event, times: 10)
-        try await Self.checkExecInterval(durationInRange: 4.5..<5) {
+        try await Self.checkExecInterval(durationInRange: 4.5..<5.3) {
             try await event.wait()
         }
     }
@@ -101,7 +100,7 @@ class AsyncCountdownEventTests: XCTestCase {
     {
         let event = AsyncCountdownEvent(until: 3, initial: 3)
         event.increment(by: 10)
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         Self.signalCountdownEvent(event, times: 10)
         await Self.checkExecInterval(durationInSeconds: 3) {
             do {
@@ -116,7 +115,7 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitWithIncrementAndReset() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         Task.detached {
             try await Self.sleep(seconds: 3)
             event.reset()
@@ -129,7 +128,7 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitWithIncrementAndResetToCount() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         Task.detached {
             try await Self.sleep(seconds: 3)
             event.reset(to: 2)
@@ -143,7 +142,7 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitTimeoutWithIncrementAndReset() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         Task.detached {
             try await Self.sleep(seconds: 3)
             event.reset()
@@ -161,7 +160,7 @@ class AsyncCountdownEventTests: XCTestCase {
     func testCountdownWaitTimeoutWithIncrementAndResetToCount() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         Task.detached {
             try await Self.sleep(seconds: 3)
             event.reset(to: 6)
@@ -181,7 +180,7 @@ class AsyncCountdownEventTests: XCTestCase {
     {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         Task.detached {
             try await Self.sleep(seconds: 2)
             event.reset(to: 2)

@@ -45,7 +45,7 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask { try await queue.wait() }
                 try await group.waitForAll()
             }
@@ -93,7 +93,7 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     do {
                         try await queue.wait(forSeconds: 1)
@@ -163,7 +163,7 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec(flags: .block) {
                         try await Self.sleep(seconds: 1)
@@ -184,7 +184,7 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec {
                         try await Self.sleep(seconds: 1)
@@ -205,7 +205,7 @@ class TaskQueueTests: XCTestCase {
                     throw CancellationError()
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec(flags: .block) {
                         try await Self.sleep(seconds: 2)
@@ -236,7 +236,7 @@ class TaskQueueTests: XCTestCase {
                     throw CancellationError()
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec(flags: .block) {
                         try await Self.sleep(seconds: 2)
@@ -273,7 +273,7 @@ class TaskQueueTests: XCTestCase {
                     throw CancellationError()
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec(flags: .block) {
                         try await Self.sleep(seconds: 2)
@@ -331,7 +331,7 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
                         try await Self.sleep(seconds: 1)
@@ -352,7 +352,7 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec {
                         try await Self.sleep(seconds: 1)
@@ -373,7 +373,7 @@ class TaskQueueTests: XCTestCase {
                     throw CancellationError()
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
                         try await Self.sleep(seconds: 2)
@@ -404,7 +404,7 @@ class TaskQueueTests: XCTestCase {
                     throw CancellationError()
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
                         try await Self.sleep(seconds: 3)
@@ -441,7 +441,7 @@ class TaskQueueTests: XCTestCase {
                     throw CancellationError()
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
                         try await Self.sleep(seconds: 3)
@@ -480,7 +480,7 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
                         try await Self.sleep(seconds: 1)
@@ -501,7 +501,7 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec(flags: .block) {
                         try await Self.sleep(seconds: 1)
@@ -525,14 +525,14 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 await group.addTaskAndStart {
                     try await queue.exec(flags: .block) {
                         try await Self.sleep(seconds: 1)
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 await group.addTaskAndStart {
                     try await queue.exec(flags: .barrier) {
                         try await Self.sleep(seconds: 3)
@@ -556,14 +556,14 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try! await Self.sleep(forSeconds: 0.01)
+                try! await Self.sleep(seconds: 0.01)
                 await group.addTaskAndStart {
                     await queue.exec(flags: .barrier) {
                         try! await Self.sleep(seconds: 2)
                     }
                 }
                 // Make sure previous tasks started
-                try! await Self.sleep(forSeconds: 0.01)
+                try! await Self.sleep(seconds: 0.01)
                 await group.addTaskAndStart {
                     await queue.exec(flags: .block) {
                         try! await Self.sleep(seconds: 1)
@@ -596,14 +596,14 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try! await Self.sleep(forSeconds: 0.01)
+                try! await Self.sleep(seconds: 0.01)
                 await group.addTaskAndStart {
                     await queue.exec(flags: .barrier) {
                         try! await Self.sleep(seconds: 2)
                     }
                 }
                 // Make sure previous tasks started
-                try! await Self.sleep(forSeconds: 0.01)
+                try! await Self.sleep(seconds: 0.01)
                 group.addTask {
                     await queue.exec {
                         try! await Self.sleep(seconds: 1)
@@ -676,14 +676,14 @@ class TaskQueueTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 await group.addTaskAndStart {
                     try await queue.exec(flags: .barrier) {
                         try await Self.sleep(seconds: 2)
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await queue.exec {
                         try await Self.sleep(seconds: 2)
@@ -726,7 +726,7 @@ class TaskQueueTests: XCTestCase {
             try await Self.sleep(seconds: 2)
         }
         // Make sure previous tasks started
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         try await Self.checkExecInterval(durationInSeconds: 2) {
             queue.addTask { try! await Self.sleep(seconds: 2) }
             try await queue.wait()
@@ -741,7 +741,7 @@ class TaskQueueTests: XCTestCase {
         try await queue.exec {
             try await Self.sleep(seconds: 1)
         }
-        try await Self.sleep(forSeconds: 0.001)
+        try await Self.sleep(seconds: 0.001)
         self.addTeardownBlock { [weak queue] in
             try await Self.sleep(seconds: 1)
             XCTAssertNil(queue)

@@ -24,45 +24,21 @@ extension XCTestCase {
         #endif
     }
 
-    static func checkExecInterval(
+    static func checkExecInterval<T: DivisiveArithmetic>(
         name: String? = nil,
-        durationInSeconds seconds: Int = 0,
+        durationInSeconds seconds: T = .zero,
         for task: () async throws -> Void
-    ) async rethrows {
-        let time = DispatchTime.now()
+    ) async rethrows where T: Comparable {
+        let second: T = 1_000_000_000
+        let time = DispatchTime.now().uptimeNanoseconds
         try await task()
+        guard
+            let span = T(exactly: DispatchTime.now().uptimeNanoseconds - time),
+            case let duration = span / second
+        else { XCTFail("Invalid number type: \(T.self)"); return }
         let assertions = {
-            XCTAssertEqual(
-                seconds,
-                Int(
-                    (Double(
-                        DispatchTime.now().uptimeNanoseconds
-                            - time.uptimeNanoseconds
-                    ) / 1E9).rounded(.toNearestOrAwayFromZero)
-                )
-            )
-        }
-        runAssertions(with: name, assertions)
-    }
-
-    static func checkExecInterval(
-        name: String? = nil,
-        durationInSeconds seconds: Double = 0,
-        roundedUpTo digit: UInt = 1,
-        for task: () async throws -> Void
-    ) async rethrows {
-        let time = DispatchTime.now()
-        try await task()
-        let order = pow(10, Double(digit))
-        let duration =
-            Double(
-                DispatchTime.now().uptimeNanoseconds - time.uptimeNanoseconds
-            ) * order
-        let assertions = {
-            XCTAssertEqual(
-                seconds,
-                (duration / 1E9).rounded() / order
-            )
+            XCTAssertLessThanOrEqual(duration, seconds + 1)
+            XCTAssertGreaterThanOrEqual(duration, seconds - 1)
         }
         runAssertions(with: name, assertions)
     }
@@ -71,14 +47,16 @@ extension XCTestCase {
         name: String? = nil,
         durationInRange range: R,
         for task: () async throws -> Void
-    ) async rethrows where R.Bound == Int {
-        let time = DispatchTime.now()
+    ) async rethrows where R.Bound: DivisiveArithmetic {
+        let second: R.Bound = 1_000_000_000
+        let time = DispatchTime.now().uptimeNanoseconds
         try await task()
-        let duration = Int(
-            (Double(
-                DispatchTime.now().uptimeNanoseconds - time.uptimeNanoseconds
-            ) / 1E9).rounded(.toNearestOrAwayFromZero)
-        )
+        guard
+            let span = R.Bound(
+                exactly: DispatchTime.now().uptimeNanoseconds - time
+            ),
+            case let duration = span / second
+        else { XCTFail("Invalid range type: \(R.self)"); return }
         let assertions = {
             XCTAssertTrue(
                 range.contains(duration),
@@ -88,32 +66,14 @@ extension XCTestCase {
         runAssertions(with: name, assertions)
     }
 
-    static func checkExecInterval<R: RangeExpression>(
-        name: String? = nil,
-        durationInRange range: R,
-        for task: () async throws -> Void
-    ) async rethrows where R.Bound == Double {
-        let time = DispatchTime.now()
-        try await task()
-        let duration =
-            Double(
-                DispatchTime.now().uptimeNanoseconds - time.uptimeNanoseconds
-            ) / 1E9
-        let assertions = {
-            XCTAssertTrue(
-                range.contains(duration),
-                "\(duration) not present in \(range)"
-            )
-        }
-        runAssertions(with: name, assertions)
+    static func sleep<T: BinaryInteger>(seconds: T) async throws {
+        let second: T = 1_000_000_000
+        try await Task.sleep(nanoseconds: UInt64(exactly: seconds * second)!)
     }
 
-    static func sleep(seconds: UInt64) async throws {
-        try await Task.sleep(nanoseconds: seconds * 1_000_000_000)
-    }
-
-    static func sleep(forSeconds seconds: Double) async throws {
-        try await Task.sleep(nanoseconds: UInt64(seconds * 1E9))
+    static func sleep<T: BinaryFloatingPoint>(seconds: T) async throws {
+        let second: T = 1_000_000_000
+        try await Task.sleep(nanoseconds: UInt64(exactly: seconds * second)!)
     }
 }
 
@@ -124,3 +84,12 @@ extension AsyncObject {
         return try await self.wait(forNanoseconds: seconds * 1_000_000_000)
     }
 }
+
+protocol DivisiveArithmetic: Numeric {
+    static func / (lhs: Self, rhs: Self) -> Self
+    static func /= (lhs: inout Self, rhs: Self)
+}
+
+extension Int: DivisiveArithmetic {}
+extension Double: DivisiveArithmetic {}
+extension UInt64: DivisiveArithmetic {}

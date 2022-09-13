@@ -49,7 +49,7 @@ class NonThrowingFutureTests: XCTestCase {
                     XCTAssertEqual(value, [1, 3, 2])
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -86,7 +86,7 @@ class NonThrowingFutureTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -118,7 +118,7 @@ class NonThrowingFutureTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -150,7 +150,7 @@ class NonThrowingFutureTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)

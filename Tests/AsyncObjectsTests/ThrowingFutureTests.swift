@@ -80,7 +80,7 @@ class ThrowingFutureTests: XCTestCase {
                     XCTAssertEqual(value, [1, 2, 3])
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -118,7 +118,7 @@ class ThrowingFutureTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -155,7 +155,7 @@ class ThrowingFutureTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -197,7 +197,7 @@ class ThrowingFutureTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -229,7 +229,7 @@ class ThrowingFutureTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -267,7 +267,7 @@ class ThrowingFutureTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(throwing: CancellationError())
@@ -299,7 +299,7 @@ class ThrowingFutureTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -331,7 +331,7 @@ class ThrowingFutureTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(throwing: CancellationError())
@@ -369,7 +369,7 @@ class ThrowingFutureTests: XCTestCase {
                     }
                 }
                 // Make sure previous tasks started
-                try await Self.sleep(forSeconds: 0.01)
+                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(throwing: CancellationError())
