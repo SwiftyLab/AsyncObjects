@@ -1,8 +1,4 @@
-#if swift(>=5.7)
-import Foundation
-#else
 @preconcurrency import Foundation
-#endif
 
 /// A type that manages a collection of continuations with an associated key.
 ///

@@ -62,12 +62,28 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// Always returns true, since the operation always executes its task asynchronously.
     public override var isAsynchronous: Bool { true }
+
+    /// Private store for boolean value indicating whether the operation is currently cancelled.
+    @usableFromInline
+    internal var _isCancelled: Bool = false
     /// A Boolean value indicating whether the operation has been cancelled.
     ///
     /// Returns whether the underlying top-level task is cancelled or not.
     /// The default value of this property is `false`.
     /// Calling the ``cancel()`` method of this object sets the value of this property to `true`.
-    public override var isCancelled: Bool { execTask?.isCancelled ?? false }
+    public override internal(set) var isCancelled: Bool {
+        get { locker.perform { execTask?.isCancelled ?? _isCancelled } }
+        @usableFromInline
+        set {
+            willChangeValue(forKey: "isCancelled")
+            locker.perform {
+                _isCancelled = newValue
+                guard newValue else { return }
+                execTask?.cancel()
+            }
+            didChangeValue(forKey: "isCancelled")
+        }
+    }
 
     /// Private store for boolean value indicating whether the operation is currently executing.
     @usableFromInline
@@ -113,7 +129,12 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// Will be success if provided operation completed successfully,
     /// or failure returned with error.
     public var result: Result<R, Error> {
-        get async { (await execTask?.result) ?? .failure(EarlyInvokeError()) }
+        get async {
+            (await execTask?.result)
+                ?? (isCancelled
+                    ? .failure(CancellationError())
+                    : .failure(EarlyInvokeError()))
+        }
     }
 
     /// Creates a new operation that executes the provided asynchronous task.
@@ -187,7 +208,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// Likewise, if the task has already run past the last point where it would stop early,
     /// calling this method has no effect.
     public override func cancel() {
-        execTask?.cancel()
+        isCancelled = true
         _finish()
     }
 

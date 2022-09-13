@@ -1,8 +1,4 @@
-#if swift(>=5.7)
-import Foundation
-#else
 @preconcurrency import Foundation
-#endif
 import OrderedCollections
 
 /// An object that acts as a concurrent queue executing submitted tasks concurrently.

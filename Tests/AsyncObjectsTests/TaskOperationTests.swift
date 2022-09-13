@@ -237,6 +237,21 @@ class TaskOperationTests: XCTestCase {
         }
     }
 
+    func testNotStartedCancellationError() async throws {
+        let operation = TaskOperation { try await Self.sleep(seconds: 1) }
+        operation.cancel()
+        let result = await operation.result
+        switch result {
+        case .success: XCTFail("Unexpected operation result")
+        case .failure(let error):
+            XCTAssertTrue(type(of: error) == CancellationError.self)
+            print(
+                "[\(#function)] [\(type(of: error))] \(error.localizedDescription)"
+            )
+            XCTAssertFalse(error.localizedDescription.isEmpty)
+        }
+    }
+
     func testWaitCancellationWhenTaskCancelled() async throws {
         let operation = TaskOperation { try await Self.sleep(seconds: 10) }
         let task = Task.detached {
