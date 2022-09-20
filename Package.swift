@@ -21,7 +21,7 @@ let package = Package(
     dependencies: [
         .package(url: "\(appleGitHub)/swift-collections.git", from: "1.0.0"),
         .package(url: "\(appleGitHub)/swift-docc-plugin", from: "1.0.0"),
-        .package(url: "\(appleGitHub)/swift-format", from: "0.50600.1"),
+        .package(url: "\(appleGitHub)/swift-format", from: "0.50700.0"),
     ],
     targets: [
         .target(
