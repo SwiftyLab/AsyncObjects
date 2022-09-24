@@ -46,8 +46,9 @@ internal final class SafeContinuation<C: Continuable>: SynchronizedContinuable {
     /// - Returns: Whether the current status can be updated to provided status.
     private func validateStatus(_ status: Status) -> Bool {
         switch (self.status, status) {
-        case (.willResume, .waiting), (.willResume, .willResume): return false
-        case (.resumed, .waiting), (.resumed, .willResume): return false
+        case (.willResume, .waiting), (.willResume, .willResume),
+            (.resumed, .waiting), (.resumed, .willResume):
+            return false
         default: return true
         }
     }
