@@ -94,11 +94,20 @@ public actor Future<Output: Sendable, Failure: Error> {
     /// Creates a future that invokes a promise closure when the publisher emits an element.
     ///
     /// - Parameters:
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - attemptToFulfill: A ``Future/Promise`` that the publisher invokes
     ///                       when the publisher emits an element or terminates with an error.
     ///
     /// - Returns: The newly created future.
     public init(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         attemptToFulfill: @Sendable @escaping (
             @escaping Promise
         ) async -> Void
@@ -107,7 +116,12 @@ public actor Future<Output: Sendable, Failure: Error> {
         Task {
             await attemptToFulfill { result in
                 Task { [weak self] in
-                    await self?.fulfill(with: result)
+                    await self?.fulfill(
+                        with: result,
+                        file: file,
+                        function: function,
+                        line: line
+                    )
                 }
             }
         }
@@ -116,11 +130,20 @@ public actor Future<Output: Sendable, Failure: Error> {
     /// Creates a future that invokes a promise closure when the publisher emits an element.
     ///
     /// - Parameters:
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - attemptToFulfill: A ``Future/Promise`` that the publisher invokes
     ///                       when the publisher emits an element or terminates with an error.
     ///
     /// - Returns: The newly created future.
     public convenience init(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         attemptToFulfill: @Sendable @escaping (
             @escaping Promise
         ) async -> Void
@@ -129,7 +152,12 @@ public actor Future<Output: Sendable, Failure: Error> {
         Task {
             await attemptToFulfill { result in
                 Task { [weak self] in
-                    await self?.fulfill(with: result)
+                    await self?.fulfill(
+                        with: result,
+                        file: file,
+                        function: function,
+                        line: line
+                    )
                 }
             }
         }
@@ -147,9 +175,26 @@ public actor Future<Output: Sendable, Failure: Error> {
     /// A future must be fulfilled exactly once. If the future has already been fulfilled,
     /// then calling this method has no effect and returns immediately.
     ///
-    /// - Parameter value: The value to produce from the future.
-    public func fulfill(producing value: Output) {
-        self.fulfill(with: .success(value))
+    /// - Parameters:
+    ///   - value: The value to produce from the future.
+    ///   - file: The file future fulfillment originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future fulfillment originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future fulfillment originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    public func fulfill(
+        producing value: Output,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        self.fulfill(
+            with: .success(value),
+            file: file,
+            function: function,
+            line: line
+        )
     }
 
     /// Terminate the future with the given error and propagate error to subscribers.
@@ -157,9 +202,26 @@ public actor Future<Output: Sendable, Failure: Error> {
     /// A future must be fulfilled exactly once. If the future has already been fulfilled,
     /// then calling this method has no effect and returns immediately.
     ///
-    /// - Parameter error: The error to throw to the callers.
-    public func fulfill(throwing error: Failure) {
-        self.fulfill(with: .failure(error))
+    /// - Parameters:
+    ///   - error: The error to throw to the callers.
+    ///   - file: The file future fulfillment originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future fulfillment originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future fulfillment originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    public func fulfill(
+        throwing error: Failure,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        self.fulfill(
+            with: .failure(error),
+            file: file,
+            function: function,
+            line: line
+        )
     }
 
     /// Fulfill the future by returning or throwing the given result value.
@@ -167,10 +229,22 @@ public actor Future<Output: Sendable, Failure: Error> {
     /// A future must be fulfilled exactly once. If the future has already been fulfilled,
     /// then calling this method has no effect and returns immediately.
     ///
-    /// - Parameter result: The result. If it contains a `.success` value,
-    ///                     that value delivered asynchronously to callers;
-    ///                     otherwise, the awaiting caller receives the `.error` instead.
-    public func fulfill(with result: FutureResult) {
+    /// - Parameters:
+    ///   - result: The result. If it contains a `.success` value,
+    ///             that value delivered asynchronously to callers;
+    ///             otherwise, the awaiting caller receives the `.error` instead.
+    ///   - file: The file future fulfillment originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future fulfillment originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future fulfillment originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    public func fulfill(
+        with result: FutureResult,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         guard self.result == nil else { return }
         self.result = result
         continuations.forEach { $0.value.resume(with: result) }
@@ -200,7 +274,19 @@ extension Future where Failure == Never {
     /// This property exposes the fulfilled value for the `Future` asynchronously.
     /// Immediately returns if `Future` is fulfilled otherwise waits asynchronously
     /// for `Future` to be fulfilled.
-    public func get() async -> Output {
+    ///
+    /// - Parameters:
+    ///   - file: The file value request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function value request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line value request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).   
+    public func get(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async -> Output {
         if let result = result { return try! result.get() }
         return await _withPromisedContinuation()
     }
@@ -210,12 +296,22 @@ extension Future where Failure == Never {
     /// If the returned future fulfills, it is fulfilled with an aggregating array of the values from the fulfilled futures,
     /// in the same order as provided.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: Already fulfilled future if no future provided, or a pending future
     ///            combining provided futures.
     public static func all(
-        _ futures: [Future<Output, Failure>]
+        _ futures: [Future<Output, Failure>],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<[Output], Failure> {
         typealias IndexedOutput = (index: Int, value: Output)
         guard !futures.isEmpty else { return .init(with: .success([])) }
@@ -227,7 +323,11 @@ extension Future where Failure == Never {
                     group.addTask {
                         return (
                             index: index,
-                            value: await future.get()
+                            value: await future.get(
+                                file: file,
+                                function: function,
+                                line: line
+                            )
                         )
                     }
                 }
@@ -246,14 +346,24 @@ extension Future where Failure == Never {
     /// If the returned future fulfills, it is fulfilled with an aggregating array of the values from the fulfilled futures,
     /// in the same order as provided.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: Already fulfilled future if no future provided, or a pending future
     ///            combining provided futures.
     public static func all(
-        _ futures: Future<Output, Failure>...
+        _ futures: Future<Output, Failure>...,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<[Output], Failure> {
-        return Self.all(futures)
+        return Self.all(futures, file: file, function: function, line: line)
     }
 
     /// Combines into a single future, for all futures to have settled.
@@ -262,12 +372,22 @@ extension Future where Failure == Never {
     /// with an array of `Result`s that each describe the outcome of each future
     /// in the same order as provided.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: Already fulfilled future if no future provided, or a pending future
     ///            combining provided futures.
     public static func allSettled(
-        _ futures: [Future<Output, Failure>]
+        _ futures: [Future<Output, Failure>],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<[FutureResult], Never> {
         typealias IndexedOutput = (index: Int, value: FutureResult)
         guard !futures.isEmpty else { return .init(with: .success([])) }
@@ -279,7 +399,13 @@ extension Future where Failure == Never {
                     group.addTask {
                         return (
                             index: index,
-                            value: .success(await future.get())
+                            value: .success(
+                                await future.get(
+                                    file: file,
+                                    function: function,
+                                    line: line
+                                )
+                            )
                         )
                     }
                 }
@@ -299,14 +425,29 @@ extension Future where Failure == Never {
     /// with an array of `Result`s that each describe the outcome of each future
     /// in the same order as provided.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: Already fulfilled future if no future provided, or a pending future
     ///            combining provided futures.
     public static func allSettled(
-        _ futures: Future<Output, Failure>...
+        _ futures: Future<Output, Failure>...,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<[FutureResult], Never> {
-        return Self.allSettled(futures)
+        return Self.allSettled(
+            futures,
+            file: file,
+            function: function,
+            line: line
+        )
     }
 
     /// Takes multiple futures and, returns a single future that fulfills with the value
@@ -314,17 +455,33 @@ extension Future where Failure == Never {
     ///
     /// If the returned future fulfills, it is fulfilled with the value of the first future that fulfilled.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: A pending future combining provided futures, or a forever pending future
     ///            if no future provided.
     public static func race(
-        _ futures: [Future<Output, Failure>]
+        _ futures: [Future<Output, Failure>],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<Output, Failure> {
         return .init { promise in
             await withTaskGroup(of: Output.self) { group in
                 futures.forEach { future in
-                    group.addTask { await future.get() }
+                    group.addTask {
+                        await future.get(
+                            file: file,
+                            function: function,
+                            line: line
+                        )
+                    }
                 }
                 if let first = await group.next() {
                     promise(.success(first))
@@ -339,42 +496,72 @@ extension Future where Failure == Never {
     ///
     /// If the returned future fulfills, it is fulfilled with the value of the first future that fulfilled.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: A pending future combining provided futures, or a forever pending future
     ///            if no future provided.
     public static func race(
-        _ futures: Future<Output, Failure>...
+        _ futures: Future<Output, Failure>...,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<Output, Failure> {
-        return Self.race(futures)
+        return Self.race(futures, file: file, function: function, line: line)
     }
 
     /// Takes multiple futures and, returns a single future that fulfills with the value as soon as one of the futures fulfills.
     ///
     /// If the returned future fulfills, it is fulfilled with the value of the first future that fulfilled.
     ///
-    /// - Parameter futures: The futures to wait for.
+    /// - Parameters:
+    ///   - futures: The futures to wait for.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: A pending future waiting for first fulfilled future from provided futures,
     ///            or a forever pending future if no future provided.
     public static func any(
-        _ futures: [Future<Output, Failure>]
+        _ futures: [Future<Output, Failure>],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<Output, Failure> {
-        return Self.race(futures)
+        return Self.race(futures, file: file, function: function, line: line)
     }
 
     /// Takes multiple futures and, returns a single future that fulfills with the value as soon as one of the futures fulfills.
     ///
     /// If the returned future fulfills, it is fulfilled with the value of the first future that fulfilled.
     ///
-    /// - Parameter futures: The futures to wait for.
+    /// - Parameters:
+    ///   - futures: The futures to wait for.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: A pending future waiting for first fulfilled future from provided futures,
     ///            or a forever pending future if no future provided.
     public static func any(
-        _ futures: Future<Output, Failure>...
+        _ futures: Future<Output, Failure>...,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<Output, Failure> {
-        return Self.any(futures)
+        return Self.any(futures, file: file, function: function, line: line)
     }
 }
 
@@ -423,8 +610,20 @@ extension Future where Failure == Error {
     /// for `Future` to be fulfilled. If the Future terminates with an error,
     /// the awaiting caller receives the error instead.
     ///
+    /// - Parameters:
+    ///   - file: The file value request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function value request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line value request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
     /// - Throws: If future rejected with error or `CancellationError` if cancelled.
-    public func get() async throws -> Output {
+    public func get(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws -> Output {
         if let result = result { return try result.get() }
         return try await _withPromisedContinuation()
     }
@@ -436,12 +635,22 @@ extension Future where Failure == Error {
     ///
     /// If it rejects, it is rejected with the error from the first future that was rejected.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: Already fulfilled future if no future provided, or a pending future
     ///            combining provided futures.
     public static func all(
-        _ futures: [Future<Output, Failure>]
+        _ futures: [Future<Output, Failure>],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<[Output], Failure> {
         typealias IndexedOutput = (index: Int, value: Output)
         guard !futures.isEmpty else { return .init(with: .success([])) }
@@ -451,7 +660,14 @@ extension Future where Failure == Error {
                 result.reserveCapacity(futures.count)
                 for (index, future) in futures.enumerated() {
                     group.addTask {
-                        (index: index, value: try await future.get())
+                        (
+                            index: index,
+                            value: try await future.get(
+                                file: file,
+                                function: function,
+                                line: line
+                            )
+                        )
                     }
                 }
                 do {
@@ -476,14 +692,24 @@ extension Future where Failure == Error {
     ///
     /// If it rejects, it is rejected with the error from the first future that was rejected.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: Already fulfilled future if no future provided, or a pending future
     ///            combining provided futures.
     public static func all(
-        _ futures: Future<Output, Failure>...
+        _ futures: Future<Output, Failure>...,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<[Output], Failure> {
-        return Self.all(futures)
+        return Self.all(futures, file: file, function: function, line: line)
     }
 
     /// Combines into a single future, for all futures to have settled (each may fulfill or reject).
@@ -492,12 +718,22 @@ extension Future where Failure == Error {
     /// with an array of `Result`s that each describe the outcome of each future
     /// in the same order as provided.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: Already fulfilled future if no future provided, or a pending future
     ///            combining provided futures.
     public static func allSettled(
-        _ futures: [Future<Output, Failure>]
+        _ futures: [Future<Output, Failure>],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<[FutureResult], Never> {
         typealias IndexedOutput = (index: Int, value: FutureResult)
         guard !futures.isEmpty else { return .init(with: .success([])) }
@@ -508,7 +744,11 @@ extension Future where Failure == Error {
                 for (index, future) in futures.enumerated() {
                     group.addTask {
                         do {
-                            let value = try await future.get()
+                            let value = try await future.get(
+                                file: file,
+                                function: function,
+                                line: line
+                            )
                             return (index: index, value: .success(value))
                         } catch {
                             return (index: index, value: .failure(error))
@@ -531,14 +771,29 @@ extension Future where Failure == Error {
     /// with an array of `Result`s that each describe the outcome of each future
     /// in the same order as provided.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: Already fulfilled future if no future provided, or a pending future
     ///            combining provided futures.
     public static func allSettled(
-        _ futures: Future<Output, Failure>...
+        _ futures: Future<Output, Failure>...,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<[FutureResult], Never> {
-        return Self.allSettled(futures)
+        return Self.allSettled(
+            futures,
+            file: file,
+            function: function,
+            line: line
+        )
     }
 
     /// Takes multiple futures and, returns a single future that fulfills with the value
@@ -548,17 +803,33 @@ extension Future where Failure == Error {
     ///
     /// If it rejects, it is rejected with the error from the first future that was rejected.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: A pending future combining provided futures, or a forever pending future
     ///            if no future provided.
     public static func race(
-        _ futures: [Future<Output, Failure>]
+        _ futures: [Future<Output, Failure>],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<Output, Failure> {
         return .init { promise in
             await withThrowingTaskGroup(of: Output.self) { group in
                 futures.forEach { future in
-                    group.addTask { try await future.get() }
+                    group.addTask {
+                        try await future.get(
+                            file: file,
+                            function: function,
+                            line: line
+                        )
+                    }
                 }
                 do {
                     if let first = try await group.next() {
@@ -579,14 +850,24 @@ extension Future where Failure == Error {
     ///
     /// If it rejects, it is rejected with the error from the first future that was rejected.
     ///
-    /// - Parameter futures: The futures to combine.
+    /// - Parameters:
+    ///   - futures: The futures to combine.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: A pending future combining provided futures, or a forever pending future
     ///            if no future provided.
     public static func race(
-        _ futures: Future<Output, Failure>...
+        _ futures: Future<Output, Failure>...,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<Output, Failure> {
-        return Self.race(futures)
+        return Self.race(futures, file: file, function: function, line: line)
     }
 
     /// Takes multiple futures and, returns a single future that fulfills with the value as soon as one of the futures fulfills.
@@ -595,12 +876,22 @@ extension Future where Failure == Error {
     ///
     /// If all the provided futures are rejected, it rejects with `CancellationError`.
     ///
-    /// - Parameter futures: The futures to wait for.
+    /// - Parameters:
+    ///   - futures: The futures to wait for.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: A pending future waiting for first fulfilled future from provided futures,
     ///            or a future rejected with `CancellationError` if no future provided.
     public static func any(
-        _ futures: [Future<Output, Failure>]
+        _ futures: [Future<Output, Failure>],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<Output, Failure> {
         guard !futures.isEmpty else { return .init(with: .cancelled) }
         return .init { promise in
@@ -608,7 +899,11 @@ extension Future where Failure == Error {
                 futures.forEach { future in
                     group.addTask {
                         do {
-                            let value = try await future.get()
+                            let value = try await future.get(
+                                file: file,
+                                function: function,
+                                line: line
+                            )
                             return .success(value)
                         } catch {
                             return .failure(error)
@@ -642,14 +937,24 @@ extension Future where Failure == Error {
     ///
     /// If all the provided futures are rejected, it rejects with `CancellationError`.
     ///
-    /// - Parameter futures: The futures to wait for.
+    /// - Parameters:
+    ///   - futures: The futures to wait for.
+    ///   - file: The file future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function future initialization originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line future initialization originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: A pending future waiting for first fulfilled future from provided futures,
     ///            or a future rejected with `CancellationError` if no future provided.
     public static func any(
-        _ futures: Future<Output, Failure>...
+        _ futures: Future<Output, Failure>...,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) -> Future<Output, Failure> {
-        return Self.any(futures)
+        return Self.any(futures, file: file, function: function, line: line)
     }
 }
 

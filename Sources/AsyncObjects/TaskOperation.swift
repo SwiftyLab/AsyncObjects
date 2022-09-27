@@ -259,8 +259,20 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
 
     /// Starts operation asynchronously
     /// as part of a new top-level task on behalf of the current actor.
+    ///
+    /// - Parameters:
+    ///   - file: The file signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @Sendable
-    public func signal() {
+    public func signal(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         self.start()
     }
 
@@ -269,9 +281,21 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// Only waits asynchronously, if operation is executing,
     /// until it is completed or cancelled.
     ///
+    /// - Parameters:
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
     /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async throws {
+    public func wait(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws {
         guard !isFinished else { return }
         try await _withPromisedContinuation()
     }

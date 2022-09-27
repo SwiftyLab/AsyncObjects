@@ -112,8 +112,20 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
     /// Increment the counting semaphore.
     /// If any previous task is waiting for access to semaphore,
     /// then the task is resumed from suspension.
+    ///
+    /// - Parameters:
+    ///   - file: The file signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @Sendable
-    public nonisolated func signal() {
+    public nonisolated func signal(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         Task { await _signal() }
     }
 
@@ -122,9 +134,21 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
     /// Decrement the counting semaphore. If the resulting value is less than zero,
     /// current task is suspended until a signal occurs.
     ///
+    /// - Parameters:
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).   
+    ///
     /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async throws {
+    public func wait(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws {
         guard count <= 1 else { count -= 1; return }
         try await _withPromisedContinuation()
     }

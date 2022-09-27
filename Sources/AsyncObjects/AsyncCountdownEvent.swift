@@ -179,7 +179,12 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     /// Use this to indicate usage of resource from high priority tasks.
     ///
     /// - Parameter count: The value by which to increase ``currentCount``.
-    public nonisolated func increment(by count: UInt = 1) {
+    public nonisolated func increment(
+        by count: UInt = 1,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         Task { await _increment(by: count) }
     }
 
@@ -187,7 +192,19 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     ///
     /// If the current count becomes less or equal to limit, multiple queued tasks
     /// are resumed from suspension until current count exceeds limit.
-    public nonisolated func reset() {
+    ///
+    /// - Parameters:
+    ///   - file: The file reset originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function reset originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line reset originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    public nonisolated func reset(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         Task { await _reset() }
     }
 
@@ -196,8 +213,20 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     /// If the current count becomes less or equal to limit, multiple queued tasks
     /// are resumed from suspension until current count exceeds limit.
     ///
-    /// - Parameter count: The new initial count.
-    public nonisolated func reset(to count: UInt) {
+    /// - Parameters:
+    ///   - count: The new initial count.
+    ///   - file: The file reset originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function reset originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line reset originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).   
+    public nonisolated func reset(
+        to count: UInt,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         Task { await _reset(to: count) }
     }
 
@@ -205,7 +234,19 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     ///
     /// Decrement the countdown. If the current count becomes less or equal to limit,
     /// one queued task is resumed from suspension.
-    public nonisolated func signal() {
+    ///
+    /// - Parameters:
+    ///   - file: The file signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    public nonisolated func signal(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         Task { await _decrementCount(by: 1) }
     }
 
@@ -214,8 +255,20 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     /// Decrement the countdown by the provided count. If the current count becomes less or equal to limit,
     /// multiple queued tasks are resumed from suspension until current count exceeds limit.
     ///
-    /// - Parameter count: The number of signals to register.
-    public nonisolated func signal(repeat count: UInt) {
+    /// - Parameters:
+    ///   - count: The number of signals to register.
+    ///   - file: The file signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    public nonisolated func signal(
+        repeat count: UInt,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         Task { await _decrementCount(by: count) }
     }
 
@@ -226,9 +279,21 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     ///
     /// Use this to wait for high priority tasks completion to start low priority ones.
     ///
+    /// - Parameters:
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
     /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async throws {
+    public func wait(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws {
         guard _wait() else { currentCount += 1; return }
         try await _withPromisedContinuation()
     }

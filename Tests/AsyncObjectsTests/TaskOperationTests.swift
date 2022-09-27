@@ -134,9 +134,8 @@ class TaskOperationTests: XCTestCase {
         }
         operation.signal()
         try await Self.checkExecInterval(
-            durationInRange: ...3,
-            for: operation.wait
-        )
+            durationInRange: ...3
+        ) { try await operation.wait() }
     }
 
     func testTaskOperationAsyncWaitTimeout() async throws {

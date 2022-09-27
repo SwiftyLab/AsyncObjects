@@ -92,6 +92,14 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
     /// Resets signal of event.
     ///
     /// After reset, tasks have to wait for event signal to complete.
+    ///
+    /// - Parameters:
+    ///   - file: The file reset originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function reset originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line reset originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).   
     @Sendable
     public nonisolated func reset() {
         Task { await _reset() }
@@ -100,8 +108,20 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
     /// Signals the event.
     ///
     /// Resumes all the tasks suspended and waiting for signal.
+    ///
+    /// - Parameters:
+    ///   - file: The file signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).   
     @Sendable
-    public nonisolated func signal() {
+    public nonisolated func signal(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         Task { await _signal() }
     }
 
@@ -110,9 +130,21 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
     /// Only waits asynchronously, if event is in non-signaled state,
     /// until event is signalled.
     ///
+    /// - Parameters:
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
     /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async throws {
+    public func wait(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws {
         guard !signalled else { return }
         try await _withPromisedContinuation()
     }

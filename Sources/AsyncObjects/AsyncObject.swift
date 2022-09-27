@@ -9,8 +9,13 @@ public protocol AsyncObject: Sendable {
     ///
     /// Object might resume suspended tasks
     /// or synchronize tasks differently.
+    ///
+    /// - Parameters:
+    ///   - file: The file signal originates from.
+    ///   - function: The function signal originates from.
+    ///   - line: The line signal originates from.
     @Sendable
-    func signal()
+    func signal(file: String, function: String, line: UInt)
     /// Waits for the object to green light task execution.
     ///
     /// Waits asynchronously suspending current  task, instead of blocking any thread.
@@ -18,9 +23,14 @@ public protocol AsyncObject: Sendable {
     ///
     /// Might throw some error or never throws depending on implementation.
     ///
+    /// - Parameters:
+    ///   - file: The file wait request originates from.
+    ///   - function: The function wait request originates from.
+    ///   - line: The line signal wait request originates from.
+    ///
     /// - Note: Method might return immediately depending upon the synchronization object requirement.
     @Sendable
-    func wait() async throws
+    func wait(file: String, function: String, line: UInt) async throws
 }
 
 // TODO: add clock based timeout for Swift >=5.7
@@ -31,14 +41,27 @@ public extension AsyncObject {
     /// Depending upon whether wait succeeds or timeout expires result is returned.
     /// Async object has to resume the task at a later time depending on its requirement.
     ///
-    /// - Parameter duration: The duration in nano seconds to wait until.
+    /// - Parameters:
+    ///   - duration: The duration in nano seconds to wait until.
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
     /// - Throws: `CancellationError` if cancelled or `DurationTimeoutError` if timed out.
     /// - Note: Method might return immediately depending upon the synchronization object requirement.
     @Sendable
-    func wait(forNanoseconds duration: UInt64) async throws {
+    func wait(
+        forNanoseconds duration: UInt64,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws {
         return try await waitForTaskCompletion(
             withTimeoutInNanoseconds: duration
-        ) { try await self.wait() }
+        ) { try await self.wait(file: file, function: function, line: line) }
     }
 }
 
@@ -47,13 +70,30 @@ public extension AsyncObject {
 /// Invokes ``AsyncObject/wait()`` for all objects
 /// and returns only when all the invocation completes.
 ///
-/// - Parameter objects: The objects to wait for.
+/// - Parameters:
+///   - objects: The objects to wait for.
+///   - file: The file wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#fileID`).
+///   - function: The function wait request originates from (there's usually no need to
+///               pass it explicitly as it defaults to `#function`).
+///   - line: The line wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#line`).
+///
 /// - Throws: `CancellationError` if cancelled.
 @inlinable
 @Sendable
-public func waitForAll(_ objects: [any AsyncObject]) async throws {
+public func waitForAll(
+    _ objects: [any AsyncObject],
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
+) async throws {
     try await withThrowingTaskGroup(of: Void.self) { group in
-        objects.forEach { group.addTask(operation: $0.wait) }
+        objects.forEach { obj in
+            group.addTask {
+                try await obj.wait(file: file, function: function, line: line)
+            }
+        }
         try await group.waitForAll()
     }
 }
@@ -63,12 +103,25 @@ public func waitForAll(_ objects: [any AsyncObject]) async throws {
 /// Invokes ``AsyncObject/wait()`` for all objects
 /// and returns only when all the invocation completes.
 ///
-/// - Parameter objects: The objects to wait for.
+/// - Parameters:
+///   - objects: The objects to wait for.
+///   - file: The file wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#fileID`).
+///   - function: The function wait request originates from (there's usually no need to
+///               pass it explicitly as it defaults to `#function`).
+///   - line: The line wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#line`).
+///
 /// - Throws: `CancellationError` if cancelled.
 @inlinable
 @Sendable
-public func waitForAll(_ objects: any AsyncObject...) async throws {
-    try await waitForAll(objects)
+public func waitForAll(
+    _ objects: any AsyncObject...,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
+) async throws {
+    try await waitForAll(objects, file: file, function: function, line: line)
 }
 
 /// Waits for multiple objects to green light task execution
@@ -81,6 +134,12 @@ public func waitForAll(_ objects: any AsyncObject...) async throws {
 /// - Parameters:
 ///   - objects: The objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
+///   - file: The file wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#fileID`).
+///   - function: The function wait request originates from (there's usually no need to
+///               pass it explicitly as it defaults to `#function`).
+///   - line: The line wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#line`).
 ///
 /// - Throws: `CancellationError` if cancelled
 ///           or `DurationTimeoutError` if timed out.
@@ -88,10 +147,16 @@ public func waitForAll(_ objects: any AsyncObject...) async throws {
 @Sendable
 public func waitForAll(
     _ objects: [any AsyncObject],
-    forNanoseconds duration: UInt64
+    forNanoseconds duration: UInt64,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
 ) async throws {
     return try await waitForTaskCompletion(withTimeoutInNanoseconds: duration) {
-        try await waitForAll(objects)
+        try await waitForAll(
+            objects,
+            file: file, function: function, line: line
+        )
     }
 }
 
@@ -105,6 +170,12 @@ public func waitForAll(
 /// - Parameters:
 ///   - objects: The objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
+///   - file: The file wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#fileID`).
+///   - function: The function wait request originates from (there's usually no need to
+///               pass it explicitly as it defaults to `#function`).
+///   - line: The line wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#line`).
 ///
 /// - Throws: `CancellationError` if cancelled
 ///            or `DurationTimeoutError` if timed out.
@@ -112,9 +183,15 @@ public func waitForAll(
 @Sendable
 public func waitForAll(
     _ objects: any AsyncObject...,
-    forNanoseconds duration: UInt64
+    forNanoseconds duration: UInt64,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
 ) async throws {
-    return try await waitForAll(objects, forNanoseconds: duration)
+    return try await waitForAll(
+        objects, forNanoseconds: duration,
+        file: file, function: function, line: line
+    )
 }
 
 /// Waits for multiple objects to green light task execution
@@ -126,16 +203,29 @@ public func waitForAll(
 /// - Parameters:
 ///   - objects: The objects to wait for.
 ///   - count: The number of objects to wait for.
+///   - file: The file wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#fileID`).
+///   - function: The function wait request originates from (there's usually no need to
+///               pass it explicitly as it defaults to `#function`).
+///   - line: The line wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#line`).
 ///
 /// - Throws: `CancellationError` if cancelled.
 @inlinable
 @Sendable
 public func waitForAny(
     _ objects: [any AsyncObject],
-    count: Int = 1
+    count: Int = 1,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
 ) async throws {
     try await withThrowingTaskGroup(of: Void.self) { group in
-        objects.forEach { group.addTask(operation: $0.wait) }
+        objects.forEach { obj in
+            group.addTask {
+                try await obj.wait(file: file, function: function, line: line)
+            }
+        }
         for _ in 0..<count { try await group.next() }
         group.cancelAll()
     }
@@ -150,15 +240,27 @@ public func waitForAny(
 /// - Parameters:
 ///   - objects: The objects to wait for.
 ///   - count: The number of objects to wait for.
+///   - file: The file wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#fileID`).
+///   - function: The function wait request originates from (there's usually no need to
+///               pass it explicitly as it defaults to `#function`).
+///   - line: The line wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#line`).
 ///
 /// - Throws: `CancellationError` if cancelled.
 @inlinable
 @Sendable
 public func waitForAny(
     _ objects: any AsyncObject...,
-    count: Int = 1
+    count: Int = 1,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
 ) async throws {
-    try await waitForAny(objects, count: count)
+    try await waitForAny(
+        objects, count: count,
+        file: file, function: function, line: line
+    )
 }
 
 /// Waits for multiple objects to green light task execution
@@ -172,6 +274,12 @@ public func waitForAny(
 ///   - objects: The objects to wait for.
 ///   - count: The number of objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
+///   - file: The file wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#fileID`).
+///   - function: The function wait request originates from (there's usually no need to
+///               pass it explicitly as it defaults to `#function`).
+///   - line: The line wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#line`).
 ///
 /// - Throws: `CancellationError` if cancelled
 ///           or `DurationTimeoutError` if timed out.
@@ -180,10 +288,16 @@ public func waitForAny(
 public func waitForAny(
     _ objects: [any AsyncObject],
     count: Int = 1,
-    forNanoseconds duration: UInt64
+    forNanoseconds duration: UInt64,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
 ) async throws {
     return try await waitForTaskCompletion(withTimeoutInNanoseconds: duration) {
-        try await waitForAny(objects, count: count)
+        try await waitForAny(
+            objects, count: count,
+            file: file, function: function, line: line
+        )
     }
 }
 
@@ -198,6 +312,12 @@ public func waitForAny(
 ///   - objects: The objects to wait for.
 ///   - count: The number of objects to wait for.
 ///   - duration: The duration in nano seconds to wait until.
+///   - file: The file wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#fileID`).
+///   - function: The function wait request originates from (there's usually no need to
+///               pass it explicitly as it defaults to `#function`).
+///   - line: The line wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#line`).
 ///
 /// - Throws: `CancellationError` if cancelled
 ///           or `DurationTimeoutError` if timed out.
@@ -206,9 +326,15 @@ public func waitForAny(
 public func waitForAny(
     _ objects: any AsyncObject...,
     count: Int = 1,
-    forNanoseconds duration: UInt64
+    forNanoseconds duration: UInt64,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
 ) async throws {
-    return try await waitForAny(objects, count: count, forNanoseconds: duration)
+    return try await waitForAny(
+        objects, count: count, forNanoseconds: duration,
+        file: file, function: function, line: line
+    )
 }
 
 /// Waits for the provided task to be completed within the timeout duration.

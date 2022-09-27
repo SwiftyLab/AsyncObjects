@@ -14,9 +14,8 @@ class AsyncEventTests: XCTestCase {
             event.signal()
         }
         try await Self.checkExecInterval(
-            durationInSeconds: seconds,
-            for: event.wait
-        )
+            durationInSeconds: seconds
+        ) { try await event.wait() }
     }
 
     func testEventWait() async throws {

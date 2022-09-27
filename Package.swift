@@ -42,7 +42,7 @@ let package = Package(
     ]
 )
 
-var swiftSettings: [SwiftSetting] {
+var swiftSettings: [SwiftSetting] = {
     var swiftSettings: [SwiftSetting] = []
 
     if ProcessInfo.processInfo.environment[
@@ -77,9 +77,9 @@ var swiftSettings: [SwiftSetting] {
     }
 
     return swiftSettings
-}
+}()
 
-var testingSwiftSettings: [SwiftSetting] {
+var testingSwiftSettings: [SwiftSetting] = {
     var swiftSettings: [SwiftSetting] = []
 
     if ProcessInfo.processInfo.environment[
@@ -96,4 +96,4 @@ var testingSwiftSettings: [SwiftSetting] {
     }
 
     return swiftSettings
-}
+}()

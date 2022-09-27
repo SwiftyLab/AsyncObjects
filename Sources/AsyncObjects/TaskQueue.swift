@@ -438,6 +438,12 @@ public actor TaskQueue: AsyncObject {
     ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
+    ///   - file: The file execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function execution request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The throwing operation to perform.
     ///
     /// - Returns: The result from provided operation.
@@ -451,6 +457,9 @@ public actor TaskQueue: AsyncObject {
     public func exec<T: Sendable>(
         priority: TaskPriority? = nil,
         flags: Flags = [],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @Sendable @escaping () async throws -> T
     ) async throws -> T {
         return try await _execHelper(
@@ -470,6 +479,12 @@ public actor TaskQueue: AsyncObject {
     ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
+    ///   - file: The file execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function execution request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The non-throwing operation to perform.
     ///
     /// - Returns: The result from provided operation.
@@ -478,6 +493,9 @@ public actor TaskQueue: AsyncObject {
     public func exec<T: Sendable>(
         priority: TaskPriority? = nil,
         flags: Flags = [],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @Sendable @escaping () async -> T
     ) async -> T {
         return await _execHelper(
@@ -500,17 +518,29 @@ public actor TaskQueue: AsyncObject {
     ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
+    ///   - file: The file execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function execution request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The throwing operation to perform.
     @Sendable
     public nonisolated func addTask<T: Sendable>(
         priority: TaskPriority? = nil,
         flags: Flags = [],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @Sendable @escaping () async throws -> T
     ) {
         Task {
             try await exec(
                 priority: priority,
                 flags: flags,
+                file: file,
+                function: function,
+                line: line,
                 operation: operation
             )
         }
@@ -527,17 +557,29 @@ public actor TaskQueue: AsyncObject {
     ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
+    ///   - file: The file execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function execution request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The non-throwing operation to perform.
     @Sendable
     public nonisolated func addTask<T: Sendable>(
         priority: TaskPriority? = nil,
         flags: Flags = [],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @Sendable @escaping () async -> T
     ) {
         Task {
             await exec(
                 priority: priority,
                 flags: flags,
+                file: file,
+                function: function,
+                line: line,
                 operation: operation
             )
         }
@@ -545,17 +587,43 @@ public actor TaskQueue: AsyncObject {
 
     /// Signalling on queue does nothing.
     /// Only added to satisfy ``AsyncObject`` requirements.
+    ///
+    /// - Parameters:
+    ///   - file: The file signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @Sendable
-    public nonisolated func signal() { /* Do nothing */  }
+    public nonisolated func signal(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) { /* Do nothing */  }
 
     /// Waits for execution turn on queue.
     ///
     /// Only waits asynchronously, if queue is locked by a barrier task,
     /// until the suspended task's turn comes to be resumed.
     ///
+    /// - Parameters:
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
     /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async throws {
-        try await exec { try await Task.sleep(nanoseconds: 0) }
+    public func wait(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws {
+        try await exec(
+            file: file, function: function, line: line
+        ) { try await Task.sleep(nanoseconds: 0) }
     }
 }
