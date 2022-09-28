@@ -281,7 +281,7 @@ extension Future where Failure == Never {
     ///   - function: The function value request originates from (there's usually no need to
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line value request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).   
+    ///           explicitly as it defaults to `#line`).
     public func get(
         file: String = #fileID,
         function: String = #function,

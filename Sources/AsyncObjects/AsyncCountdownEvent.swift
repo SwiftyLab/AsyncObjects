@@ -220,7 +220,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     ///   - function: The function reset originates from (there's usually no need to
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line reset originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).   
+    ///           explicitly as it defaults to `#line`).
     public nonisolated func reset(
         to count: UInt,
         file: String = #fileID,

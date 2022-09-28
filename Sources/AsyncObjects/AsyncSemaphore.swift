@@ -140,7 +140,7 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
     ///   - function: The function wait request originates from (there's usually no need to
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line wait request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).   
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Throws: `CancellationError` if cancelled.
     @Sendable

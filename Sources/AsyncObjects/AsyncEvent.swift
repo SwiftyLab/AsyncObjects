@@ -99,7 +99,7 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
     ///   - function: The function reset originates from (there's usually no need to
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line reset originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).   
+    ///           explicitly as it defaults to `#line`).
     @Sendable
     public nonisolated func reset() {
         Task { await _reset() }
@@ -115,7 +115,7 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
     ///   - function: The function signal originates from (there's usually no need to
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line signal originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).   
+    ///           explicitly as it defaults to `#line`).
     @Sendable
     public nonisolated func signal(
         file: String = #fileID,

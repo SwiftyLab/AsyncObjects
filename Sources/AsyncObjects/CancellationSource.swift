@@ -75,7 +75,7 @@ public actor CancellationSource {
     internal nonisolated func _propagateCancellation() async {
         await withTaskGroup(of: Void.self) { group in
             let linkedSources = await linkedSources
-            linkedSources.forEach { group.addTask(operation: $0.cancel) }
+            linkedSources.forEach { s in group.addTask{ s.cancel() } }
             await group.waitForAll()
         }
     }
@@ -131,13 +131,30 @@ public actor CancellationSource {
     /// Creates a new cancellation source object
     /// and triggers cancellation event on this object after specified timeout.
     ///
-    /// - Parameter nanoseconds: The delay after which cancellation event triggered.
+    /// - Parameters:
+    ///   - nanoseconds: The delay after which cancellation event triggered.
+    ///   - file: The file cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function cancel request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: The newly created cancellation source.
-    public init(cancelAfterNanoseconds nanoseconds: UInt64) {
+    public init(
+        cancelAfterNanoseconds nanoseconds: UInt64,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         self.init()
         Task { [weak self] in
-            try await self?.cancel(afterNanoseconds: nanoseconds)
+            try await self?.cancel(
+                afterNanoseconds: nanoseconds,
+                file: file,
+                function: function,
+                line: line
+            )
         }
     }
     #else
@@ -176,13 +193,30 @@ public actor CancellationSource {
     /// Creates a new cancellation source object
     /// and triggers cancellation event on this object after specified timeout.
     ///
-    /// - Parameter nanoseconds: The delay after which cancellation event triggered.
+    /// - Parameters:
+    ///   - nanoseconds: The delay after which cancellation event triggered.
+    ///   - file: The file cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function cancel request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: The newly created cancellation source.
-    public convenience init(cancelAfterNanoseconds nanoseconds: UInt64) {
+    public convenience init(
+        cancelAfterNanoseconds nanoseconds: UInt64,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         self.init()
         Task { [weak self] in
-            try await self?.cancel(afterNanoseconds: nanoseconds)
+            try await self?.cancel(
+                afterNanoseconds: nanoseconds,
+                file: file,
+                function: function,
+                line: line
+            )
         }
     }
     #endif
@@ -191,10 +225,20 @@ public actor CancellationSource {
     ///
     /// If task completes before cancellation event is triggered, it is automatically unregistered.
     ///
-    /// - Parameter task: The task to register.
+    /// - Parameters:
+    ///   - task: The task to register.
+    ///   - file: The file task registration originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function task registration originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line task registration originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @Sendable
     public nonisolated func register<Success, Failure>(
-        task: Task<Success, Failure>
+        task: Task<Success, Failure>,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) {
         Task { [weak self] in
             await self?._add(task: task)
@@ -205,8 +249,20 @@ public actor CancellationSource {
 
     /// Trigger cancellation event, initiate cooperative cancellation of registered tasks
     /// and propagate cancellation to linked cancellation sources.
+    ///
+    /// - Parameters:
+    ///   - file: The file cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function cancel request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @Sendable
-    public nonisolated func cancel() {
+    public nonisolated func cancel(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         Task { await _cancel() }
     }
 
@@ -214,10 +270,23 @@ public actor CancellationSource {
     /// initiate cooperative cancellation of registered tasks
     /// and propagate cancellation to linked cancellation sources.
     ///
-    /// - Parameter nanoseconds: The delay after which cancellation event triggered.
+    /// - Parameters:
+    ///   - nanoseconds: The delay after which cancellation event triggered.
+    ///   - file: The file cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function cancel request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
     /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func cancel(afterNanoseconds nanoseconds: UInt64) async throws {
+    public func cancel(
+        afterNanoseconds nanoseconds: UInt64,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws {
         try await Task.sleep(nanoseconds: nanoseconds)
         await _cancel()
     }
@@ -232,6 +301,12 @@ public extension Task {
     /// - Parameters:
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
+    ///   - file: The file task registration originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function task registration originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line task registration originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The operation to perform.
     ///
     /// - Returns: The newly created task.
@@ -239,10 +314,18 @@ public extension Task {
     init(
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @escaping @Sendable () async -> Success
     ) where Failure == Never {
         self.init(priority: priority, operation: operation)
-        cancellationSource.register(task: self)
+        cancellationSource.register(
+            task: self,
+            file: file,
+            function: function,
+            line: line
+        )
     }
 
     /// Runs the given throwing operation asynchronously as part of a new top-level task on behalf of the current actor,
@@ -253,6 +336,12 @@ public extension Task {
     /// - Parameters:
     ///   - priority: The priority of the task. Pass `nil` to use the priority from `Task.currentPriority`.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
+    ///   - file: The file task registration originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function task registration originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line task registration originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The operation to perform.
     ///
     /// - Returns: The newly created task.
@@ -260,10 +349,18 @@ public extension Task {
     init(
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @escaping @Sendable () async throws -> Success
     ) where Failure == Error {
         self.init(priority: priority, operation: operation)
-        cancellationSource.register(task: self)
+        cancellationSource.register(
+            task: self,
+            file: file,
+            function: function,
+            line: line
+        )
     }
 
     /// Runs the given non-throwing operation asynchronously as part of a new top-level task,
@@ -274,6 +371,12 @@ public extension Task {
     /// - Parameters:
     ///   - priority: The priority of the task.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
+    ///   - file: The file task registration originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function task registration originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line task registration originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The operation to perform.
     ///
     /// - Returns: The newly created task.
@@ -281,10 +384,18 @@ public extension Task {
     static func detached(
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @escaping @Sendable () async -> Success
     ) -> Self where Failure == Never {
         let task = Task.detached(priority: priority, operation: operation)
-        cancellationSource.register(task: task)
+        cancellationSource.register(
+            task: task,
+            file: file,
+            function: function,
+            line: line
+        )
         return task
     }
 
@@ -296,6 +407,12 @@ public extension Task {
     /// - Parameters:
     ///   - priority: The priority of the task.
     ///   - cancellationSource: The cancellation source on which new task will be registered for cancellation.
+    ///   - file: The file task registration originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function task registration originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line task registration originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The operation to perform.
     ///
     /// - Returns: The newly created task.
@@ -303,10 +420,18 @@ public extension Task {
     static func detached(
         priority: TaskPriority? = nil,
         cancellationSource: CancellationSource,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @escaping @Sendable () async throws -> Success
     ) -> Self where Failure == Error {
         let task = Task.detached(priority: priority, operation: operation)
-        cancellationSource.register(task: task)
+        cancellationSource.register(
+            task: task,
+            file: file,
+            function: function,
+            line: line
+        )
         return task
     }
 }
