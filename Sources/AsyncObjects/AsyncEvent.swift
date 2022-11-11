@@ -1,4 +1,8 @@
+#if swift(>=5.7)
+import Foundation
+#else
 @preconcurrency import Foundation
+#endif
 
 /// An object that controls execution of tasks depending on the signal state.
 ///

@@ -1,4 +1,9 @@
+#if swift(>=5.7)
+import Foundation
+#else
 @preconcurrency import Foundation
+#endif
+
 import OrderedCollections
 
 /// An event object that controls access to a resource between high and low priority tasks

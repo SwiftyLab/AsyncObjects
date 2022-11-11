@@ -1,4 +1,9 @@
+#if swift(>=5.7)
+import Foundation
+#else
 @preconcurrency import Foundation
+#endif
+
 import OrderedCollections
 
 /// An object that controls access to a resource across multiple task contexts through use of a traditional counting semaphore.
