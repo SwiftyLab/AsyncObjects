@@ -77,13 +77,13 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     ///
     /// - Returns: Whether to wait to be resumed later.
     @inlinable
-    internal func _wait() -> Bool { !isSet || !continuations.isEmpty }
+    internal func shouldWait() -> Bool { !isSet || !continuations.isEmpty }
 
     /// Resume provided continuation with additional changes based on the associated flags.
     ///
     /// - Parameter continuation: The queued continuation to resume.
     @inlinable
-    internal func _resumeContinuation(_ continuation: Continuation) {
+    internal func resumeContinuation(_ continuation: Continuation) {
         currentCount += 1
         continuation.resume()
     }
@@ -94,12 +94,12 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    internal func _addContinuation(
+    internal func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
         guard !continuation.resumed else { return }
-        guard _wait() else { _resumeContinuation(continuation); return }
+        guard shouldWait() else { resumeContinuation(continuation); return }
         continuations[key] = continuation
     }
 
@@ -108,7 +108,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    internal func _removeContinuation(withKey key: UUID) {
+    internal func removeContinuation(withKey key: UUID) {
         continuations.removeValue(forKey: key)
     }
 
@@ -116,18 +116,18 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     ///
     /// - Parameter number: The number to decrement count by.
     @inlinable
-    internal func _decrementCount(by number: UInt = 1) {
-        defer { _resumeContinuations() }
+    internal func decrementCount(by number: UInt = 1) {
+        defer { resumeContinuations() }
         guard currentCount > 0 else { return }
         currentCount -= number
     }
 
     /// Resume previously waiting continuations for countdown event.
     @inlinable
-    internal func _resumeContinuations() {
+    internal func resumeContinuations() {
         while !continuations.isEmpty && isSet {
             let (_, continuation) = continuations.removeFirst()
-            _resumeContinuation(continuation)
+            resumeContinuation(continuation)
         }
     }
 
@@ -135,25 +135,25 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     ///
     /// - Parameter count: The value by which to increase ``currentCount``.
     @inlinable
-    internal func _increment(by count: UInt = 1) {
+    internal func incrementCount(by count: UInt = 1) {
         self.currentCount += count
     }
 
     /// Resets current count to initial count.
     @inlinable
-    internal func _reset() {
+    internal func resetCount() {
         self.currentCount = initialCount
-        _resumeContinuations()
+        resumeContinuations()
     }
 
     /// Resets initial count and current count to specified value.
     ///
     /// - Parameter count: The new initial count.
     @inlinable
-    internal func _reset(to count: UInt) {
+    internal func resetCount(to count: UInt) {
         initialCount = count
         self.currentCount = count
-        _resumeContinuations()
+        resumeContinuations()
     }
 
     // MARK: Public
@@ -190,7 +190,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await _increment(by: count) }
+        Task { await incrementCount(by: count) }
     }
 
     /// Resets current count to initial count.
@@ -210,7 +210,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await _reset() }
+        Task { await resetCount() }
     }
 
     /// Resets initial count and current count to specified value.
@@ -232,7 +232,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await _reset(to: count) }
+        Task { await resetCount(to: count) }
     }
 
     /// Registers a signal (decrements) with the countdown event.
@@ -252,7 +252,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await _decrementCount(by: 1) }
+        Task { await decrementCount(by: 1) }
     }
 
     /// Registers multiple signals (decrements by provided count) with the countdown event.
@@ -274,7 +274,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await _decrementCount(by: count) }
+        Task { await decrementCount(by: count) }
     }
 
     /// Waits for, or increments, a countdown event.
@@ -299,7 +299,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) async throws {
-        guard _wait() else { currentCount += 1; return }
-        try await _withPromisedContinuation()
+        guard shouldWait() else { currentCount += 1; return }
+        try await withPromisedContinuation()
     }
 }

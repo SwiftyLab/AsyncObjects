@@ -59,7 +59,7 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    internal func _addContinuation(
+    internal func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -74,22 +74,22 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    internal func _removeContinuation(withKey key: UUID) {
+    internal func removeContinuation(withKey key: UUID) {
         continuations.removeValue(forKey: key)
-        _incrementCount()
+        incrementCount()
     }
 
     /// Increments semaphore count within limit provided.
     @inlinable
-    internal func _incrementCount() {
+    internal func incrementCount() {
         guard count < limit else { return }
         count += 1
     }
 
     /// Signals (increments) and releases a semaphore.
     @inlinable
-    internal func _signal() {
-        _incrementCount()
+    internal func signalSemaphore() {
+        incrementCount()
         guard !continuations.isEmpty else { return }
         let (_, continuation) = continuations.removeFirst()
         continuation.resume()
@@ -131,7 +131,7 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await _signal() }
+        Task { await signalSemaphore() }
     }
 
     /// Waits for, or decrements, a semaphore.
@@ -155,6 +155,6 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
         line: UInt = #line
     ) async throws {
         guard count <= 1 else { count -= 1; return }
-        try await _withPromisedContinuation()
+        try await withPromisedContinuation()
     }
 }

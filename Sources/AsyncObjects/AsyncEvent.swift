@@ -47,7 +47,7 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    internal func _addContinuation(
+    internal func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -61,20 +61,20 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    internal func _removeContinuation(withKey key: UUID) {
+    internal func removeContinuation(withKey key: UUID) {
         continuations.removeValue(forKey: key)
     }
 
     /// Resets signal of event.
     @inlinable
-    internal func _reset() {
+    internal func resetEvent() {
         signalled = false
     }
 
     /// Signals the event and resumes all the tasks
     /// suspended and waiting for signal.
     @inlinable
-    internal func _signal() {
+    internal func signalEvent() {
         continuations.forEach { $0.value.resume() }
         continuations = [:]
         signalled = true
@@ -106,7 +106,7 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
     ///           explicitly as it defaults to `#line`).
     @Sendable
     public nonisolated func reset() {
-        Task { await _reset() }
+        Task { await resetEvent() }
     }
 
     /// Signals the event.
@@ -126,7 +126,7 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await _signal() }
+        Task { await signalEvent() }
     }
 
     /// Waits for event signal, or proceeds if already signalled.
@@ -150,6 +150,6 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
         line: UInt = #line
     ) async throws {
         guard !signalled else { return }
-        try await _withPromisedContinuation()
+        try await withPromisedContinuation()
     }
 }

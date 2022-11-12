@@ -88,9 +88,9 @@ public final class Locker: Exclusible, Equatable, Hashable, NSCopying, Sendable
     /// - Warning: This method doesn't check if current thread
     ///            has already acquired lock, and will cause runtime error
     ///            if called repeatedly from same thread without releasing
-    ///            with `_unlock()` beforehand. Use the ``perform(_:)``
+    ///            with `unlock()` beforehand. Use the ``perform(_:)``
     ///            method for safer handling of locking and unlocking.
-    private func _lock() {
+    private func lock() {
         #if canImport(Darwin)
         os_unfair_lock_lock(platformLock)
         #elseif canImport(Glibc)
@@ -110,10 +110,10 @@ public final class Locker: Exclusible, Equatable, Hashable, NSCopying, Sendable
     ///
     /// - Warning: This method doesn't check if current thread
     ///            has already acquired lock, and will cause runtime error
-    ///            if called from a thread calling `_lock()` beforehand.
+    ///            if called from a thread calling `lock()` beforehand.
     ///            Use the ``perform(_:)`` method for safer handling
     ///            of locking and unlocking.
-    private func _unlock() {
+    private func unlock() {
         let threadDictionary = Thread.current.threadDictionary
         threadDictionary.removeObject(forKey: self)
         #if canImport(Darwin)
@@ -145,8 +145,8 @@ public final class Locker: Exclusible, Equatable, Hashable, NSCopying, Sendable
             !(threadDictionary[self] as? Bool ?? false)
         else { return try critical() }
 
-        _lock()
-        defer { _unlock() }
+        lock()
+        defer { unlock() }
         return try critical()
     }
 

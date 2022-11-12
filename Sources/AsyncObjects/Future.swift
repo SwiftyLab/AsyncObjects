@@ -70,7 +70,7 @@ public actor Future<Output: Sendable, Failure: Error> {
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    internal func _addContinuation(
+    internal func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID = .init()
     ) {
@@ -260,15 +260,15 @@ public actor Future<Output: Sendable, Failure: Error> {
 extension Future where Failure == Never {
     /// Suspends the current task, then calls the given closure with a non-throwing continuation for the current task.
     ///
-    /// Spins up a new continuation and requests to track it with key by invoking `_addContinuation`.
+    /// Spins up a new continuation and requests to track it with key by invoking `addContinuation`.
     /// This operation doesn't check for cancellation.
     ///
     /// - Returns: The value continuation is resumed with.
     @inlinable
-    internal nonisolated func _withPromisedContinuation() async -> Output {
+    internal nonisolated func withPromisedContinuation() async -> Output {
         return await Continuation.with { continuation in
             Task { [weak self] in
-                await self?._addContinuation(continuation)
+                await self?.addContinuation(continuation)
             }
         }
     }
@@ -292,7 +292,7 @@ extension Future where Failure == Never {
         line: UInt = #line
     ) async -> Output {
         if let result = result { return try! result.get() }
-        return await _withPromisedContinuation()
+        return await withPromisedContinuation()
     }
 
     /// Combines into a single future, for all futures to be fulfilled.
@@ -576,33 +576,33 @@ extension Future where Failure == Error {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    internal func _removeContinuation(withKey key: UUID) {
+    internal func removeContinuation(withKey key: UUID) {
         continuations.removeValue(forKey: key)
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
-    /// Continuation can be cancelled with error if current task is cancelled, by invoking `_removeContinuation`.
+    /// Continuation can be cancelled with error if current task is cancelled, by invoking `removeContinuation`.
     ///
-    /// Spins up a new continuation and requests to track it with key by invoking `_addContinuation`.
-    /// This operation cooperatively checks for cancellation and reacting to it by invoking `_removeContinuation`.
+    /// Spins up a new continuation and requests to track it with key by invoking `addContinuation`.
+    /// This operation cooperatively checks for cancellation and reacting to it by invoking `removeContinuation`.
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
     /// - Returns: The value continuation is resumed with.
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    internal nonisolated func _withPromisedContinuation() async throws -> Output
+    internal nonisolated func withPromisedContinuation() async throws -> Output
     {
         let key = UUID()
         return try await Continuation.withCancellation(
             synchronizedWith: locker
         ) {
             Task { [weak self] in
-                await self?._removeContinuation(withKey: key)
+                await self?.removeContinuation(withKey: key)
             }
         } operation: { continuation in
             Task { [weak self] in
-                await self?._addContinuation(continuation, withKey: key)
+                await self?.addContinuation(continuation, withKey: key)
             }
         }
     }
@@ -629,7 +629,7 @@ extension Future where Failure == Error {
         line: UInt = #line
     ) async throws -> Output {
         if let result = result { return try result.get() }
-        return try await _withPromisedContinuation()
+        return try await withPromisedContinuation()
     }
 
     /// Combines into a single future, for all futures to be fulfilled, or for any to be rejected.

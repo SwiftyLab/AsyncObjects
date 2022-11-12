@@ -191,7 +191,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// as part of a new top-level task on behalf of the current actor.
     public override func main() {
         guard isExecuting, execTask == nil else { return }
-        let final = { @Sendable[weak self] in self?._finish(); return }
+        let final = { @Sendable[weak self] in self?.finish(); return }
         execTask = flags.createTask(
             priority: priority,
             operation: underlyingAction,
@@ -209,14 +209,14 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// calling this method has no effect.
     public override func cancel() {
         isCancelled = true
-        _finish()
+        finish()
     }
 
     /// Moves this operation to finished state.
     ///
     /// Must be called either when operation completes or cancelled.
     @inlinable
-    internal func _finish() {
+    internal func finish() {
         isExecuting = false
         isFinished = true
     }
@@ -237,7 +237,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    internal func _addContinuation(
+    internal func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -253,7 +253,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    internal func _removeContinuation(withKey key: UUID) {
+    internal func removeContinuation(withKey key: UUID) {
         locker.perform { continuations.removeValue(forKey: key) }
     }
 
@@ -297,7 +297,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         line: UInt = #line
     ) async throws {
         guard !isFinished else { return }
-        try await _withPromisedContinuation()
+        try await withPromisedContinuation()
     }
 }
 

@@ -49,7 +49,7 @@ public actor CancellationSource {
     ///
     /// - Parameter task: The task to register.
     @inlinable
-    internal func _add<Success, Failure>(task: Task<Success, Failure>) {
+    internal func add<Success, Failure>(task: Task<Success, Failure>) {
         guard !task.isCancelled else { return }
         registeredTasks[task] = { task.cancel() }
     }
@@ -58,7 +58,7 @@ public actor CancellationSource {
     ///
     /// - Parameter task: The task to remove.
     @inlinable
-    internal func _remove<Success, Failure>(task: Task<Success, Failure>) {
+    internal func remove<Success, Failure>(task: Task<Success, Failure>) {
         registeredTasks.removeValue(forKey: task)
     }
 
@@ -66,26 +66,26 @@ public actor CancellationSource {
     ///
     /// - Parameter task: The source to link.
     @inlinable
-    internal func _addSource(_ source: CancellationSource) {
+    internal func addSource(_ source: CancellationSource) {
         linkedSources.append(source)
     }
 
     /// Propagate cancellation to linked cancellation sources.
     @inlinable
-    internal nonisolated func _propagateCancellation() async {
+    internal nonisolated func propagateCancellation() async {
         await withTaskGroup(of: Void.self) { group in
             let linkedSources = await linkedSources
-            linkedSources.forEach { s in group.addTask{ s.cancel() } }
+            linkedSources.forEach { s in group.addTask { s.cancel() } }
             await group.waitForAll()
         }
     }
 
     /// Trigger cancellation event, initiate cooperative cancellation of registered tasks
     /// and propagate cancellation to linked cancellation sources.
-    internal func _cancel() async {
+    internal func cancelAll() async {
         registeredTasks.forEach { $1() }
         registeredTasks = [:]
-        await _propagateCancellation()
+        await propagateCancellation()
     }
 
     // MARK: Public
@@ -109,7 +109,7 @@ public actor CancellationSource {
         Task {
             await withTaskGroup(of: Void.self) { group in
                 sources.forEach { source in
-                    group.addTask { await source._addSource(self) }
+                    group.addTask { await source.addSource(self) }
                 }
                 await group.waitForAll()
             }
@@ -171,7 +171,7 @@ public actor CancellationSource {
         Task {
             await withTaskGroup(of: Void.self) { group in
                 sources.forEach { source in
-                    group.addTask { await source._addSource(self) }
+                    group.addTask { await source.addSource(self) }
                 }
                 await group.waitForAll()
             }
@@ -241,9 +241,9 @@ public actor CancellationSource {
         line: UInt = #line
     ) {
         Task { [weak self] in
-            await self?._add(task: task)
+            await self?.add(task: task)
             let _ = await task.result
-            await self?._remove(task: task)
+            await self?.remove(task: task)
         }
     }
 
@@ -263,7 +263,7 @@ public actor CancellationSource {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await _cancel() }
+        Task { await cancelAll() }
     }
 
     /// Trigger cancellation event after provided delay,
@@ -288,7 +288,7 @@ public actor CancellationSource {
         line: UInt = #line
     ) async throws {
         try await Task.sleep(nanoseconds: nanoseconds)
-        await _cancel()
+        await cancelAll()
     }
 }
 
