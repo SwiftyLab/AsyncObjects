@@ -3,14 +3,43 @@ import Foundation
 #else
 @preconcurrency import Foundation
 #endif
+
 import OrderedCollections
 
 /// An object that acts as a concurrent queue executing submitted tasks concurrently.
 ///
-/// You can use the ``exec(priority:flags:operation:)-2ll3k``
+/// You can use the ``exec(priority:flags:operation:)-8u46i``
 /// or its non-throwing/non-cancellable version to run tasks concurrently.
 /// Additionally, you can provide priority of task and ``Flags``
 /// to customize execution of submitted operation.
+///
+/// ```swift
+/// // create a queue with some priority processing async actions
+/// let queue = TaskQueue()
+/// // add operations to queue to be executed asynchronously
+/// queue.addTask {
+///   try await Task.sleep(nanoseconds: 1_000_000_000)
+/// }
+/// // or wait asynchronously for operation to be executed on queue
+/// // the provided operation cancelled if invoking task cancelled
+/// try await queue.exec {
+///   try await Task.sleep(nanoseconds: 1_000_000_000)
+/// }
+///
+/// // provide additional flags for added operations
+/// // execute operation as a barrier
+/// queue.addTask(flags: .barrier) {
+///   try await Task.sleep(nanoseconds: 1_000_000_000)
+/// }
+/// // execute operation as a detached task
+/// queue.addTask(flags: .detached) {
+///   try await Task.sleep(nanoseconds: 1_000_000_000)
+/// }
+/// // combine multiple flags for operation execution
+/// queue.addTask(flags: [.barrier, .detached]) {
+///   try await Task.sleep(nanoseconds: 1_000_000_000)
+/// }
+/// ```
 public actor TaskQueue: AsyncObject {
     /// A set of behaviors for operations, such as its priority and whether to create a barrier
     /// or spawn a new detached task.
@@ -55,7 +84,7 @@ public actor TaskQueue: AsyncObject {
         ///
         /// Returns `true` if either ``barrier`` or ``block`` flag provided.
         @usableFromInline
-        var isBlockEnabled: Bool {
+        internal var isBlockEnabled: Bool {
             return self.contains(.block) || self.contains(.barrier)
         }
 
@@ -74,7 +103,7 @@ public actor TaskQueue: AsyncObject {
         /// - Returns: The determined priority of operation to be executed,
         ///            based on provided flags.
         @usableFromInline
-        func choosePriority(
+        internal func choosePriority(
             fromContext context: TaskPriority?,
             andWork work: TaskPriority?
         ) -> TaskPriority? {
@@ -105,7 +134,7 @@ public actor TaskQueue: AsyncObject {
         ///
         /// - Returns: Whether to suspend newly added task.
         @usableFromInline
-        func wait(forCurrent current: UInt) -> Bool {
+        internal func wait(forCurrent current: UInt) -> Bool {
             return self.contains(.barrier) ? current > 0 : false
         }
 
@@ -132,14 +161,16 @@ public actor TaskQueue: AsyncObject {
 
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = SafeContinuation<GlobalContinuation<Void, Error>>
+    internal typealias Continuation = SafeContinuation<
+        GlobalContinuation<Void, Error>
+    >
     /// A mechanism to queue tasks in ``TaskQueue``, to be resumed when queue is freed
     /// and provided flags are satisfied.
     @usableFromInline
-    typealias QueuedContinuation = (value: Continuation, flags: Flags)
+    internal typealias QueuedContinuation = (value: Continuation, flags: Flags)
     /// The platform dependent lock used to synchronize continuations tracking.
     @usableFromInline
-    let locker: Locker = .init()
+    internal let locker: Locker = .init()
     /// The list of tasks currently queued and would be resumed one by one when current barrier task ends.
     @usableFromInline
     private(set) var queue: OrderedDictionary<UUID, QueuedContinuation> = [:]
@@ -159,7 +190,7 @@ public actor TaskQueue: AsyncObject {
     /// - Parameter flags: The flags provided for new task.
     /// - Returns: Whether to wait to be resumed later.
     @inlinable
-    func _wait(whenFlags flags: Flags) -> Bool {
+    internal func shouldWait(whenFlags flags: Flags) -> Bool {
         return blocked
             || !queue.isEmpty
             || flags.wait(forCurrent: currentRunning)
@@ -171,7 +202,7 @@ public actor TaskQueue: AsyncObject {
     /// - Returns: Whether queue is free to proceed scheduling other tasks.
     @inlinable
     @discardableResult
-    func _resumeQueuedContinuation(
+    internal func resumeQueuedContinuation(
         _ continuation: QueuedContinuation
     ) -> Bool {
         currentRunning += 1
@@ -187,13 +218,13 @@ public actor TaskQueue: AsyncObject {
     ///   - key: The key in the continuation queue.
     ///   - continuation: The continuation and flags to add to queue.
     @inlinable
-    func _queueContinuation(
+    internal func queueContinuation(
         atKey key: UUID = .init(),
         _ continuation: QueuedContinuation
     ) {
         guard !continuation.value.resumed else { return }
-        guard _wait(whenFlags: continuation.flags) else {
-            _resumeQueuedContinuation(continuation)
+        guard shouldWait(whenFlags: continuation.flags) else {
+            resumeQueuedContinuation(continuation)
             return
         }
         queue[key] = continuation
@@ -203,7 +234,7 @@ public actor TaskQueue: AsyncObject {
     ///
     /// - Parameter key: The key in the continuation queue.
     @inlinable
-    func _dequeueContinuation(withKey key: UUID) {
+    internal func dequeueContinuation(withKey key: UUID) {
         queue.removeValue(forKey: key)
     }
 
@@ -213,9 +244,9 @@ public actor TaskQueue: AsyncObject {
     /// Updates the ``blocked`` flag and starts queued tasks
     /// in order of their addition if any tasks are queued.
     @inlinable
-    func _unblockQueue() {
+    internal func unblockQueue() {
         blocked = false
-        _resumeQueuedTasks()
+        resumeQueuedTasks()
     }
 
     /// Signals completion of operation to the queue
@@ -224,8 +255,8 @@ public actor TaskQueue: AsyncObject {
     /// Updates the ``currentRunning`` count and starts
     /// queued tasks in order of their addition if any queued.
     @inlinable
-    func _signalCompletion() {
-        defer { _resumeQueuedTasks() }
+    internal func signalCompletion() {
+        defer { resumeQueuedTasks() }
         guard currentRunning > 0 else { return }
         currentRunning -= 1
     }
@@ -233,38 +264,40 @@ public actor TaskQueue: AsyncObject {
     /// Resumes queued tasks when queue isn't blocked
     /// and operation flags preconditions satisfied.
     @inlinable
-    func _resumeQueuedTasks() {
+    internal func resumeQueuedTasks() {
         while let (_, continuation) = queue.elements.first,
             !blocked,
             !continuation.flags.wait(forCurrent: currentRunning)
         {
             queue.removeFirst()
-            guard _resumeQueuedContinuation(continuation) else { break }
+            guard resumeQueuedContinuation(continuation) else { break }
         }
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
-    /// Continuation can be cancelled with error if current task is cancelled, by invoking `_dequeueContinuation`.
+    /// Continuation can be cancelled with error if current task is cancelled, by invoking `dequeueContinuation`.
     ///
-    /// Spins up a new continuation and requests to track it on queue with key by invoking `_queueContinuation`.
-    /// This operation cooperatively checks for cancellation and reacting to it by invoking `_dequeueContinuation`.
+    /// Spins up a new continuation and requests to track it on queue with key by invoking `queueContinuation`.
+    /// This operation cooperatively checks for cancellation and reacting to it by invoking `dequeueContinuation`.
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
     /// - Parameter flags: The flags associated that determine the execution behavior of task.
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    nonisolated func _withPromisedContinuation(flags: Flags = []) async throws {
+    internal nonisolated func withPromisedContinuation(
+        flags: Flags = []
+    ) async throws {
         let key = UUID()
         try await Continuation.withCancellation(
             synchronizedWith: locker
         ) {
             Task { [weak self] in
-                await self?._dequeueContinuation(withKey: key)
+                await self?.dequeueContinuation(withKey: key)
             }
         } operation: { continuation in
             Task { [weak self] in
-                await self?._queueContinuation(
+                await self?.queueContinuation(
                     atKey: key,
                     (value: continuation, flags: flags)
                 )
@@ -282,12 +315,12 @@ public actor TaskQueue: AsyncObject {
     /// - Returns: The result from provided operation.
     /// - Throws: `CancellationError` if cancelled, or error from provided operation.
     @inlinable
-    func _run<T: Sendable>(
+    internal func run<T: Sendable>(
         with priority: TaskPriority?,
         flags: Flags,
         operation: @Sendable @escaping () async throws -> T
     ) async rethrows -> T {
-        defer { _signalCompletion() }
+        defer { signalCompletion() }
         typealias LocalTask = Task<T, Error>
         let taskPriority = flags.choosePriority(
             fromContext: self.priority,
@@ -316,14 +349,14 @@ public actor TaskQueue: AsyncObject {
     /// - Returns: The result from provided operation.
     /// - Throws: `CancellationError` if cancelled, or error from provided operation.
     @inlinable
-    func _runBlocking<T: Sendable>(
+    internal func runBlocking<T: Sendable>(
         with priority: TaskPriority?,
         flags: Flags,
         operation: @Sendable @escaping () async throws -> T
     ) async rethrows -> T {
-        defer { _unblockQueue() }
+        defer { unblockQueue() }
         blocked = true
-        return try await _run(
+        return try await run(
             with: priority,
             flags: flags,
             operation: operation
@@ -364,7 +397,7 @@ public actor TaskQueue: AsyncObject {
     /// - Throws: Error from provided operation or the cancellation handler.
     @discardableResult
     @inlinable
-    public func _execHelper<T: Sendable>(
+    internal func execHelper<T: Sendable>(
         priority: TaskPriority? = nil,
         flags: Flags = [],
         operation: @Sendable @escaping () async throws -> T,
@@ -374,25 +407,25 @@ public actor TaskQueue: AsyncObject {
             _ operation: @Sendable @escaping () async throws -> T
         ) async rethrows -> T {
             return flags.isBlockEnabled
-                ? try await _runBlocking(
+                ? try await runBlocking(
                     with: priority,
                     flags: flags,
                     operation: operation
                 )
-                : try await _run(
+                : try await run(
                     with: priority,
                     flags: flags,
                     operation: operation
                 )
         }
 
-        guard self._wait(whenFlags: flags) else {
+        guard self.shouldWait(whenFlags: flags) else {
             currentRunning += 1
             return try await runTask(operation)
         }
 
         do {
-            try await _withPromisedContinuation(flags: flags)
+            try await withPromisedContinuation(flags: flags)
         } catch {
             try cancellation(error)
         }
@@ -410,6 +443,12 @@ public actor TaskQueue: AsyncObject {
     ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
+    ///   - file: The file execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function execution request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The throwing operation to perform.
     ///
     /// - Returns: The result from provided operation.
@@ -418,13 +457,17 @@ public actor TaskQueue: AsyncObject {
     /// - Note: If task that added the operation to queue is cancelled,
     ///         the provided operation also cancelled cooperatively if already started
     ///         or the operation execution is skipped if only queued and not started.
+    @Sendable
     @discardableResult
     public func exec<T: Sendable>(
         priority: TaskPriority? = nil,
         flags: Flags = [],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @Sendable @escaping () async throws -> T
     ) async throws -> T {
-        return try await _execHelper(
+        return try await execHelper(
             priority: priority,
             flags: flags,
             operation: operation
@@ -441,16 +484,26 @@ public actor TaskQueue: AsyncObject {
     ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
+    ///   - file: The file execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function execution request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The non-throwing operation to perform.
     ///
     /// - Returns: The result from provided operation.
+    @Sendable
     @discardableResult
     public func exec<T: Sendable>(
         priority: TaskPriority? = nil,
         flags: Flags = [],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @Sendable @escaping () async -> T
     ) async -> T {
-        return await _execHelper(
+        return await execHelper(
             priority: priority,
             flags: flags,
             operation: operation
@@ -470,16 +523,29 @@ public actor TaskQueue: AsyncObject {
     ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
+    ///   - file: The file execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function execution request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The throwing operation to perform.
+    @Sendable
     public nonisolated func addTask<T: Sendable>(
         priority: TaskPriority? = nil,
         flags: Flags = [],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @Sendable @escaping () async throws -> T
     ) {
         Task {
             try await exec(
                 priority: priority,
                 flags: flags,
+                file: file,
+                function: function,
+                line: line,
                 operation: operation
             )
         }
@@ -496,16 +562,29 @@ public actor TaskQueue: AsyncObject {
     ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
+    ///   - file: The file execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function execution request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The non-throwing operation to perform.
+    @Sendable
     public nonisolated func addTask<T: Sendable>(
         priority: TaskPriority? = nil,
         flags: Flags = [],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line,
         operation: @Sendable @escaping () async -> T
     ) {
         Task {
             await exec(
                 priority: priority,
                 flags: flags,
+                file: file,
+                function: function,
+                line: line,
                 operation: operation
             )
         }
@@ -513,16 +592,43 @@ public actor TaskQueue: AsyncObject {
 
     /// Signalling on queue does nothing.
     /// Only added to satisfy ``AsyncObject`` requirements.
-    public func signal() {
-        // Do nothing
-    }
+    ///
+    /// - Parameters:
+    ///   - file: The file signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    @Sendable
+    public nonisolated func signal(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) { /* Do nothing */  }
 
     /// Waits for execution turn on queue.
     ///
     /// Only waits asynchronously, if queue is locked by a barrier task,
     /// until the suspended task's turn comes to be resumed.
+    ///
+    /// - Parameters:
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
+    /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async {
-        await exec { /*Do nothing*/  }
+    public func wait(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws {
+        try await exec(
+            file: file, function: function, line: line
+        ) { try await Task.sleep(nanoseconds: 0) }
     }
 }

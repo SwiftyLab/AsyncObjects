@@ -14,29 +14,46 @@ import Foundation
 /// This lock must be unlocked from the same thread that locked it,
 /// attempts to unlock from a different thread will cause an assertion aborting the process.
 /// This lock must not be accessed from multiple processes or threads via shared or multiply-mapped memory,
-/// the lock implementation relies on the address of the lock value and owning process.
-public final class Locker: Equatable, Hashable, NSCopying, Sendable {
+/// as the lock implementation relies on the address of the lock value and owning process.
+///
+/// ```swift
+/// // create a lock object to provide
+/// // exclusive access to critical resources
+/// let lock = Locker()
+/// // perform critical mutually exclusive action
+/// lock.perform { /* some action */ }
+///
+/// // inside the critical action provided
+/// // lock.perform can be called safely
+/// lock.perform {
+///   lock.perform { // works and runs with current context
+///     /* some action */
+///   }
+/// }
+/// ```
+public final class Locker: Exclusible, Equatable, Hashable, NSCopying, Sendable
+{
     #if canImport(Darwin)
     /// A type representing data for an unfair lock.
-    typealias Primitive = os_unfair_lock
+    internal typealias Primitive = os_unfair_lock
     #elseif canImport(Glibc)
     /// A type representing a MUTual EXclusion object.
-    typealias Primitive = pthread_mutex_t
+    internal typealias Primitive = pthread_mutex_t
     #elseif canImport(WinSDK)
     /// A type representing a slim reader/writer (SRW) lock.
-    typealias Primitive = SRWLOCK
+    internal typealias Primitive = SRWLOCK
     #endif
 
     /// Pointer type pointing to platform dependent lock primitive.
-    typealias PlatformLock = UnsafeMutablePointer<Primitive>
+    internal typealias PlatformLock = UnsafeMutablePointer<Primitive>
     /// Pointer to platform dependent lock primitive.
-    let platformLock: PlatformLock
+    internal let platformLock: PlatformLock
 
     /// Creates lock object with the provided pointer to platform dependent lock primitive.
     ///
     /// - Parameter platformLock: Pointer to platform dependent lock primitive.
     /// - Returns: The newly created lock object.
-    init(withLock platformLock: PlatformLock) {
+    internal init(withLock platformLock: PlatformLock) {
         self.platformLock = platformLock
     }
 
@@ -62,7 +79,6 @@ public final class Locker: Equatable, Hashable, NSCopying, Sendable {
         platformLock.deinitialize(count: 1)
     }
 
-    #if swift(>=5.7)
     /// Acquires exclusive lock.
     ///
     /// If a thread has already acquired lock and hasn't released lock yet,
@@ -72,10 +88,9 @@ public final class Locker: Equatable, Hashable, NSCopying, Sendable {
     /// - Warning: This method doesn't check if current thread
     ///            has already acquired lock, and will cause runtime error
     ///            if called repeatedly from same thread without releasing
-    ///            with ``unlock()`` beforehand. Use the ``perform(_:)``
+    ///            with `unlock()` beforehand. Use the ``perform(_:)``
     ///            method for safer handling of locking and unlocking.
-    @available(*, noasync, message: "use perform(_:) instead")
-    public func lock() {
+    private func lock() {
         #if canImport(Darwin)
         os_unfair_lock_lock(platformLock)
         #elseif canImport(Glibc)
@@ -95,11 +110,10 @@ public final class Locker: Equatable, Hashable, NSCopying, Sendable {
     ///
     /// - Warning: This method doesn't check if current thread
     ///            has already acquired lock, and will cause runtime error
-    ///            if called from a thread calling ``lock()`` beforehand.
+    ///            if called from a thread calling `lock()` beforehand.
     ///            Use the ``perform(_:)`` method for safer handling
     ///            of locking and unlocking.
-    @available(*, noasync, message: "use perform(_:) instead")
-    public func unlock() {
+    private func unlock() {
         let threadDictionary = Thread.current.threadDictionary
         threadDictionary.removeObject(forKey: self)
         #if canImport(Darwin)
@@ -110,53 +124,6 @@ public final class Locker: Equatable, Hashable, NSCopying, Sendable {
         ReleaseSRWLockExclusive(platformLock)
         #endif
     }
-    #else
-    /// Acquires exclusive lock.
-    ///
-    /// If a thread has already acquired lock and hasn't released lock yet,
-    /// other threads will wait for lock to be released and then acquire lock
-    /// in order of their request.
-    ///
-    /// - Warning: This method doesn't check if current thread
-    ///            has already acquired lock, and will cause runtime error
-    ///            if called repeatedly from same thread without releasing
-    ///            with ``unlock()`` beforehand. Use the ``perform(_:)``
-    ///            method for safer handling of locking and unlocking.
-    public func lock() {
-        #if canImport(Darwin)
-        os_unfair_lock_lock(platformLock)
-        #elseif canImport(Glibc)
-        pthread_mutex_lock(platformLock)
-        #elseif canImport(WinSDK)
-        AcquireSRWLockExclusive(platformLock)
-        #endif
-        // Track if thread is locked
-        let threadDictionary = Thread.current.threadDictionary
-        threadDictionary.setObject(true, forKey: self)
-    }
-
-    /// Releases exclusive lock.
-    ///
-    /// A lock must be unlocked only from the same thread in which it was locked.
-    /// Attempting to unlock from a different thread causes a runtime error.
-    ///
-    /// - Warning: This method doesn't check if current thread
-    ///            has already acquired lock, and will cause runtime error
-    ///            if called from a thread calling ``lock()`` beforehand.
-    ///            Use the ``perform(_:)`` method for safer handling
-    ///            of locking and unlocking.
-    public func unlock() {
-        let threadDictionary = Thread.current.threadDictionary
-        threadDictionary.removeObject(forKey: self)
-        #if canImport(Darwin)
-        os_unfair_lock_unlock(platformLock)
-        #elseif canImport(Glibc)
-        pthread_mutex_unlock(platformLock)
-        #elseif canImport(WinSDK)
-        ReleaseSRWLockExclusive(platformLock)
-        #endif
-    }
-    #endif
 
     /// Performs a critical piece of work synchronously after acquiring the lock
     /// and releases lock when task completes.
@@ -166,7 +133,7 @@ public final class Locker: Equatable, Hashable, NSCopying, Sendable {
     ///
     /// This method checks if thread has already acquired lock and performs task
     /// without releasing the lock. This allows safer lock management eliminating
-    /// potential runtime errors, than manually invoking ``lock()`` and ``unlock()``.
+    /// potential runtime errors.
     ///
     /// - Parameter critical: The critical task to perform.
     /// - Returns: The result from the critical task.

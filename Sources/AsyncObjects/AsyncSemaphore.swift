@@ -3,6 +3,7 @@ import Foundation
 #else
 @preconcurrency import Foundation
 #endif
+
 import OrderedCollections
 
 /// An object that controls access to a resource across multiple task contexts through use of a traditional counting semaphore.
@@ -12,25 +13,43 @@ import OrderedCollections
 ///
 /// You increment a semaphore count by calling the ``signal()`` method
 /// and decrement a semaphore count by calling ``wait()`` method
-/// or its timeout variation ``wait(forNanoseconds:)``.
-public actor AsyncSemaphore: AsyncObject {
+/// or its timeout variation ``wait(forNanoseconds:)``:
+///
+/// ```swift
+/// // create limiting concurrent access count
+/// let semaphore = AsyncSemaphore(value: 1)
+/// // wait for semaphore access,
+/// // fails only if task cancelled
+/// try await semaphore.wait()
+/// // or wait with some timeout
+/// try await semaphore.wait(forNanoseconds: 1_000_000_000)
+/// // release after executing critical async tasks
+/// defer { semaphore.signal() }
+/// ```
+public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = SafeContinuation<GlobalContinuation<Void, Error>>
+    internal typealias Continuation = SafeContinuation<
+        GlobalContinuation<Void, Error>
+    >
     /// The platform dependent lock used to synchronize continuations tracking.
     @usableFromInline
-    let locker: Locker = .init()
+    internal let locker: Locker = .init()
     /// The continuations stored with an associated key for all the suspended task that are waiting for access to resource.
     @usableFromInline
-    private(set) var continuations: OrderedDictionary<UUID, Continuation> = [:]
+    internal private(set) var continuations:
+        OrderedDictionary<
+            UUID,
+            Continuation
+        > = [:]
     /// Pool size for concurrent resource access.
     /// Has value provided during initialization incremented by one.
     @usableFromInline
-    let limit: UInt
+    internal let limit: UInt
     /// Current count of semaphore.
     /// Can have maximum value up to `limit`.
     @usableFromInline
-    private(set) var count: Int
+    internal private(set) var count: Int
 
     // MARK: Internal
 
@@ -40,7 +59,7 @@ public actor AsyncSemaphore: AsyncObject {
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    func _addContinuation(
+    internal func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -55,38 +74,25 @@ public actor AsyncSemaphore: AsyncObject {
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    func _removeContinuation(withKey key: UUID) {
+    internal func removeContinuation(withKey key: UUID) {
         continuations.removeValue(forKey: key)
-        _incrementCount()
+        incrementCount()
     }
 
     /// Increments semaphore count within limit provided.
     @inlinable
-    func _incrementCount() {
+    internal func incrementCount() {
         guard count < limit else { return }
         count += 1
     }
 
-    /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
-    /// Continuation can be cancelled with error if current task is cancelled, by invoking `_removeContinuation`.
-    ///
-    /// Spins up a new continuation and requests to track it with key by invoking `_addContinuation`.
-    /// This operation cooperatively checks for cancellation and reacting to it by invoking `_removeContinuation`.
-    /// Continuation can be resumed with error and some cleanup code can be run here.
-    ///
-    /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
+    /// Signals (increments) and releases a semaphore.
     @inlinable
-    nonisolated func _withPromisedContinuation() async throws {
-        let key = UUID()
-        try await Continuation.withCancellation(synchronizedWith: locker) {
-            Task { [weak self] in
-                await self?._removeContinuation(withKey: key)
-            }
-        } operation: { continuation in
-            Task { [weak self] in
-                await self?._addContinuation(continuation, withKey: key)
-            }
-        }
+    internal func signalSemaphore() {
+        incrementCount()
+        guard !continuations.isEmpty else { return }
+        let (_, continuation) = continuations.removeFirst()
+        continuation.resume()
     }
 
     // MARK: Public
@@ -98,7 +104,6 @@ public actor AsyncSemaphore: AsyncObject {
     /// Passing a value greater than zero is useful for managing a finite pool of resources, where the pool size is equal to the value.
     ///
     /// - Parameter count: The starting value for the semaphore.
-    ///
     /// - Returns: The newly created semaphore.
     public init(value count: UInt = 0) {
         self.limit = count + 1
@@ -110,22 +115,46 @@ public actor AsyncSemaphore: AsyncObject {
     /// Signals (increments) a semaphore.
     ///
     /// Increment the counting semaphore.
-    /// If the previous value was less than zero,
-    /// current task is resumed from suspension.
-    public func signal() {
-        _incrementCount()
-        guard !continuations.isEmpty else { return }
-        let (_, continuation) = continuations.removeFirst()
-        continuation.resume()
+    /// If any previous task is waiting for access to semaphore,
+    /// then the task is resumed from suspension.
+    ///
+    /// - Parameters:
+    ///   - file: The file signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    @Sendable
+    public nonisolated func signal(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        Task { await signalSemaphore() }
     }
 
     /// Waits for, or decrements, a semaphore.
     ///
     /// Decrement the counting semaphore. If the resulting value is less than zero,
     /// current task is suspended until a signal occurs.
+    ///
+    /// - Parameters:
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
+    /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async {
+    public func wait(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws {
         guard count <= 1 else { count -= 1; return }
-        try? await _withPromisedContinuation()
+        try await withPromisedContinuation()
     }
 }

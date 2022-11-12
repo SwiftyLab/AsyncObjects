@@ -1,4 +1,5 @@
 import XCTest
+@testable import AsyncObjects
 
 /// Tests inner workings of structured concurrency
 class StandardLibraryTests: XCTestCase {
@@ -47,7 +48,7 @@ class StandardLibraryTests: XCTestCase {
     }
 
     @TaskLocal
-    nonisolated static var traceID: Int = 0
+    static var traceID: Int = 0
     func testTaskLocalVariable() async {
         func call(_ value: Int) {
             XCTAssertEqual(Self.traceID, value)
@@ -121,7 +122,7 @@ class StandardLibraryTests: XCTestCase {
     }
 
     @TaskLocal
-    nonisolated static var localRef: TaskLocalClass!
+    static var localRef: TaskLocalClass!
     func testTaskLocalVariableWithReferenceType() {
         @Sendable
         func call(label: String, fromFunction function: String = #function) {

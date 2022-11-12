@@ -133,10 +133,9 @@ class TaskOperationTests: XCTestCase {
             (try? await Self.sleep(seconds: 3)) != nil
         }
         operation.signal()
-        await Self.checkExecInterval(
-            durationInRange: ...3,
-            for: operation.wait
-        )
+        try await Self.checkExecInterval(
+            durationInRange: ...3
+        ) { try await operation.wait() }
     }
 
     func testTaskOperationAsyncWaitTimeout() async throws {
@@ -145,15 +144,20 @@ class TaskOperationTests: XCTestCase {
         }
         operation.signal()
         await Self.checkExecInterval(durationInSeconds: 1) {
-            await operation.wait(forSeconds: 1)
+            do {
+                try await operation.wait(forSeconds: 1)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
+            }
         }
     }
 
     func testTaskOperationAsyncWaitWithZeroTimeout() async throws {
         let operation = TaskOperation { /* Do nothing */  }
         operation.signal()
-        await Self.checkExecInterval(durationInSeconds: 0) {
-            await operation.wait(forNanoseconds: 0)
+        try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await operation.wait(forNanoseconds: 0)
         }
     }
 
@@ -168,6 +172,7 @@ class TaskOperationTests: XCTestCase {
         }
         operation.signal()
         self.addTeardownBlock { [weak operation] in
+            try await Self.sleep(seconds: 1)
             XCTAssertNil(operation)
         }
     }
@@ -175,8 +180,9 @@ class TaskOperationTests: XCTestCase {
     func testDeinitWithoutCancellation() async throws {
         let operation = TaskOperation { try await Self.sleep(seconds: 1) }
         operation.signal()
-        await operation.wait()
+        try await operation.wait()
         self.addTeardownBlock { [weak operation] in
+            try await Self.sleep(seconds: 1)
             XCTAssertNil(operation)
         }
     }
@@ -203,16 +209,16 @@ class TaskOperationTests: XCTestCase {
     func testOperationWithoutTrackingChildTasks() async throws {
         let operation = createOperationWithChildTasks(track: false)
         operation.signal()
-        await Self.checkExecInterval(durationInSeconds: 0) {
-            await operation.wait()
+        try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await operation.wait()
         }
     }
 
     func testOperationWithTrackingChildTasks() async throws {
         let operation = createOperationWithChildTasks(track: true)
         operation.signal()
-        await Self.checkExecInterval(durationInSeconds: 3) {
-            await operation.wait()
+        try await Self.checkExecInterval(durationInSeconds: 3) {
+            try await operation.wait()
         }
     }
 
@@ -230,47 +236,72 @@ class TaskOperationTests: XCTestCase {
         }
     }
 
+    func testNotStartedCancellationError() async throws {
+        let operation = TaskOperation { try await Self.sleep(seconds: 1) }
+        operation.cancel()
+        let result = await operation.result
+        switch result {
+        case .success: XCTFail("Unexpected operation result")
+        case .failure(let error):
+            XCTAssertTrue(type(of: error) == CancellationError.self)
+            print(
+                "[\(#function)] [\(type(of: error))] \(error.localizedDescription)"
+            )
+            XCTAssertFalse(error.localizedDescription.isEmpty)
+        }
+    }
+
     func testWaitCancellationWhenTaskCancelled() async throws {
         let operation = TaskOperation { try await Self.sleep(seconds: 10) }
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 0) {
-                await operation.wait()
+            try await Self.checkExecInterval(durationInSeconds: 0) {
+                try await operation.wait()
             }
         }
         task.cancel()
-        await task.value
+        do {
+            try await task.value
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == CancellationError.self)
+        }
     }
 
     func testWaitCancellationForAlreadyCancelledTask() async throws {
         let operation = TaskOperation { try await Self.sleep(seconds: 10) }
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 0) {
+            try await Self.checkExecInterval(durationInSeconds: 0) {
                 do {
                     try await Self.sleep(seconds: 5)
                     XCTFail("Unexpected task progression")
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
-                await operation.wait()
+                try await operation.wait()
             }
         }
         task.cancel()
-        await task.value
+        do {
+            try await task.value
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == CancellationError.self)
+        }
     }
 
-    func testConcurrentAccess() async {
-        await withTaskGroup(of: Void.self) { group in
+    func testConcurrentAccess() async throws {
+        try await withThrowingTaskGroup(of: Void.self) { group in
             for _ in 0..<10 {
                 group.addTask {
                     let operation = TaskOperation {}
-                    await Self.checkExecInterval(durationInSeconds: 0) {
-                        await withTaskGroup(of: Void.self) { group in
-                            group.addTask { await operation.wait() }
-                            group.addTask { operation.signal() }
-                            await group.waitForAll()
+                    try await Self.checkExecInterval(durationInSeconds: 0) {
+                        try await withThrowingTaskGroup(of: Void.self) { g in
+                            g.addTask { try await operation.wait() }
+                            g.addTask { operation.signal() }
+                            try await g.waitForAll()
                         }
                     }
                 }
-                await group.waitForAll()
+                try await group.waitForAll()
             }
         }
     }

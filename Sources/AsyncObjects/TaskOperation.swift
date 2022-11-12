@@ -1,8 +1,4 @@
-#if swift(>=5.7)
 import Foundation
-#else
-@preconcurrency import Foundation
-#endif
 import Dispatch
 
 /// An object that bridges asynchronous work under structured concurrency
@@ -14,9 +10,26 @@ import Dispatch
 /// You can start the operation by adding it to an `OperationQueue`,
 /// or by manually calling the ``signal()`` or ``start()`` method.
 /// Wait for operation completion asynchronously by calling ``wait()`` method
-/// or its timeout variation ``wait(forNanoseconds:)``.
+/// or its timeout variation ``wait(forNanoseconds:)``:
+///
+/// ```swift
+/// // create operation with async action
+/// let operation = TaskOperation {
+///   try await Task.sleep(nanoseconds: 1_000_000_000)
+/// }
+/// // start operation to execute action
+/// operation.start() // operation.signal()
+///
+/// // wait for operation completion asynchronously,
+/// // fails only if task cancelled
+/// try await operation.wait()
+/// // or wait with some timeout
+/// try await operation.wait(forNanoseconds: 1_000_000_000)
+/// // or wait synchronously for completion
+/// operation.waitUntilFinished()
+/// ```
 public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
-    @unchecked Sendable
+    ContinuableCollection, @unchecked Sendable
 {
     /// The asynchronous action to perform as part of the operation..
     private let underlyingAction: @Sendable () async throws -> R
@@ -26,7 +39,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// The platform dependent lock used to
     /// synchronize data access and modifications.
     @usableFromInline
-    let locker: Locker
+    internal let locker: Locker
 
     /// A type representing a set of behaviors for the executed
     /// task type and task completion behavior.
@@ -49,16 +62,32 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// Always returns true, since the operation always executes its task asynchronously.
     public override var isAsynchronous: Bool { true }
+
+    /// Private store for boolean value indicating whether the operation is currently cancelled.
+    @usableFromInline
+    internal var _isCancelled: Bool = false
     /// A Boolean value indicating whether the operation has been cancelled.
     ///
     /// Returns whether the underlying top-level task is cancelled or not.
     /// The default value of this property is `false`.
     /// Calling the ``cancel()`` method of this object sets the value of this property to `true`.
-    public override var isCancelled: Bool { execTask?.isCancelled ?? false }
+    public override internal(set) var isCancelled: Bool {
+        get { locker.perform { execTask?.isCancelled ?? _isCancelled } }
+        @usableFromInline
+        set {
+            willChangeValue(forKey: "isCancelled")
+            locker.perform {
+                _isCancelled = newValue
+                guard newValue else { return }
+                execTask?.cancel()
+            }
+            didChangeValue(forKey: "isCancelled")
+        }
+    }
 
     /// Private store for boolean value indicating whether the operation is currently executing.
     @usableFromInline
-    var _isExecuting: Bool = false
+    internal var _isExecuting: Bool = false
     /// A Boolean value indicating whether the operation is currently executing.
     ///
     /// The value of this property is true if the operation is currently executing
@@ -75,7 +104,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
 
     /// Private store for boolean value indicating whether the operation has finished executing its task.
     @usableFromInline
-    var _isFinished: Bool = false
+    internal var _isFinished: Bool = false
     /// A Boolean value indicating whether the operation has finished executing its task.
     ///
     /// The value of this property is true if the operation is finished executing or cancelled
@@ -100,7 +129,12 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// Will be success if provided operation completed successfully,
     /// or failure returned with error.
     public var result: Result<R, Error> {
-        get async { (await execTask?.result) ?? .failure(EarlyInvokeError()) }
+        get async {
+            (await execTask?.result)
+                ?? (isCancelled
+                    ? .failure(CancellationError())
+                    : .failure(EarlyInvokeError()))
+        }
     }
 
     /// Creates a new operation that executes the provided asynchronous task.
@@ -157,7 +191,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// as part of a new top-level task on behalf of the current actor.
     public override func main() {
         guard isExecuting, execTask == nil else { return }
-        let final = { @Sendable[weak self] in self?._finish(); return }
+        let final = { @Sendable[weak self] in self?.finish(); return }
         execTask = flags.createTask(
             priority: priority,
             operation: underlyingAction,
@@ -174,15 +208,15 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// Likewise, if the task has already run past the last point where it would stop early,
     /// calling this method has no effect.
     public override func cancel() {
-        execTask?.cancel()
-        _finish()
+        isCancelled = true
+        finish()
     }
 
     /// Moves this operation to finished state.
     ///
     /// Must be called either when operation completes or cancelled.
     @inlinable
-    func _finish() {
+    internal func finish() {
         isExecuting = false
         isFinished = true
     }
@@ -190,10 +224,12 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     // MARK: AsyncObject
     /// The suspended tasks continuation type.
     @usableFromInline
-    typealias Continuation = SafeContinuation<GlobalContinuation<Void, Error>>
+    internal typealias Continuation = SafeContinuation<
+        GlobalContinuation<Void, Error>
+    >
     /// The continuations stored with an associated key for all the suspended task that are waiting for operation completion.
     @usableFromInline
-    private(set) var continuations: [UUID: Continuation] = [:]
+    internal private(set) var continuations: [UUID: Continuation] = [:]
 
     /// Add continuation with the provided key in `continuations` map.
     ///
@@ -201,7 +237,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
     @inlinable
-    func _addContinuation(
+    internal func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID
     ) {
@@ -217,34 +253,26 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// - Parameter key: The key in the map.
     @inlinable
-    func _removeContinuation(withKey key: UUID) {
+    internal func removeContinuation(withKey key: UUID) {
         locker.perform { continuations.removeValue(forKey: key) }
-    }
-
-    /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
-    /// Continuation can be cancelled with error if current task is cancelled, by invoking `_removeContinuation`.
-    ///
-    /// Spins up a new continuation and requests to track it with key by invoking `_addContinuation`.
-    /// This operation cooperatively checks for cancellation and reacting to it by invoking `_removeContinuation`.
-    /// Continuation can be resumed with error and some cleanup code can be run here.
-    ///
-    /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
-    @inlinable
-    func _withPromisedContinuation() async throws {
-        let key = UUID()
-        try await Continuation.withCancellation(synchronizedWith: locker) {
-            Task { [weak self] in self?._removeContinuation(withKey: key) }
-        } operation: { continuation in
-            Task { [weak self] in
-                self?._addContinuation(continuation, withKey: key)
-            }
-        }
     }
 
     /// Starts operation asynchronously
     /// as part of a new top-level task on behalf of the current actor.
+    ///
+    /// - Parameters:
+    ///   - file: The file signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @Sendable
-    public func signal() {
+    public func signal(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         self.start()
     }
 
@@ -252,10 +280,24 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///
     /// Only waits asynchronously, if operation is executing,
     /// until it is completed or cancelled.
+    ///
+    /// - Parameters:
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
+    /// - Throws: `CancellationError` if cancelled.
     @Sendable
-    public func wait() async {
+    public func wait(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws {
         guard !isFinished else { return }
-        try? await _withPromisedContinuation()
+        try await withPromisedContinuation()
     }
 }
 

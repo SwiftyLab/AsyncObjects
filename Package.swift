@@ -21,7 +21,7 @@ let package = Package(
     dependencies: [
         .package(url: "\(appleGitHub)/swift-collections.git", from: "1.0.0"),
         .package(url: "\(appleGitHub)/swift-docc-plugin", from: "1.0.0"),
-        .package(url: "\(appleGitHub)/swift-format", from: "0.50600.1"),
+        .package(url: "\(appleGitHub)/swift-format", from: "0.50700.0"),
     ],
     targets: [
         .target(
@@ -42,7 +42,7 @@ let package = Package(
     ]
 )
 
-var swiftSettings: [SwiftSetting] {
+var swiftSettings: [SwiftSetting] = {
     var swiftSettings: [SwiftSetting] = []
 
     if ProcessInfo.processInfo.environment[
@@ -77,9 +77,9 @@ var swiftSettings: [SwiftSetting] {
     }
 
     return swiftSettings
-}
+}()
 
-var testingSwiftSettings: [SwiftSetting] {
+var testingSwiftSettings: [SwiftSetting] = {
     var swiftSettings: [SwiftSetting] = []
 
     if ProcessInfo.processInfo.environment[
@@ -96,4 +96,4 @@ var testingSwiftSettings: [SwiftSetting] {
     }
 
     return swiftSettings
-}
+}()

@@ -9,7 +9,7 @@
 ///              Do not keep strong reference of this object, as then object won't
 ///              deallocate as soon asynchronous operations and their created
 ///              unstructured tasks complete.
-final class TaskTracker: Sendable {
+internal final class TaskTracker: Sendable {
     /// The tracker associated with current task.
     ///
     /// Use the `withValue` method to assign a tracker to asynchronous operation.
@@ -21,7 +21,7 @@ final class TaskTracker: Sendable {
     ///              deallocate as soon asynchronous operations and their created
     ///              unstructured tasks complete.
     @TaskLocal
-    static var current: TaskTracker?
+    internal static var current: TaskTracker?
 
     /// The action to complete when task and all its created unstructured tasks complete.
     private let fire: @Sendable () -> Void
@@ -39,7 +39,7 @@ final class TaskTracker: Sendable {
     ///              Do not keep strong reference of this object, as then object won't
     ///              deallocate as soon asynchronous operations and their  created
     ///              unstructured tasks complete.
-    init(onComplete fire: @Sendable @escaping () -> Void) {
+    internal init(onComplete fire: @Sendable @escaping () -> Void) {
         self.fire = fire
     }
 
