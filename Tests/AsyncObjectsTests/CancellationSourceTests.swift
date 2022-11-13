@@ -26,6 +26,27 @@ class CancellationSourceTests: XCTestCase {
         XCTAssertTrue(task.isCancelled)
     }
 
+    #if swift(>=5.7)
+    func testTaskCancellationWithClockTimeout() async throws {
+        guard
+            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+        else {
+            throw XCTSkip("Clock API not available")
+        }
+        let clock: ContinuousClock = .continuous
+        let source = CancellationSource(
+            at: .now + .seconds(1),
+            clock: ContinuousClock.continuous
+        )
+        let task = Task {
+            try await Self.sleep(seconds: 2, clock: clock)
+        }
+        source.register(task: task)
+        try await Self.sleep(seconds: 2, clock: clock)
+        XCTAssertTrue(task.isCancelled)
+    }
+    #endif
+
     func testTaskCancellationWithLinkedSource() async throws {
         let parentSource = CancellationSource()
         let source = CancellationSource(linkedWith: parentSource)

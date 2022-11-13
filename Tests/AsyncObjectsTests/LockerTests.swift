@@ -19,7 +19,7 @@ class LockerTests: XCTestCase {
     func testSynchronization() {
         let lock = Locker()
         var iterations = 0
-        DispatchQueue.concurrentPerform(iterations: 5) { count in
+        DispatchQueue.concurrentPerform(iterations: 5) { _ in
             lock.perform {
                 iterations += 1
             }

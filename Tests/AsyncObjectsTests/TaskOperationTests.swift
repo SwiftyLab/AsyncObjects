@@ -4,14 +4,9 @@ import Dispatch
 
 @MainActor
 class TaskOperationTests: XCTestCase {
-    #if canImport(Darwin)
-    let runOperationQueueTests = true
-    #else
-    let runOperationQueueTests = false
-    #endif
 
     func testTaskOperation() async throws {
-        try XCTSkipUnless(runOperationQueueTests)
+        try XCTSkipUnless(Self.runOperationQueueTests)
         let queue = OperationQueue()
         let operation = TaskOperation {
             (try? await Self.sleep(seconds: 3)) != nil
@@ -42,8 +37,195 @@ class TaskOperationTests: XCTestCase {
         }
     }
 
-    func testTaskOperationCancellation() async throws {
-        try XCTSkipUnless(runOperationQueueTests)
+    func testThrowingTaskOperation() async throws {
+        try XCTSkipUnless(Self.runOperationQueueTests)
+        let queue = OperationQueue()
+        let operation = TaskOperation {
+            try await Self.sleep(seconds: 3)
+        }
+        XCTAssertFalse(operation.isExecuting)
+        XCTAssertFalse(operation.isFinished)
+        XCTAssertFalse(operation.isCancelled)
+        queue.addOperation(operation)
+        expectation(
+            for: NSPredicate { _, _ in operation.isExecuting },
+            evaluatedWith: nil,
+            handler: nil
+        )
+        waitForExpectations(timeout: 2)
+        await GlobalContinuation<Void, Never>.with { continuation in
+            DispatchQueue.global(qos: .default).async {
+                operation.waitUntilFinished()
+                continuation.resume()
+            }
+        }
+        XCTAssertTrue(operation.isFinished)
+        XCTAssertFalse(operation.isExecuting)
+        XCTAssertFalse(operation.isCancelled)
+    }
+
+    func testTaskOperationAsyncWait() async throws {
+        let operation = TaskOperation {
+            (try? await Self.sleep(seconds: 3)) != nil
+        }
+        operation.signal()
+        try await Self.checkExecInterval(
+            durationInRange: ...3
+        ) { try await operation.wait() }
+    }
+
+    func testDeinit() async throws {
+        let operation = TaskOperation { try await Self.sleep(seconds: 1) }
+        operation.signal()
+        try await operation.wait()
+        self.addTeardownBlock { [weak operation] in
+            try await Self.sleep(seconds: 1)
+            XCTAssertNil(operation)
+        }
+    }
+
+    func testConcurrentAccess() async throws {
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for _ in 0..<10 {
+                group.addTask {
+                    let operation = TaskOperation {}
+                    try await Self.checkExecInterval(durationInSeconds: 0) {
+                        try await withThrowingTaskGroup(of: Void.self) { g in
+                            g.addTask { try await operation.wait() }
+                            g.addTask { operation.signal() }
+                            try await g.waitForAll()
+                        }
+                    }
+                }
+                try await group.waitForAll()
+            }
+        }
+    }
+}
+
+@MainActor
+class TaskOperationTimeoutTests: XCTestCase {
+
+    func testWait() async throws {
+        let operation = TaskOperation {
+            (try? await Self.sleep(seconds: 1)) != nil
+        }
+        operation.signal()
+        try await Self.checkExecInterval(durationInSeconds: 1) {
+            try await operation.wait(forSeconds: 2)
+        }
+    }
+
+    func testFinishedWait() async throws {
+        let operation = TaskOperation { /* Do nothing */  }
+        operation.signal()
+        try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await operation.wait(forNanoseconds: 2)
+        }
+    }
+
+    func testWaitTimeout() async throws {
+        let operation = TaskOperation {
+            (try? await Self.sleep(seconds: 3)) != nil
+        }
+        operation.signal()
+        await Self.checkExecInterval(durationInSeconds: 1) {
+            do {
+                try await operation.wait(forSeconds: 1)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
+            }
+        }
+    }
+
+    func testWaitZeroTimeout() async throws {
+        let operation = TaskOperation { /* Do nothing */  }
+        operation.signal()
+        try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await operation.wait(forNanoseconds: 0)
+        }
+    }
+}
+
+#if swift(>=5.7)
+@MainActor
+class TaskOperationClockTimeoutTests: XCTestCase {
+
+    func testWait() async throws {
+        guard
+            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+        else {
+            throw XCTSkip("Clock API not available")
+        }
+        let clock: ContinuousClock = .continuous
+        let operation = TaskOperation {
+            (try? await Self.sleep(seconds: 1, clock: clock)) != nil
+        }
+        operation.signal()
+        try await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+            try await operation.wait(forSeconds: 2, clock: clock)
+        }
+    }
+
+    func testFinishedWait() async throws {
+        guard
+            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+        else {
+            throw XCTSkip("Clock API not available")
+        }
+        let clock: ContinuousClock = .continuous
+        let operation = TaskOperation { /* Do nothing */  }
+        operation.signal()
+        try await Self.checkExecInterval(duration: .seconds(0), clock: clock) {
+            try await operation.wait(forSeconds: 2, clock: clock)
+        }
+    }
+
+    func testWaitTimeout() async throws {
+        guard
+            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+        else {
+            throw XCTSkip("Clock API not available")
+        }
+        let clock: ContinuousClock = .continuous
+        let operation = TaskOperation {
+            (try? await Self.sleep(seconds: 3, clock: clock)) != nil
+        }
+        operation.signal()
+        await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+            do {
+                try await operation.wait(forSeconds: 1, clock: clock)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(
+                    type(of: error) == TimeoutError<ContinuousClock>.self
+                )
+            }
+        }
+    }
+
+    func testWaitZeroTimeout() async throws {
+        guard
+            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+        else {
+            throw XCTSkip("Clock API not available")
+        }
+        let clock: ContinuousClock = .continuous
+        let operation = TaskOperation { /* Do nothing */  }
+        operation.signal()
+        try await Self.checkExecInterval(duration: .seconds(0), clock: clock) {
+            try await operation.wait(forSeconds: 0, clock: clock)
+        }
+    }
+}
+#endif
+
+@MainActor
+class TaskOperationCancellationTests: XCTestCase {
+
+    func testCancellation() async throws {
+        try XCTSkipUnless(Self.runOperationQueueTests)
         let queue = OperationQueue()
         let operation = TaskOperation {
             (try? await Self.sleep(seconds: 3)) != nil
@@ -74,34 +256,7 @@ class TaskOperationTests: XCTestCase {
         }
     }
 
-    func testThrowingTaskOperation() async throws {
-        try XCTSkipUnless(runOperationQueueTests)
-        let queue = OperationQueue()
-        let operation = TaskOperation {
-            try await Self.sleep(seconds: 3)
-        }
-        XCTAssertFalse(operation.isExecuting)
-        XCTAssertFalse(operation.isFinished)
-        XCTAssertFalse(operation.isCancelled)
-        queue.addOperation(operation)
-        expectation(
-            for: NSPredicate { _, _ in operation.isExecuting },
-            evaluatedWith: nil,
-            handler: nil
-        )
-        waitForExpectations(timeout: 2)
-        await GlobalContinuation<Void, Never>.with { continuation in
-            DispatchQueue.global(qos: .default).async {
-                operation.waitUntilFinished()
-                continuation.resume()
-            }
-        }
-        XCTAssertTrue(operation.isFinished)
-        XCTAssertFalse(operation.isExecuting)
-        XCTAssertFalse(operation.isCancelled)
-    }
-
-    func testThrowingTaskOperationCancellation() async throws {
+    func testThrowingCancellation() async throws {
         let queue = OperationQueue()
         let operation = TaskOperation {
             try await Self.sleep(seconds: 3)
@@ -128,40 +283,44 @@ class TaskOperationTests: XCTestCase {
         XCTAssertTrue(operation.isCancelled)
     }
 
-    func testTaskOperationAsyncWait() async throws {
-        let operation = TaskOperation {
-            (try? await Self.sleep(seconds: 3)) != nil
-        }
-        operation.signal()
-        try await Self.checkExecInterval(
-            durationInRange: ...3
-        ) { try await operation.wait() }
-    }
-
-    func testTaskOperationAsyncWaitTimeout() async throws {
-        let operation = TaskOperation {
-            (try? await Self.sleep(seconds: 3)) != nil
-        }
-        operation.signal()
-        await Self.checkExecInterval(durationInSeconds: 1) {
-            do {
-                try await operation.wait(forSeconds: 1)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
+    func testWaitCancellation() async throws {
+        let operation = TaskOperation { try await Self.sleep(seconds: 10) }
+        let task = Task.detached {
+            try await Self.checkExecInterval(durationInSeconds: 0) {
+                try await operation.wait()
             }
         }
-    }
-
-    func testTaskOperationAsyncWaitWithZeroTimeout() async throws {
-        let operation = TaskOperation { /* Do nothing */  }
-        operation.signal()
-        try await Self.checkExecInterval(durationInSeconds: 0) {
-            try await operation.wait(forNanoseconds: 0)
+        task.cancel()
+        do {
+            try await task.value
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == CancellationError.self)
         }
     }
 
-    func testDeinitWithCancellation() async throws {
+    func testAlreadyCancelledTask() async throws {
+        let operation = TaskOperation { try await Self.sleep(seconds: 10) }
+        let task = Task.detached {
+            try await Self.checkExecInterval(durationInSeconds: 0) {
+                do {
+                    try await Self.sleep(seconds: 5)
+                    XCTFail("Unexpected task progression")
+                } catch {}
+                XCTAssertTrue(Task.isCancelled)
+                try await operation.wait()
+            }
+        }
+        task.cancel()
+        do {
+            try await task.value
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == CancellationError.self)
+        }
+    }
+
+    func testDeinit() async throws {
         let operation = TaskOperation {
             do {
                 try await Self.sleep(seconds: 2)
@@ -176,16 +335,10 @@ class TaskOperationTests: XCTestCase {
             XCTAssertNil(operation)
         }
     }
+}
 
-    func testDeinitWithoutCancellation() async throws {
-        let operation = TaskOperation { try await Self.sleep(seconds: 1) }
-        operation.signal()
-        try await operation.wait()
-        self.addTeardownBlock { [weak operation] in
-            try await Self.sleep(seconds: 1)
-            XCTAssertNil(operation)
-        }
-    }
+@MainActor
+class TaskOperationTaskManagementTests: XCTestCase {
 
     func createOperationWithChildTasks(
         track: Bool = false
@@ -250,59 +403,12 @@ class TaskOperationTests: XCTestCase {
             XCTAssertFalse(error.localizedDescription.isEmpty)
         }
     }
+}
 
-    func testWaitCancellationWhenTaskCancelled() async throws {
-        let operation = TaskOperation { try await Self.sleep(seconds: 10) }
-        let task = Task.detached {
-            try await Self.checkExecInterval(durationInSeconds: 0) {
-                try await operation.wait()
-            }
-        }
-        task.cancel()
-        do {
-            try await task.value
-            XCTFail("Unexpected task progression")
-        } catch {
-            XCTAssertTrue(type(of: error) == CancellationError.self)
-        }
-    }
-
-    func testWaitCancellationForAlreadyCancelledTask() async throws {
-        let operation = TaskOperation { try await Self.sleep(seconds: 10) }
-        let task = Task.detached {
-            try await Self.checkExecInterval(durationInSeconds: 0) {
-                do {
-                    try await Self.sleep(seconds: 5)
-                    XCTFail("Unexpected task progression")
-                } catch {}
-                XCTAssertTrue(Task.isCancelled)
-                try await operation.wait()
-            }
-        }
-        task.cancel()
-        do {
-            try await task.value
-            XCTFail("Unexpected task progression")
-        } catch {
-            XCTAssertTrue(type(of: error) == CancellationError.self)
-        }
-    }
-
-    func testConcurrentAccess() async throws {
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            for _ in 0..<10 {
-                group.addTask {
-                    let operation = TaskOperation {}
-                    try await Self.checkExecInterval(durationInSeconds: 0) {
-                        try await withThrowingTaskGroup(of: Void.self) { g in
-                            g.addTask { try await operation.wait() }
-                            g.addTask { operation.signal() }
-                            try await g.waitForAll()
-                        }
-                    }
-                }
-                try await group.waitForAll()
-            }
-        }
-    }
+fileprivate extension XCTestCase {
+    #if canImport(Darwin)
+    static let runOperationQueueTests = true
+    #else
+    static let runOperationQueueTests = false
+    #endif
 }
