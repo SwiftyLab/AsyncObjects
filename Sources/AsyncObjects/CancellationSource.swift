@@ -324,6 +324,7 @@ public actor CancellationSource {
         await cancelAll()
     }
 
+    #if swift(>=5.7)
     /// Trigger cancellation event at provided deadline.
     ///
     /// Initiate cooperative cancellation of registered tasks
@@ -353,6 +354,7 @@ public actor CancellationSource {
         try await Task.sleep(until: deadline, clock: clock)
         await cancelAll()
     }
+    #endif
 }
 
 public extension Task {
