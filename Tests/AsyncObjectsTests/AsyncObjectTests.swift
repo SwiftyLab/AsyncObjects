@@ -151,6 +151,7 @@ class AsyncObjectTimeoutTests: XCTestCase {
     }
 }
 
+#if swift(>=5.7)
 @MainActor
 class AsyncObjectClockTimeoutTests: XCTestCase {
 
@@ -290,3 +291,4 @@ class AsyncObjectClockTimeoutTests: XCTestCase {
         }
     }
 }
+#endif
