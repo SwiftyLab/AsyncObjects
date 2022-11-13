@@ -11,9 +11,9 @@ import OrderedCollections
 /// An async semaphore is an efficient implementation of a traditional counting semaphore.
 /// Unlike traditional semaphore, async semaphore suspends current task instead of blocking threads.
 ///
-/// You increment a semaphore count by calling the ``signal()`` method
-/// and decrement a semaphore count by calling ``wait()`` method
-/// or its timeout variation ``wait(forNanoseconds:)``:
+/// You increment a semaphore count by calling the ``signal(file:function:line:)`` method
+/// and decrement a semaphore count by calling ``wait(file:function:line:)`` method
+/// or its timeout variation ``wait(until:tolerance:clock:file:function:line:)``:
 ///
 /// ```swift
 /// // create limiting concurrent access count

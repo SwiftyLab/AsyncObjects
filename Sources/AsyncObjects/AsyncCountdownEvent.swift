@@ -13,10 +13,11 @@ import OrderedCollections
 /// in the sense that instead of restricting access to a resource,
 /// it notifies when the resource usage is idle or inefficient.
 ///
-/// You can indicate high priority usage of resource by using ``increment(by:)`` method,
-/// and indicate free of resource by calling ``signal(repeat:)`` or ``signal()`` methods.
-/// For low priority resource usage or detect resource idling use ``wait()`` method
-/// or its timeout variation ``wait(forNanoseconds:)``:
+/// You can indicate high priority usage of resource by using ``increment(by:file:function:line:)``
+/// method, and indicate free of resource by calling ``signal(repeat:file:function:line:)``
+/// or ``signal(file:function:line:)`` methods.
+/// For low priority resource usage or detect resource idling use ``wait(file:function:line:)``
+/// method or its timeout variation ``wait(until:tolerance:clock:file:function:line:)``:
 ///
 /// ```swift
 /// // create event with initial count and count down limit
@@ -63,8 +64,9 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
     public var currentCount: UInt
     /// Initial count of the countdown when count started.
     ///
-    /// Can be changed after initialization
-    /// by using ``reset(to:)`` method.
+    /// Can be changed after initialization by using
+    /// ``reset(to:file:function:line:)``
+    /// method.
     public var initialCount: UInt
     /// Indicates whether countdown event current count is within ``limit``.
     ///
@@ -180,8 +182,9 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection {
 
     /// Increments the countdown event current count by the specified value.
     ///
-    /// Unlike the ``wait()`` method count is reflected immediately.
-    /// Use this to indicate usage of resource from high priority tasks.
+    /// Unlike the ``wait(file:function:line:)`` method
+    /// count is reflected immediately. Use this to indicate usage of
+    /// resource from high priority tasks.
     ///
     /// - Parameter count: The value by which to increase ``currentCount``.
     public nonisolated func increment(

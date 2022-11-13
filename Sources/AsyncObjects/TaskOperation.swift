@@ -8,9 +8,9 @@ import Dispatch
 /// making concurrent task management flexible in terms of managing dependencies.
 ///
 /// You can start the operation by adding it to an `OperationQueue`,
-/// or by manually calling the ``signal()`` or ``start()`` method.
-/// Wait for operation completion asynchronously by calling ``wait()`` method
-/// or its timeout variation ``wait(forNanoseconds:)``:
+/// or by manually calling the ``signal(file:function:line:)`` or ``start()`` method.
+/// Wait for operation completion asynchronously by calling ``wait(file:function:line:)`` method
+/// or its timeout variation ``wait(until:tolerance:clock:file:function:line:)``:
 ///
 /// ```swift
 /// // create operation with async action
@@ -306,7 +306,8 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
 ///
 /// Error is thrown by ``TaskOperation/result``
 /// if the operation hasn't been started yet with either
-/// ``TaskOperation/start()`` or ``TaskOperation/signal()``.
+/// ``TaskOperation/start()`` or
+/// ``TaskOperation/signal(file:function:line:)``.
 @frozen
 public struct EarlyInvokeError: Error, Sendable {}
 

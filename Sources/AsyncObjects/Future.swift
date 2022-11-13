@@ -11,7 +11,7 @@ import Foundation
 /// the closure calls the promise with a `Result` that indicates either success or failure.
 ///
 /// Otherwise, you can create future and fulfill it with a `Result` that indicates either success or failure
-/// by using ``fulfill(with:)`` method. In the success case,
+/// by using ``fulfill(with:file:function:line:)`` method. In the success case,
 /// the future’s downstream subscriber receives the element prior to the publishing stream finishing normally.
 /// If the result is an error, publishing terminates with that error.
 ///
@@ -79,7 +79,7 @@ public actor Future<Output: Sendable, Failure: Error> {
         continuations[key] = continuation
     }
 
-    /// Creates a future that can be fulfilled later by ``fulfill(with:)`` or
+    /// Creates a future that can be fulfilled later by ``fulfill(with:file:function:line:)`` or
     /// any other variation of this methods.
     ///
     /// - Returns: The newly created future.

@@ -8,7 +8,7 @@ import OrderedCollections
 
 /// An object that acts as a concurrent queue executing submitted tasks concurrently.
 ///
-/// You can use the ``exec(priority:flags:operation:)-8u46i``
+/// You can use the ``exec(priority:flags:file:function:line:operation:)-et``
 /// or its non-throwing/non-cancellable version to run tasks concurrently.
 /// Additionally, you can provide priority of task and ``Flags``
 /// to customize execution of submitted operation.

@@ -8,8 +8,10 @@ import Foundation
 ///
 /// An async event suspends tasks if current state is non-signaled and resumes execution when event is signalled.
 ///
-/// You can signal event by calling the ``signal()`` method and reset signal by calling ``reset()``.
-/// Wait for event signal by calling ``wait()`` method or its timeout variation ``wait(forNanoseconds:)``:
+/// You can signal event by calling the ``signal(file:function:line:)``
+/// method and reset signal by calling ``reset(file:function:line:)``.
+/// Wait for event signal by calling ``wait(file:function:line:)``
+/// method or its timeout variation ``wait(until:tolerance:clock:file:function:line:)``:
 ///
 /// ```swift
 /// // create event with initial state (signalled or not)
@@ -105,7 +107,11 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
     ///   - line: The line reset originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
     @Sendable
-    public nonisolated func reset() {
+    public nonisolated func reset(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         Task { await resetEvent() }
     }
 

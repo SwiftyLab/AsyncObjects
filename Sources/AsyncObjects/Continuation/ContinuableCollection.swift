@@ -37,15 +37,6 @@ internal protocol ContinuableCollection {
     func withPromisedContinuation() async rethrows -> Continuation.Success
 }
 
-extension ContinuableCollection {
-    /// Remove continuation associated with provided key.
-    ///
-    /// Default implementation that does nothing.
-    ///
-    /// - Parameter key: The key for continuation to remove.
-    func removeContinuation(withKey key: Key) async { /* Do nothing */  }
-}
-
 extension ContinuableCollection
 where
     Self: AnyObject, Self: Sendable, Continuation: SynchronizedContinuable,
