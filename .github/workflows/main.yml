@@ -50,15 +50,10 @@ jobs:
     secrets: inherit
     with:
       codecov-swift: '5.7'
-      codecov-os: macos-12
+      codecov-os: ubuntu-latest
       matrix: >
         {
           "include": [
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "swift": "5.7"
-            },
             {
               "os": "ubuntu-latest",
               "swift": "5.7"
