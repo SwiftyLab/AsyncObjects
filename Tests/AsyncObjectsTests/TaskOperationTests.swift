@@ -244,9 +244,14 @@ class TaskOperationCancellationTests: XCTestCase {
                 continuation.resume()
             }
         }
+        expectation(
+            for: NSPredicate { _, _ in operation.isCancelled },
+            evaluatedWith: nil,
+            handler: nil
+        )
+        waitForExpectations(timeout: 2)
         XCTAssertTrue(operation.isFinished)
         XCTAssertFalse(operation.isExecuting)
-        XCTAssertTrue(operation.isCancelled)
         switch await operation.result {
         case .success(true): XCTFail("Unexpected operation result")
         default: break
@@ -275,9 +280,14 @@ class TaskOperationCancellationTests: XCTestCase {
                 continuation.resume()
             }
         }
+        expectation(
+            for: NSPredicate { _, _ in operation.isCancelled },
+            evaluatedWith: nil,
+            handler: nil
+        )
+        waitForExpectations(timeout: 2)
         XCTAssertTrue(operation.isFinished)
         XCTAssertFalse(operation.isExecuting)
-        XCTAssertTrue(operation.isCancelled)
     }
 
     func testWaitCancellation() async throws {
