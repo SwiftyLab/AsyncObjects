@@ -6,7 +6,6 @@ import Dispatch
 class TaskOperationTests: XCTestCase {
 
     func testTaskOperation() async throws {
-        let queue = OperationQueue()
         let operation = TaskOperation {
             (try? await Self.sleep(seconds: 3)) != nil
         }
@@ -14,7 +13,12 @@ class TaskOperationTests: XCTestCase {
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
         XCTAssertFalse(operation.isCancelled)
+        #if canImport(Darwin)
+        let queue = OperationQueue()
         queue.addOperation(operation)
+        #else
+        operation.start()
+        #endif
         expectation(
             for: NSPredicate { _, _ in operation.isExecuting },
             evaluatedWith: nil,
@@ -37,14 +41,18 @@ class TaskOperationTests: XCTestCase {
     }
 
     func testThrowingTaskOperation() async throws {
-        let queue = OperationQueue()
         let operation = TaskOperation {
             try await Self.sleep(seconds: 3)
         }
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
         XCTAssertFalse(operation.isCancelled)
+        #if canImport(Darwin)
+        let queue = OperationQueue()
         queue.addOperation(operation)
+        #else
+        operation.start()
+        #endif
         expectation(
             for: NSPredicate { _, _ in operation.isExecuting },
             evaluatedWith: nil,
@@ -223,14 +231,18 @@ class TaskOperationClockTimeoutTests: XCTestCase {
 class TaskOperationCancellationTests: XCTestCase {
 
     func testCancellation() async throws {
-        let queue = OperationQueue()
         let operation = TaskOperation {
             (try? await Self.sleep(seconds: 3)) != nil
         }
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
         XCTAssertFalse(operation.isCancelled)
+        #if canImport(Darwin)
+        let queue = OperationQueue()
         queue.addOperation(operation)
+        #else
+        operation.start()
+        #endif
         expectation(
             for: NSPredicate { _, _ in operation.isExecuting },
             evaluatedWith: nil,
@@ -259,14 +271,18 @@ class TaskOperationCancellationTests: XCTestCase {
     }
 
     func testThrowingCancellation() async throws {
-        let queue = OperationQueue()
         let operation = TaskOperation {
             try await Self.sleep(seconds: 3)
         }
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
         XCTAssertFalse(operation.isCancelled)
+        #if canImport(Darwin)
+        let queue = OperationQueue()
         queue.addOperation(operation)
+        #else
+        operation.start()
+        #endif
         expectation(
             for: NSPredicate { _, _ in operation.isExecuting },
             evaluatedWith: nil,
