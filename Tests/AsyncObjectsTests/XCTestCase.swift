@@ -137,6 +137,7 @@ extension AsyncObject {
     ) async throws where C.Duration == Duration {
         return try await self.wait(
             until: clock.now.advanced(by: .seconds(seconds)),
+            tolerance: .microseconds(1),
             clock: clock
         )
     }
