@@ -4,38 +4,14 @@ import XCTest
 @MainActor
 class AsyncCountdownEventTests: XCTestCase {
 
-    func testCountdownWaitWithoutIncrement() async throws {
+    func testWaitWithoutIncrement() async throws {
         let event = AsyncCountdownEvent()
         try await Self.checkExecInterval(durationInSeconds: 0) {
             try await event.wait()
         }
     }
 
-    func testCountdownWaitZeroTimeoutWithoutIncrement() async throws {
-        let event = AsyncCountdownEvent()
-        try await Self.checkExecInterval(durationInSeconds: 0) {
-            try await event.wait(forSeconds: 0)
-        }
-    }
-
-    static func signalCountdownEvent(
-        _ event: AsyncCountdownEvent,
-        times count: UInt
-    ) {
-        Task.detached {
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                for i in 0..<count {
-                    group.addTask {
-                        try await Self.sleep(seconds: (Double(i) + 1) * 0.5)
-                        event.signal(repeat: 1)
-                    }
-                }
-                try await group.waitForAll()
-            }
-        }
-    }
-
-    func testCountdownWaitWithIncrement() async throws {
+    func testWaitWithIncrement() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
         try await Self.sleep(seconds: 0.001)
@@ -45,22 +21,7 @@ class AsyncCountdownEventTests: XCTestCase {
         }
     }
 
-    func testCountdownWaitTimeoutWithIncrement() async throws {
-        let event = AsyncCountdownEvent()
-        event.increment(by: 10)
-        try await Self.sleep(seconds: 0.001)
-        Self.signalCountdownEvent(event, times: 10)
-        await Self.checkExecInterval(durationInSeconds: 3) {
-            do {
-                try await event.wait(forSeconds: 3)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
-        }
-    }
-
-    func testCountdownWaitWithLimitAndIncrement() async throws {
+    func testWaitWithLimitAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3)
         event.increment(by: 10)
         try await Self.sleep(seconds: 0.001)
@@ -70,22 +31,7 @@ class AsyncCountdownEventTests: XCTestCase {
         }
     }
 
-    func testCountdownWaitTimeoutWithLimitAndIncrement() async throws {
-        let event = AsyncCountdownEvent(until: 3)
-        event.increment(by: 10)
-        try await Self.sleep(seconds: 0.001)
-        Self.signalCountdownEvent(event, times: 10)
-        await Self.checkExecInterval(durationInSeconds: 2) {
-            do {
-                try await event.wait(forSeconds: 2)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
-        }
-    }
-
-    func testCountdownWaitWithLimitInitialCountAndIncrement() async throws {
+    func testWaitWithLimitInitialCountAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3, initial: 2)
         event.increment(by: 10)
         try await Self.sleep(seconds: 0.001)
@@ -95,24 +41,7 @@ class AsyncCountdownEventTests: XCTestCase {
         }
     }
 
-    func testCountdownWaitTimeoutWithLimitInitialCountAndIncrement()
-        async throws
-    {
-        let event = AsyncCountdownEvent(until: 3, initial: 3)
-        event.increment(by: 10)
-        try await Self.sleep(seconds: 0.001)
-        Self.signalCountdownEvent(event, times: 10)
-        await Self.checkExecInterval(durationInSeconds: 3) {
-            do {
-                try await event.wait(forSeconds: 3)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
-        }
-    }
-
-    func testCountdownWaitWithIncrementAndReset() async throws {
+    func testWaitWithIncrementAndReset() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
         try await Self.sleep(seconds: 0.001)
@@ -125,59 +54,21 @@ class AsyncCountdownEventTests: XCTestCase {
         }
     }
 
-    func testCountdownWaitWithIncrementAndResetToCount() async throws {
+    func testWaitWithIncrementAndResetToCount() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
         try await Self.sleep(seconds: 0.001)
         Task.detached {
             try await Self.sleep(seconds: 3)
             event.reset(to: 2)
-            await Self.signalCountdownEvent(event, times: 10)
+            Self.signalCountdownEvent(event, times: 10)
         }
         try await Self.checkExecInterval(durationInSeconds: 4) {
             try await event.wait()
         }
     }
 
-    func testCountdownWaitTimeoutWithIncrementAndReset() async throws {
-        let event = AsyncCountdownEvent()
-        event.increment(by: 10)
-        try await Self.sleep(seconds: 0.001)
-        Task.detached {
-            try await Self.sleep(seconds: 3)
-            event.reset()
-        }
-        await Self.checkExecInterval(durationInSeconds: 2) {
-            do {
-                try await event.wait(forSeconds: 2)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
-        }
-    }
-
-    func testCountdownWaitTimeoutWithIncrementAndResetToCount() async throws {
-        let event = AsyncCountdownEvent()
-        event.increment(by: 10)
-        try await Self.sleep(seconds: 0.001)
-        Task.detached {
-            try await Self.sleep(seconds: 3)
-            event.reset(to: 6)
-            await Self.signalCountdownEvent(event, times: 10)
-        }
-        await Self.checkExecInterval(durationInSeconds: 3) {
-            do {
-                try await event.wait(forSeconds: 3)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
-        }
-    }
-
-    func testCountdownWaitWithConcurrentIncrementAndResetToCount() async throws
-    {
+    func testWaitWithConcurrentIncrementAndResetToCount() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
         try await Self.sleep(seconds: 0.001)
@@ -204,7 +95,263 @@ class AsyncCountdownEventTests: XCTestCase {
         }
     }
 
-    func testWaitCancellationWhenTaskCancelled() async throws {
+    func testConcurrentAccess() async throws {
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for _ in 0..<10 {
+                group.addTask {
+                    let event = AsyncCountdownEvent(initial: 1)
+                    try await Self.checkExecInterval(durationInSeconds: 0) {
+                        try await withThrowingTaskGroup(of: Void.self) { g in
+                            g.addTask { try await event.wait() }
+                            g.addTask { event.signal() }
+                            try await g.waitForAll()
+                        }
+                    }
+                }
+                try await group.waitForAll()
+            }
+        }
+    }
+}
+
+@MainActor
+class AsyncCountdownEventTimeoutTests: XCTestCase {
+
+    func testWaitZeroTimeoutWithoutIncrement() async throws {
+        let event = AsyncCountdownEvent()
+        try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await event.wait(forSeconds: 0)
+        }
+    }
+
+    func testWaitTimeoutWithIncrement() async throws {
+        let event = AsyncCountdownEvent()
+        event.increment(by: 10)
+        try await Self.sleep(seconds: 0.001)
+        Self.signalCountdownEvent(event, times: 10)
+        await Self.checkExecInterval(durationInSeconds: 3) {
+            do {
+                try await event.wait(forSeconds: 3)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
+            }
+        }
+    }
+
+    func testWaitTimeoutWithLimitAndIncrement() async throws {
+        let event = AsyncCountdownEvent(until: 3)
+        event.increment(by: 10)
+        try await Self.sleep(seconds: 0.001)
+        Self.signalCountdownEvent(event, times: 10)
+        await Self.checkExecInterval(durationInSeconds: 2) {
+            do {
+                try await event.wait(forSeconds: 2)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
+            }
+        }
+    }
+
+    func testWaitTimeoutWithLimitInitialCountAndIncrement() async throws {
+        let event = AsyncCountdownEvent(until: 3, initial: 3)
+        event.increment(by: 10)
+        try await Self.sleep(seconds: 0.001)
+        Self.signalCountdownEvent(event, times: 10)
+        await Self.checkExecInterval(durationInSeconds: 3) {
+            do {
+                try await event.wait(forSeconds: 3)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
+            }
+        }
+    }
+
+    func testWaitTimeoutWithIncrementAndReset() async throws {
+        let event = AsyncCountdownEvent()
+        event.increment(by: 10)
+        try await Self.sleep(seconds: 0.001)
+        Task.detached {
+            try await Self.sleep(seconds: 3)
+            event.reset()
+        }
+        await Self.checkExecInterval(durationInSeconds: 2) {
+            do {
+                try await event.wait(forSeconds: 2)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
+            }
+        }
+    }
+
+    func testWaitTimeoutWithIncrementAndResetToCount() async throws {
+        let event = AsyncCountdownEvent()
+        event.increment(by: 10)
+        try await Self.sleep(seconds: 0.001)
+        Task.detached {
+            try await Self.sleep(seconds: 3)
+            event.reset(to: 6)
+            Self.signalCountdownEvent(event, times: 10)
+        }
+        await Self.checkExecInterval(durationInSeconds: 3) {
+            do {
+                try await event.wait(forSeconds: 3)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
+            }
+        }
+    }
+}
+
+#if swift(>=5.7)
+@MainActor
+class AsyncCountdownEventClockTimeoutTests: XCTestCase {
+
+    func testWaitZeroTimeoutWithoutIncrement() async throws {
+        guard
+            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+        else {
+            throw XCTSkip("Clock API not available")
+        }
+        let clock: ContinuousClock = .continuous
+        let event = AsyncCountdownEvent()
+        try await Self.checkExecInterval(duration: .seconds(0), clock: clock) {
+            try await event.wait(forSeconds: 0, clock: clock)
+        }
+    }
+
+    func testWaitTimeoutWithIncrement() async throws {
+        guard
+            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+        else {
+            throw XCTSkip("Clock API not available")
+        }
+        let clock: ContinuousClock = .continuous
+        let event = AsyncCountdownEvent()
+        event.increment(by: 10)
+        try await Self.sleep(seconds: 0.001, clock: clock)
+        Self.signalCountdownEvent(event, times: 10)
+        await Self.checkExecInterval(duration: .seconds(3), clock: clock) {
+            do {
+                try await event.wait(forSeconds: 3, clock: clock)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(
+                    type(of: error) == TimeoutError<ContinuousClock>.self
+                )
+            }
+        }
+    }
+
+    func testWaitTimeoutWithLimitAndIncrement() async throws {
+        guard
+            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+        else {
+            throw XCTSkip("Clock API not available")
+        }
+        let clock: ContinuousClock = .continuous
+        let event = AsyncCountdownEvent(until: 3)
+        event.increment(by: 10)
+        try await Self.sleep(seconds: 0.001, clock: clock)
+        Self.signalCountdownEvent(event, times: 10)
+        await Self.checkExecInterval(duration: .seconds(2), clock: clock) {
+            do {
+                try await event.wait(forSeconds: 2, clock: clock)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(
+                    type(of: error) == TimeoutError<ContinuousClock>.self
+                )
+            }
+        }
+    }
+
+    func testWaitTimeoutWithLimitInitialCountAndIncrement() async throws {
+        guard
+            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+        else {
+            throw XCTSkip("Clock API not available")
+        }
+        let clock: ContinuousClock = .continuous
+        let event = AsyncCountdownEvent(until: 3, initial: 3)
+        event.increment(by: 10)
+        try await Self.sleep(seconds: 0.001, clock: clock)
+        Self.signalCountdownEvent(event, times: 10)
+        await Self.checkExecInterval(duration: .seconds(3), clock: clock) {
+            do {
+                try await event.wait(forSeconds: 3, clock: clock)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(
+                    type(of: error) == TimeoutError<ContinuousClock>.self
+                )
+            }
+        }
+    }
+
+    func testWaitTimeoutWithIncrementAndReset() async throws {
+        guard
+            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+        else {
+            throw XCTSkip("Clock API not available")
+        }
+        let clock: ContinuousClock = .continuous
+        let event = AsyncCountdownEvent()
+        event.increment(by: 10)
+        try await Self.sleep(seconds: 0.001, clock: clock)
+        Task.detached {
+            try await Self.sleep(seconds: 3, clock: clock)
+            event.reset()
+        }
+        await Self.checkExecInterval(duration: .seconds(2), clock: clock) {
+            do {
+                try await event.wait(forSeconds: 2, clock: clock)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(
+                    type(of: error) == TimeoutError<ContinuousClock>.self
+                )
+            }
+        }
+    }
+
+    func testWaitTimeoutWithIncrementAndResetToCount() async throws {
+        guard
+            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+        else {
+            throw XCTSkip("Clock API not available")
+        }
+        let clock: ContinuousClock = .continuous
+        let event = AsyncCountdownEvent()
+        event.increment(by: 10)
+        try await Self.sleep(seconds: 0.001, clock: clock)
+        Task.detached {
+            try await Self.sleep(seconds: 3, clock: clock)
+            event.reset(to: 6)
+            Self.signalCountdownEvent(event, times: 10)
+        }
+        await Self.checkExecInterval(duration: .seconds(3), clock: clock) {
+            do {
+                try await event.wait(forSeconds: 3, clock: clock)
+                XCTFail("Unexpected task progression")
+            } catch {
+                XCTAssertTrue(
+                    type(of: error) == TimeoutError<ContinuousClock>.self
+                )
+            }
+        }
+    }
+}
+#endif
+
+@MainActor
+class AsyncCountdownEventCancellationTests: XCTestCase {
+
+    func testWaitCancellation() async throws {
         let event = AsyncCountdownEvent(initial: 1)
         let task = Task.detached {
             try await Self.checkExecInterval(durationInSeconds: 0) {
@@ -215,7 +362,7 @@ class AsyncCountdownEventTests: XCTestCase {
         try? await task.value
     }
 
-    func testWaitCancellationForAlreadyCancelledTask() async throws {
+    func testAlreadyCancelledTask() async throws {
         let event = AsyncCountdownEvent(initial: 1)
         let task = Task.detached {
             try await Self.checkExecInterval(durationInSeconds: 0) {
@@ -230,18 +377,20 @@ class AsyncCountdownEventTests: XCTestCase {
         task.cancel()
         try? await task.value
     }
+}
 
-    func testConcurrentAccess() async throws {
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            for _ in 0..<10 {
-                group.addTask {
-                    let event = AsyncCountdownEvent(initial: 1)
-                    try await Self.checkExecInterval(durationInSeconds: 0) {
-                        try await withThrowingTaskGroup(of: Void.self) { g in
-                            g.addTask { try await event.wait() }
-                            g.addTask { event.signal() }
-                            try await g.waitForAll()
-                        }
+fileprivate extension XCTestCase {
+
+    static func signalCountdownEvent(
+        _ event: AsyncCountdownEvent,
+        times count: UInt
+    ) {
+        Task.detached {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                for i in 0..<count {
+                    group.addTask {
+                        try await Self.sleep(seconds: (Double(i) + 1) * 0.5)
+                        event.signal(repeat: 1)
                     }
                 }
                 try await group.waitForAll()

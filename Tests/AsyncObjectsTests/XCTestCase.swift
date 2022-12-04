@@ -13,7 +13,7 @@ extension XCTestCase {
     ) {
         #if canImport(Darwin)
         if let name = name, activitySupported {
-            XCTContext.runActivity(named: name) { activity in
+            XCTContext.runActivity(named: name) { _ in
                 assertions()
             }
         } else {
@@ -84,6 +84,65 @@ extension AsyncObject {
         return try await self.wait(forNanoseconds: seconds * 1_000_000_000)
     }
 }
+
+#if swift(>=5.7)
+@available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+@MainActor
+extension XCTestCase {
+
+    static func checkExecInterval<C: Clock>(
+        name: String? = nil,
+        duration: C.Instant.Duration = .zero,
+        clock: C,
+        for task: () async throws -> Void
+    ) async rethrows where C.Duration == Duration {
+        let result = try await clock.measure { try await task() }
+        let assertions = {
+            XCTAssertLessThanOrEqual(
+                abs(duration.components.seconds - result.components.seconds),
+                1
+            )
+        }
+        runAssertions(with: name, assertions)
+    }
+
+    static func sleep<C: Clock, T: BinaryInteger>(
+        seconds: T,
+        clock: C
+    ) async throws where C.Duration == Duration {
+        try await Task.sleep(
+            until: clock.now.advanced(by: .seconds(seconds)),
+            clock: clock
+        )
+    }
+
+    static func sleep<C: Clock>(
+        seconds: Double,
+        clock: C
+    ) async throws where C.Duration == Duration {
+        try await Task.sleep(
+            until: clock.now.advanced(by: .seconds(seconds)),
+            clock: clock
+        )
+    }
+}
+
+@available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+extension AsyncObject {
+    @Sendable
+    @inlinable
+    func wait<T: BinaryInteger, C: Clock>(
+        forSeconds seconds: T,
+        clock: C
+    ) async throws where C.Duration == Duration {
+        return try await self.wait(
+            until: clock.now.advanced(by: .seconds(seconds)),
+            tolerance: .microseconds(1),
+            clock: clock
+        )
+    }
+}
+#endif
 
 protocol DivisiveArithmetic: Numeric {
     static func / (lhs: Self, rhs: Self) -> Self

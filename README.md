@@ -7,7 +7,7 @@
 [![Swift](https://img.shields.io/badge/Swift-5.6+-orange)](https://img.shields.io/badge/Swift-5-DE5D43)
 [![Platforms](https://img.shields.io/badge/Platforms-all-sucess)](https://img.shields.io/badge/Platforms-all-sucess)
 [![CI/CD](https://github.com/SwiftyLab/AsyncObjects/actions/workflows/main.yml/badge.svg?event=push)](https://github.com/SwiftyLab/AsyncObjects/actions/workflows/main.yml)
-[![Maintainability](https://api.codeclimate.com/v1/badges/37183c809818826c1bcf/maintainability)](https://codeclimate.com/github/SwiftyLab/AsyncObjects/maintainability)
+[![CodeFactor](https://www.codefactor.io/repository/github/swiftylab/asyncobjects/badge)](https://www.codefactor.io/repository/github/swiftylab/asyncobjects)
 [![codecov](https://codecov.io/gh/SwiftyLab/AsyncObjects/branch/main/graph/badge.svg?token=jKxMv5oFeA)](https://codecov.io/gh/SwiftyLab/AsyncObjects)
 <!-- [![CodeQL](https://github.com/SwiftyLab/AsyncObjects/actions/workflows/codeql-analysis.yml/badge.svg?event=schedule)](https://github.com/SwiftyLab/AsyncObjects/actions/workflows/codeql-analysis.yml) -->
 

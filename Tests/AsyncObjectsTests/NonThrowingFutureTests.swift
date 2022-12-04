@@ -37,7 +37,58 @@ class NonThrowingFutureTests: XCTestCase {
         XCTAssertEqual(value, 5)
     }
 
-    func testCombiningAllPromises() async throws {
+    func testMultipleTimesFutureFulfilled() async throws {
+        let future = Future<Int, Never>(with: .success(5))
+        await future.fulfill(producing: 10)
+        let value = await future.get()
+        XCTAssertEqual(value, 5)
+    }
+
+    func testFutureAsyncInitializerDuration() async throws {
+        await Self.checkExecInterval(durationInSeconds: 0) {
+            let _ = Future<Int, Never> { promise in
+                try! await Self.sleep(seconds: 1)
+                promise(.success(5))
+            }
+        }
+    }
+
+    func testDeinit() async throws {
+        let future = Future<Int, Never>()
+        Task.detached {
+            try await Self.sleep(seconds: 1)
+            await future.fulfill(producing: 5)
+        }
+        let _ = await future.get()
+        self.addTeardownBlock { [weak future] in
+            try await Self.sleep(seconds: 1)
+            XCTAssertNil(future)
+        }
+    }
+
+    func testConcurrentAccess() async throws {
+        await withTaskGroup(of: Void.self) { group in
+            for i in 0..<10 {
+                group.addTask {
+                    let future = Future<Int, Never>()
+                    await Self.checkExecInterval(durationInSeconds: 0) {
+                        await withTaskGroup(of: Void.self) { group in
+                            group.addTask { let _ = await future.get() }
+                            group.addTask { await future.fulfill(producing: i) }
+                            await group.waitForAll()
+                        }
+                    }
+                }
+                await group.waitForAll()
+            }
+        }
+    }
+}
+
+@MainActor
+class NonThrowingFutureCombiningTests: XCTestCase {
+
+    func testAllPromises() async throws {
         let future1 = Future<Int, Never>()
         let future2 = Future<Int, Never>()
         let future3 = Future<Int, Never>()
@@ -67,7 +118,7 @@ class NonThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testCombiningAllSettledPromises() async throws {
+    func testAllSettledPromises() async throws {
         let future1 = Future<Int, Never>()
         let future2 = Future<Int, Never>()
         let future3 = Future<Int, Never>()
@@ -168,62 +219,15 @@ class NonThrowingFutureTests: XCTestCase {
         }
     }
 
-    func testConstructingAllFutureFromZeroFutures() async {
+    func testConstructingAllFutureFromEmpty() async {
         let future = Future<Int, Never>.all()
         let value = await future.get()
         XCTAssertTrue(value.isEmpty)
     }
 
-    func testConstructingAllSettledFutureFromZeroFutures() async {
+    func testConstructingAllSettledFutureFromEmpty() async {
         let future = Future<Int, Never>.allSettled()
         let value = await future.get()
         XCTAssertTrue(value.isEmpty)
-    }
-
-    func testMultipleTimesFutureFulfilled() async throws {
-        let future = Future<Int, Never>(with: .success(5))
-        await future.fulfill(producing: 10)
-        let value = await future.get()
-        XCTAssertEqual(value, 5)
-    }
-
-    func testFutureAsyncInitializerDuration() async throws {
-        await Self.checkExecInterval(durationInSeconds: 0) {
-            let _ = Future<Int, Never> { promise in
-                try! await Self.sleep(seconds: 1)
-                promise(.success(5))
-            }
-        }
-    }
-
-    func testDeinit() async throws {
-        let future = Future<Int, Never>()
-        Task.detached {
-            try await Self.sleep(seconds: 1)
-            await future.fulfill(producing: 5)
-        }
-        let _ = await future.get()
-        self.addTeardownBlock { [weak future] in
-            try await Self.sleep(seconds: 1)
-            XCTAssertNil(future)
-        }
-    }
-
-    func testConcurrentAccess() async throws {
-        await withTaskGroup(of: Void.self) { group in
-            for i in 0..<10 {
-                group.addTask {
-                    let future = Future<Int, Never>()
-                    await Self.checkExecInterval(durationInSeconds: 0) {
-                        await withTaskGroup(of: Void.self) { group in
-                            group.addTask { let _ = await future.get() }
-                            group.addTask { await future.fulfill(producing: i) }
-                            await group.waitForAll()
-                        }
-                    }
-                }
-                await group.waitForAll()
-            }
-        }
     }
 }
