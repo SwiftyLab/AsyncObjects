@@ -2,7 +2,7 @@ import XCTest
 @testable import AsyncObjects
 
 @MainActor
-class AsyncSemaphoreTests: XCTestCase {
+class AsyncSemaphoreTests: AsyncTestCase {
 
     func testWaitWithTasksLessThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
@@ -121,13 +121,6 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
         }
     }
 
-    func testWaitZeroTimeout() async throws {
-        let semaphore = AsyncSemaphore(value: 1)
-        try await Self.checkExecInterval(durationInSeconds: 0) {
-            try await semaphore.wait(forNanoseconds: 0)
-        }
-    }
-
     func testMutexWaitTimeout() async throws {
         let mutex = AsyncSemaphore()
         await Self.checkExecInterval(durationInSeconds: 1) {
@@ -236,19 +229,6 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
                 XCTAssertEqual(successes, value)
                 XCTAssertEqual(failures, UInt(count) - value)
             }
-        }
-    }
-
-    func testWaitZeroTimeout() async throws {
-        guard
-            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
-        else {
-            throw XCTSkip("Clock API not available")
-        }
-        let clock: ContinuousClock = .continuous
-        let semaphore = AsyncSemaphore(value: 1)
-        try await Self.checkExecInterval(duration: .seconds(0), clock: clock) {
-            try await semaphore.wait(forSeconds: 0, clock: clock)
         }
     }
 

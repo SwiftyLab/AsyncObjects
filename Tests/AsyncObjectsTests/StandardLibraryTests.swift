@@ -2,7 +2,7 @@ import XCTest
 @testable import AsyncObjects
 
 /// Tests inner workings of structured concurrency
-class StandardLibraryTests: XCTestCase {
+class StandardLibraryTests: AsyncTestCase {
 
     func testTaskValueFetchingCancelation() async throws {
         let task = Task { () -> Int in

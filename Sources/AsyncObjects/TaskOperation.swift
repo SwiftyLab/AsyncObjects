@@ -29,7 +29,7 @@ import Dispatch
 /// operation.waitUntilFinished()
 /// ```
 public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
-    ContinuableCollection, @unchecked Sendable
+    ContinuableCollection, Loggable, @unchecked Sendable
 {
     /// The asynchronous action to perform as part of the operation..
     private let underlyingAction: @Sendable () async throws -> R
@@ -236,25 +236,70 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
+    ///   - file: The file add request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function add request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line add request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
     internal func addContinuation(
         _ continuation: Continuation,
-        withKey key: UUID
+        withKey key: UUID,
+        file: String, function: String, line: UInt
     ) {
         locker.perform {
-            guard !continuation.resumed else { return }
-            if isFinished { continuation.resume(); return }
+            guard !continuation.resumed else {
+                log(
+                    "Already resumed", id: key,
+                    file: file, function: function, line: line
+                )
+                return
+            }
+
+            guard !isFinished else {
+                continuation.resume()
+                log(
+                    "Resumed", id: key,
+                    file: file, function: function, line: line
+                )
+                return
+            }
+
             continuations[key] = continuation
+            log("Tracking", id: key, file: file, function: function, line: line)
         }
     }
 
     /// Remove continuation associated with provided key
     /// from `continuations` map.
     ///
-    /// - Parameter key: The key in the map.
+    /// - Parameters:
+    ///   - key: The key in the map.
+    ///   - file: The file remove request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function remove request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line remove request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func removeContinuation(withKey key: UUID) {
-        locker.perform { continuations.removeValue(forKey: key) }
+    internal func removeContinuation(
+        withKey key: UUID,
+        file: String, function: String, line: UInt
+    ) {
+        locker.perform {
+            guard let _ = continuations.removeValue(forKey: key) else {
+                log(
+                    "Early Cancellation", id: key,
+                    file: file, function: function, line: line
+                )
+                return
+            }
+            log(
+                "Cancelled", id: key,
+                file: file, function: function, line: line
+            )
+        }
     }
 
     /// Starts operation asynchronously
@@ -274,6 +319,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         line: UInt = #line
     ) {
         self.start()
+        log("Started", file: file, function: function, line: line)
     }
 
     /// Waits for operation to complete successfully or cancelled.
@@ -296,8 +342,18 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         function: String = #function,
         line: UInt = #line
     ) async throws {
-        guard !isFinished else { return }
-        try await withPromisedContinuation()
+        guard !isFinished else {
+            log("Finished", file: file, function: function, line: line)
+            return
+        }
+
+        let key = UUID()
+        log("Waiting", id: key, file: file, function: function, line: line)
+        try await withPromisedContinuation(
+            withKey: key,
+            file: file, function: function, line: line
+        )
+        log("Finished", id: key, file: file, function: function, line: line)
     }
 }
 
@@ -394,3 +450,22 @@ public struct TaskOperationFlags: OptionSet, Sendable {
         self.rawValue = rawValue
     }
 }
+
+#if canImport(Logging)
+import Logging
+
+extension TaskOperation {
+    /// Type specific metadata to attach to all log messages.
+    @usableFromInline
+    var metadata: Logger.Metadata {
+        return [
+            "obj": "\(self)",
+            "priority": "\(priority != nil ? "\(priority!)" : "nil")",
+            "flags": "\(flags)",
+            "executing": "\(isExecuting)",
+            "cancelled": "\(isCancelled)",
+            "finished": "\(isFinished)",
+        ]
+    }
+}
+#endif

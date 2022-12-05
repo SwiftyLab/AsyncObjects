@@ -40,7 +40,7 @@ import OrderedCollections
 ///   try await Task.sleep(nanoseconds: 1_000_000_000)
 /// }
 /// ```
-public actor TaskQueue: AsyncObject {
+public actor TaskQueue: AsyncObject, LoggableActor {
     /// A set of behaviors for operations, such as its priority and whether to create a barrier
     /// or spawn a new detached task.
     ///
@@ -198,13 +198,31 @@ public actor TaskQueue: AsyncObject {
 
     /// Resume provided continuation with additional changes based on the associated flags.
     ///
-    /// - Parameter continuation: The queued continuation to resume.
+    /// - Parameters:
+    ///   - continuation: The queued continuation to resume.
+    ///   - key: The key in the continuation queue.
+    ///   - file: The file resume request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function resume request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line resume request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
     /// - Returns: Whether queue is free to proceed scheduling other tasks.
     @inlinable
     @discardableResult
     internal func resumeQueuedContinuation(
-        _ continuation: QueuedContinuation
+        _ continuation: QueuedContinuation,
+        atKey key: UUID,
+        file: String, function: String, line: UInt
     ) -> Bool {
+        defer {
+            log(
+                "Resumed", flags: continuation.flags, id: key,
+                file: file, function: function, line: line
+            )
+        }
+
         currentRunning += 1
         continuation.value.resume()
         guard continuation.flags.isBlockEnabled else { return true }
@@ -215,27 +233,71 @@ public actor TaskQueue: AsyncObject {
     /// Add continuation with the provided key and associated flags to queue.
     ///
     /// - Parameters:
-    ///   - key: The key in the continuation queue.
     ///   - continuation: The continuation and flags to add to queue.
+    ///   - key: The key in the continuation queue.
+    ///   - file: The file queue request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function queue request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line queue request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
     internal func queueContinuation(
-        atKey key: UUID = .init(),
-        _ continuation: QueuedContinuation
+        _ continuation: QueuedContinuation,
+        atKey key: UUID,
+        file: String, function: String, line: UInt
     ) {
-        guard !continuation.value.resumed else { return }
-        guard shouldWait(whenFlags: continuation.flags) else {
-            resumeQueuedContinuation(continuation)
+        guard !continuation.value.resumed else {
+            log(
+                "Already resumed", flags: continuation.flags, id: key,
+                file: file, function: function, line: line
+            )
             return
         }
+
+        guard shouldWait(whenFlags: continuation.flags) else {
+            resumeQueuedContinuation(
+                continuation, atKey: key,
+                file: file, function: function, line: line
+            )
+            return
+        }
+
         queue[key] = continuation
+        log(
+            "Tracking", flags: continuation.flags, id: key,
+            file: file, function: function, line: line
+        )
     }
 
     /// Remove continuation associated with provided key from queue.
     ///
-    /// - Parameter key: The key in the continuation queue.
+    /// - Parameters:
+    ///   - flags: The flags associated that determine the execution behavior of task.
+    ///   - key: The key in the continuation queue.
+    ///   - file: The file remove request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function remove request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line remove request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func dequeueContinuation(withKey key: UUID) {
-        queue.removeValue(forKey: key)
+    internal func dequeueContinuation(
+        flags: Flags,
+        withKey key: UUID,
+        file: String, function: String, line: UInt
+    ) {
+        guard let _ = queue.removeValue(forKey: key) else {
+            log(
+                "Early Cancellation", id: key,
+                file: file, function: function, line: line
+            )
+            return
+        }
+        log(
+            "Cancelled", flags: flags, id: key,
+            file: file, function: function, line: line
+        )
     }
 
     /// Unblock queue allowing other queued tasks to run
@@ -243,10 +305,18 @@ public actor TaskQueue: AsyncObject {
     ///
     /// Updates the ``blocked`` flag and starts queued tasks
     /// in order of their addition if any tasks are queued.
+    ///
+    /// - Parameters:
+    ///   - file: The file unblock request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The unblock resume request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line unblock request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func unblockQueue() {
+    internal func unblockQueue(file: String, function: String, line: UInt) {
         blocked = false
-        resumeQueuedTasks()
+        resumeQueuedTasks(file: file, function: function, line: line)
     }
 
     /// Signals completion of operation to the queue
@@ -254,23 +324,46 @@ public actor TaskQueue: AsyncObject {
     ///
     /// Updates the ``currentRunning`` count and starts
     /// queued tasks in order of their addition if any queued.
+    ///
+    /// - Parameters:
+    ///   - file: The file signal request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func signalCompletion() {
-        defer { resumeQueuedTasks() }
+    internal func signalCompletion(file: String, function: String, line: UInt) {
+        defer { resumeQueuedTasks(file: file, function: function, line: line) }
         guard currentRunning > 0 else { return }
         currentRunning -= 1
     }
 
     /// Resumes queued tasks when queue isn't blocked
     /// and operation flags preconditions satisfied.
+    ///
+    /// - Parameters:
+    ///   - file: The file resume request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function resume request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line resume request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func resumeQueuedTasks() {
-        while let (_, continuation) = queue.elements.first,
+    internal func resumeQueuedTasks(
+        file: String, function: String, line: UInt
+    ) {
+        while let (key, continuation) = queue.elements.first,
             !blocked,
             !continuation.flags.wait(forCurrent: currentRunning)
         {
             queue.removeFirst()
-            guard resumeQueuedContinuation(continuation) else { break }
+            guard
+                resumeQueuedContinuation(
+                    continuation, atKey: key,
+                    file: file, function: function, line: line
+                )
+            else { break }
         }
     }
 
@@ -281,25 +374,38 @@ public actor TaskQueue: AsyncObject {
     /// This operation cooperatively checks for cancellation and reacting to it by invoking `dequeueContinuation`.
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
-    /// - Parameter flags: The flags associated that determine the execution behavior of task.
+    /// - Parameters:
+    ///   - flags: The flags associated that determine the execution behavior of task.
+    ///   - key: The key associated to task, that requested suspension.
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
     internal nonisolated func withPromisedContinuation(
-        flags: Flags = []
+        flags: Flags = [],
+        withKey key: UUID,
+        file: String, function: String, line: UInt
     ) async throws {
-        let key = UUID()
         try await Continuation.withCancellation(
             synchronizedWith: locker
         ) {
             Task { [weak self] in
-                await self?.dequeueContinuation(withKey: key)
+                await self?.dequeueContinuation(
+                    flags: flags, withKey: key,
+                    file: file, function: function, line: line
+                )
             }
         } operation: { continuation in
             Task { [weak self] in
                 await self?.queueContinuation(
+                    (value: continuation, flags: flags),
                     atKey: key,
-                    (value: continuation, flags: flags)
+                    file: file, function: function, line: line
                 )
             }
         }
@@ -310,6 +416,13 @@ public actor TaskQueue: AsyncObject {
     /// - Parameters:
     ///   - priority: The priority with which operation executed.
     ///   - flags: The flags associated that determine the execution behavior of task.
+    ///   - key: Optional key associated with task.
+    ///   - file: The file execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function execution request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The operation to perform.
     ///
     /// - Returns: The result from provided operation.
@@ -318,15 +431,21 @@ public actor TaskQueue: AsyncObject {
     internal func run<T: Sendable>(
         with priority: TaskPriority?,
         flags: Flags,
+        withKey key: UUID?,
+        file: String, function: String, line: UInt,
         operation: @Sendable @escaping () async throws -> T
     ) async rethrows -> T {
-        defer { signalCompletion() }
+        defer { signalCompletion(file: file, function: function, line: line) }
         typealias LocalTask = Task<T, Error>
         let taskPriority = flags.choosePriority(
             fromContext: self.priority,
             andWork: priority
         )
 
+        log(
+            "Executing", flags: flags, id: key,
+            file: file, function: function, line: line
+        )
         return flags.contains(.detached)
             ? try await LocalTask.withCancellableDetachedTask(
                 priority: taskPriority,
@@ -344,6 +463,13 @@ public actor TaskQueue: AsyncObject {
     /// - Parameters:
     ///   - priority: The priority with which operation executed.
     ///   - flags: The flags associated that determine the execution behavior of task.
+    ///   - key: Optional key associated with task.
+    ///   - file: The file execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function execution request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The operation to perform.
     ///
     /// - Returns: The result from provided operation.
@@ -352,13 +478,15 @@ public actor TaskQueue: AsyncObject {
     internal func runBlocking<T: Sendable>(
         with priority: TaskPriority?,
         flags: Flags,
+        withKey key: UUID?,
+        file: String, function: String, line: UInt,
         operation: @Sendable @escaping () async throws -> T
     ) async rethrows -> T {
-        defer { unblockQueue() }
+        defer { unblockQueue(file: file, function: function, line: line) }
         blocked = true
         return try await run(
-            with: priority,
-            flags: flags,
+            with: priority, flags: flags, withKey: key,
+            file: file, function: function, line: line,
             operation: operation
         )
     }
@@ -390,6 +518,12 @@ public actor TaskQueue: AsyncObject {
     ///               from execution context(`Task.currentPriority`) for non-detached tasks.
     ///   - flags: Additional attributes to apply when executing the operation.
     ///            For a list of possible values, see ``Flags``.
+    ///   - file: The file execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function execution request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line execution request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///   - operation: The operation to perform.
     ///   - cancellation: The cancellation handler invoked if continuation is cancelled.
     ///
@@ -400,21 +534,23 @@ public actor TaskQueue: AsyncObject {
     internal func execHelper<T: Sendable>(
         priority: TaskPriority? = nil,
         flags: Flags = [],
+        file: String, function: String, line: UInt,
         operation: @Sendable @escaping () async throws -> T,
         cancellation: (Error) throws -> Void
     ) async rethrows -> T {
         func runTask(
+            withKey key: UUID? = nil,
             _ operation: @Sendable @escaping () async throws -> T
         ) async rethrows -> T {
             return flags.isBlockEnabled
                 ? try await runBlocking(
-                    with: priority,
-                    flags: flags,
+                    with: priority, flags: flags, withKey: key,
+                    file: file, function: function, line: line,
                     operation: operation
                 )
                 : try await run(
-                    with: priority,
-                    flags: flags,
+                    with: priority, flags: flags, withKey: key,
+                    file: file, function: function, line: line,
                     operation: operation
                 )
         }
@@ -424,13 +560,28 @@ public actor TaskQueue: AsyncObject {
             return try await runTask(operation)
         }
 
+        let key = UUID()
+        log(
+            "Waiting", flags: flags, id: key,
+            file: file, function: function, line: line
+        )
+        defer {
+            log(
+                "Executed", flags: flags, id: key,
+                file: file, function: function, line: line
+            )
+        }
+
         do {
-            try await withPromisedContinuation(flags: flags)
+            try await withPromisedContinuation(
+                flags: flags, withKey: key,
+                file: file, function: function, line: line
+            )
         } catch {
             try cancellation(error)
         }
 
-        return try await runTask(operation)
+        return try await runTask(withKey: key, operation)
     }
 
     /// Executes the given throwing operation asynchronously based on the priority and flags.
@@ -468,8 +619,8 @@ public actor TaskQueue: AsyncObject {
         operation: @Sendable @escaping () async throws -> T
     ) async throws -> T {
         return try await execHelper(
-            priority: priority,
-            flags: flags,
+            priority: priority, flags: flags,
+            file: file, function: function, line: line,
             operation: operation
         ) { throw $0 }
     }
@@ -504,8 +655,8 @@ public actor TaskQueue: AsyncObject {
         operation: @Sendable @escaping () async -> T
     ) async -> T {
         return await execHelper(
-            priority: priority,
-            flags: flags,
+            priority: priority, flags: flags,
+            file: file, function: function, line: line,
             operation: operation
         ) { _ in
             withUnsafeCurrentTask { $0?.cancel() }
@@ -541,11 +692,8 @@ public actor TaskQueue: AsyncObject {
     ) {
         Task {
             try await exec(
-                priority: priority,
-                flags: flags,
-                file: file,
-                function: function,
-                line: line,
+                priority: priority, flags: flags,
+                file: file, function: function, line: line,
                 operation: operation
             )
         }
@@ -580,11 +728,8 @@ public actor TaskQueue: AsyncObject {
     ) {
         Task {
             await exec(
-                priority: priority,
-                flags: flags,
-                file: file,
-                function: function,
-                line: line,
+                priority: priority, flags: flags,
+                file: file, function: function, line: line,
                 operation: operation
             )
         }
@@ -632,3 +777,84 @@ public actor TaskQueue: AsyncObject {
         ) { try await Task.sleep(nanoseconds: 0) }
     }
 }
+
+#if canImport(Logging)
+import Logging
+
+extension TaskQueue {
+    /// Type specific metadata to attach to all log messages.
+    @usableFromInline
+    var metadata: Logger.Metadata {
+        return [
+            "obj": "\(self)(\(Unmanaged.passUnretained(self).toOpaque()))",
+            "blocked": "\(blocked)",
+            "current_running": "\(currentRunning)",
+            "priority": "\(priority != nil ? "\(priority!)" : "nil")",
+        ]
+    }
+
+    /// Log a message attaching the default type specific metadata
+    /// and optional identifier.
+    ///
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_TRACE` is set log level is set to `trace`.
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_DEBUG` is set log level is set to `debug`.
+    /// Otherwise log level is set to `info`.
+    ///
+    /// - Parameters:
+    ///   - message: The message to be logged.
+    ///   - flags: The flags associated that determine the execution behavior of task.
+    ///   - id: Optional identifier associated with message.
+    ///   - file: The file this log message originates from (there's usually
+    ///           no need to pass it explicitly as it defaults to `#fileID`).
+    ///   - function: The function this log message originates from (there's usually
+    ///               no need to pass it explicitly as it defaults to `#function`).
+    ///   - line: The line this log message originates from (there's usually
+    ///           no need to pass it explicitly as it defaults to `#line`).
+    @inlinable
+    func log(
+        _ message: @autoclosure () -> Logger.Message,
+        flags: Flags,
+        id: UUID? = nil,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        var metadata = self.metadata
+        metadata["flags"] = "\(flags)"
+        if let id = id { metadata["id"] = "\(id)" }
+        logger.log(
+            level: level, message(), metadata: metadata,
+            file: file, function: function, line: line
+        )
+    }
+}
+#else
+extension TaskQueue {
+    /// Log a message attaching the default type specific metadata
+    /// and optional identifier.
+    ///
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_TRACE` is set log level is set to `trace`.
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_DEBUG` is set log level is set to `debug`.
+    /// Otherwise log level is set to `info`.
+    ///
+    /// - Parameters:
+    ///   - message: The message to be logged.
+    ///   - flags: The flags associated that determine the execution behavior of task.
+    ///   - id: Optional identifier associated with message.
+    ///   - file: The file this log message originates from (there's usually
+    ///           no need to pass it explicitly as it defaults to `#fileID`).
+    ///   - function: The function this log message originates from (there's usually
+    ///               no need to pass it explicitly as it defaults to `#function`).
+    ///   - line: The line this log message originates from (there's usually
+    ///           no need to pass it explicitly as it defaults to `#line`).
+    @inlinable
+    func log(
+        _ message: @autoclosure () -> String,
+        flags: Flags,
+        id: UUID? = nil,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) { /* Do nothing */  }
+}
+#endif

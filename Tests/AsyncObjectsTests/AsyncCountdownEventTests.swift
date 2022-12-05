@@ -2,7 +2,7 @@ import XCTest
 @testable import AsyncObjects
 
 @MainActor
-class AsyncCountdownEventTests: XCTestCase {
+class AsyncCountdownEventTests: AsyncTestCase {
 
     func testWaitWithoutIncrement() async throws {
         let event = AsyncCountdownEvent()
@@ -117,13 +117,6 @@ class AsyncCountdownEventTests: XCTestCase {
 @MainActor
 class AsyncCountdownEventTimeoutTests: XCTestCase {
 
-    func testWaitZeroTimeoutWithoutIncrement() async throws {
-        let event = AsyncCountdownEvent()
-        try await Self.checkExecInterval(durationInSeconds: 0) {
-            try await event.wait(forSeconds: 0)
-        }
-    }
-
     func testWaitTimeoutWithIncrement() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
@@ -210,19 +203,6 @@ class AsyncCountdownEventTimeoutTests: XCTestCase {
 #if swift(>=5.7)
 @MainActor
 class AsyncCountdownEventClockTimeoutTests: XCTestCase {
-
-    func testWaitZeroTimeoutWithoutIncrement() async throws {
-        guard
-            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
-        else {
-            throw XCTSkip("Clock API not available")
-        }
-        let clock: ContinuousClock = .continuous
-        let event = AsyncCountdownEvent()
-        try await Self.checkExecInterval(duration: .seconds(0), clock: clock) {
-            try await event.wait(forSeconds: 0, clock: clock)
-        }
-    }
 
     func testWaitTimeoutWithIncrement() async throws {
         guard

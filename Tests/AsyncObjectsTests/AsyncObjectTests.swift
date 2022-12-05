@@ -2,7 +2,7 @@ import XCTest
 @testable import AsyncObjects
 
 @MainActor
-class AsyncObjectTests: XCTestCase {
+class AsyncObjectTests: AsyncTestCase {
 
     func testMultipleObjectWaitAll() async throws {
         let event = AsyncEvent(signaledInitially: false)

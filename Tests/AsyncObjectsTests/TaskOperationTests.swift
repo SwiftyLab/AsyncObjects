@@ -3,7 +3,7 @@ import Dispatch
 @testable import AsyncObjects
 
 @MainActor
-class TaskOperationTests: XCTestCase {
+class TaskOperationTests: AsyncTestCase {
 
     func testTaskOperation() async throws {
         let operation = TaskOperation {
@@ -125,9 +125,7 @@ class TaskOperationTimeoutTests: XCTestCase {
     func testFinishedWait() async throws {
         let operation = TaskOperation { /* Do nothing */  }
         operation.signal()
-        try await Self.checkExecInterval(durationInSeconds: 0) {
-            try await operation.wait(forNanoseconds: 2)
-        }
+        try await operation.wait(forSeconds: 1)
     }
 
     func testWaitTimeout() async throws {
@@ -142,14 +140,6 @@ class TaskOperationTimeoutTests: XCTestCase {
             } catch {
                 XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
             }
-        }
-    }
-
-    func testWaitZeroTimeout() async throws {
-        let operation = TaskOperation { /* Do nothing */  }
-        operation.signal()
-        try await Self.checkExecInterval(durationInSeconds: 0) {
-            try await operation.wait(forNanoseconds: 0)
         }
     }
 }
@@ -208,20 +198,6 @@ class TaskOperationClockTimeoutTests: XCTestCase {
                     type(of: error) == TimeoutError<ContinuousClock>.self
                 )
             }
-        }
-    }
-
-    func testWaitZeroTimeout() async throws {
-        guard
-            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
-        else {
-            throw XCTSkip("Clock API not available")
-        }
-        let clock: ContinuousClock = .continuous
-        let operation = TaskOperation { /* Do nothing */  }
-        operation.signal()
-        try await Self.checkExecInterval(duration: .seconds(0), clock: clock) {
-            try await operation.wait(forSeconds: 0, clock: clock)
         }
     }
 }

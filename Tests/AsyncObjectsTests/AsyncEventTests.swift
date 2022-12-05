@@ -2,7 +2,7 @@ import XCTest
 @testable import AsyncObjects
 
 @MainActor
-class AsyncEventTests: XCTestCase {
+class AsyncEventTests: AsyncTestCase {
 
     func testWait() async throws {
         let event = AsyncEvent(signaledInitially: false)
@@ -85,13 +85,6 @@ class AsyncEventTimeoutTests: XCTestCase {
             }
         }
     }
-
-    func testWaitZeroTimeout() async throws {
-        let event = AsyncEvent(signaledInitially: true)
-        try await Self.checkExecInterval(durationInSeconds: 0) {
-            try await event.wait(forNanoseconds: 0)
-        }
-    }
 }
 
 #if swift(>=5.7)
@@ -145,19 +138,6 @@ class AsyncEventClockTimeoutTests: XCTestCase {
                     type(of: error) == TimeoutError<ContinuousClock>.self
                 )
             }
-        }
-    }
-
-    func testWaitZeroTimeout() async throws {
-        guard
-            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
-        else {
-            throw XCTSkip("Clock API not available")
-        }
-        let clock: ContinuousClock = .continuous
-        let event = AsyncEvent(signaledInitially: true)
-        try await Self.checkExecInterval(duration: .seconds(0), clock: clock) {
-            try await event.wait(forSeconds: 0, clock: clock)
         }
     }
 }

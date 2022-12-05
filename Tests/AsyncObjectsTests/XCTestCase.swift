@@ -2,6 +2,13 @@ import XCTest
 import Dispatch
 @testable import AsyncObjects
 
+class AsyncTestCase: XCTestCase {
+    override var executionTimeAllowance: TimeInterval {
+        get { 60 }
+        set { /* Do nothing */  }
+    }
+}
+
 @MainActor
 extension XCTestCase {
     private static var activitySupported = ProcessInfo.processInfo.environment

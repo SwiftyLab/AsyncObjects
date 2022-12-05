@@ -3,7 +3,7 @@ import Dispatch
 @testable import AsyncObjects
 
 @MainActor
-class ThrowingFutureTests: XCTestCase {
+class ThrowingFutureTests: AsyncTestCase {
 
     func testFutureFulfilledInitialization() async throws {
         let future = Future<Int, Error>(with: .success(5))
