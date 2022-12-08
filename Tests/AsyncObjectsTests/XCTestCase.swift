@@ -3,10 +3,12 @@ import Dispatch
 @testable import AsyncObjects
 
 class AsyncTestCase: XCTestCase {
+    #if canImport(Darwin)
     override var executionTimeAllowance: TimeInterval {
         get { 60 }
         set { /* Do nothing */  }
     }
+    #endif
 }
 
 @MainActor
