@@ -290,7 +290,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         locker.perform {
             guard let _ = continuations.removeValue(forKey: key) else {
                 log(
-                    "Early Cancellation", id: key,
+                    "Not tracked for cancellation", id: key,
                     file: file, function: function, line: line
                 )
                 return

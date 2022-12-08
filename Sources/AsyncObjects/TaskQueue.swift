@@ -289,7 +289,7 @@ public actor TaskQueue: AsyncObject, LoggableActor {
     ) {
         guard let _ = queue.removeValue(forKey: key) else {
             log(
-                "Early Cancellation", id: key,
+                "Not tracked for cancellation", id: key,
                 file: file, function: function, line: line
             )
             return
