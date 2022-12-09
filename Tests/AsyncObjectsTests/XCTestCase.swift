@@ -2,15 +2,6 @@ import XCTest
 import Dispatch
 @testable import AsyncObjects
 
-class AsyncTestCase: XCTestCase {
-    #if canImport(Darwin)
-    override var executionTimeAllowance: TimeInterval {
-        get { 60 }
-        set { /* Do nothing */  }
-    }
-    #endif
-}
-
 @MainActor
 extension XCTestCase {
     private static var activitySupported = ProcessInfo.processInfo.environment

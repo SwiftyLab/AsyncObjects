@@ -3,7 +3,7 @@ import Dispatch
 @testable import AsyncObjects
 
 @MainActor
-class TaskOperationTests: AsyncTestCase {
+class TaskOperationTests: XCTestCase {
 
     func testTaskOperation() async throws {
         let operation = TaskOperation {

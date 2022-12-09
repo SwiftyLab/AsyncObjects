@@ -2,7 +2,7 @@ import XCTest
 @testable import AsyncObjects
 
 @MainActor
-class CancellationSourceTests: AsyncTestCase {
+class CancellationSourceTests: XCTestCase {
 
     func testTaskCancellation() async throws {
         let source = CancellationSource()

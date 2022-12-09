@@ -2,7 +2,7 @@ import XCTest
 @testable import AsyncObjects
 
 @MainActor
-class TaskQueueTests: AsyncTestCase {
+class TaskQueueTests: XCTestCase {
 
     func testSignalingDoesNothing() async {
         let queue = TaskQueue()

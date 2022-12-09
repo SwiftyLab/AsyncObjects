@@ -2,7 +2,7 @@ import XCTest
 @testable import AsyncObjects
 
 @MainActor
-class SafeContinuationTests: AsyncTestCase {
+class SafeContinuationTests: XCTestCase {
 
     func testResumingWithInitializedStatusWaiting() async throws {
         let value = await GlobalContinuation<Int, Never>.with { c in

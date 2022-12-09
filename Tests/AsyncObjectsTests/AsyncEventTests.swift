@@ -2,7 +2,7 @@ import XCTest
 @testable import AsyncObjects
 
 @MainActor
-class AsyncEventTests: AsyncTestCase {
+class AsyncEventTests: XCTestCase {
 
     func testWait() async throws {
         let event = AsyncEvent(signaledInitially: false)

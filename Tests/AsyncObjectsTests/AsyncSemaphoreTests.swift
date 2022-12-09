@@ -2,7 +2,7 @@ import XCTest
 @testable import AsyncObjects
 
 @MainActor
-class AsyncSemaphoreTests: AsyncTestCase {
+class AsyncSemaphoreTests: XCTestCase {
 
     func testWaitWithTasksLessThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)

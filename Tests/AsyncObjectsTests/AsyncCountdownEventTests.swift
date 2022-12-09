@@ -2,7 +2,7 @@ import XCTest
 @testable import AsyncObjects
 
 @MainActor
-class AsyncCountdownEventTests: AsyncTestCase {
+class AsyncCountdownEventTests: XCTestCase {
 
     func testWaitWithoutIncrement() async throws {
         let event = AsyncCountdownEvent()
