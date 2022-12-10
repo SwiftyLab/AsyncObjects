@@ -40,17 +40,19 @@ where Failure == Error {
     /// subsequent resumes have different behaviors depending on type implementing.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes the throwing continuation parameter.
     ///           You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     static func with(
-        function: String,
+        file: String, function: String, line: UInt,
         _ body: (Self) -> Void
     ) async throws -> Success
 }
@@ -69,16 +71,18 @@ where Failure == Never {
     /// subsequent resumes have different behavior depending on type implementing.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes the non-throwing continuation parameter.
     ///           You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     static func with(
-        function: String,
+        file: String, function: String, line: UInt,
         _ body: (Self) -> Void
     ) async -> Success
 }
@@ -123,17 +127,19 @@ internal protocol ThrowingContinuable: Continuable where Failure == Error {
     /// subsequent resumes have different behaviors depending on type implementing.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes the throwing continuation parameter.
     ///           You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     static func with(
-        function: String,
+        file: String, function: String, line: UInt,
         _ body: (Self) -> Void
     ) async throws -> Success
 }
@@ -151,16 +157,18 @@ internal protocol NonThrowingContinuable: Continuable where Failure == Never {
     /// subsequent resumes have different behavior depending on type implementing.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes the non-throwing continuation parameter.
     ///           You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     static func with(
-        function: String,
+        file: String, function: String, line: UInt,
         _ body: (Self) -> Void
     ) async -> Success
 }

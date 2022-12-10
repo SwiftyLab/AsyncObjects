@@ -677,7 +677,8 @@ extension Future where Failure == Error {
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) async throws -> Output {
-        return try await Continuation.withCancellation { continuation in
+        return try await Continuation.withCancellation(id: key) {
+            continuation in
             Task { [weak self] in
                 await self?.removeContinuation(
                     continuation, withKey: key,

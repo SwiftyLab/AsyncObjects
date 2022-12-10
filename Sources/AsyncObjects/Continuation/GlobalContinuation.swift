@@ -20,10 +20,12 @@ extension CheckedContinuation: ThrowingContinuable where E == Error {
     /// at the loss of additional runtime checks.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes a `CheckedContinuation` parameter.
     ///           You must resume the continuation exactly once.
     ///
@@ -31,7 +33,9 @@ extension CheckedContinuation: ThrowingContinuable where E == Error {
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
     public static func with(
+        file: String = #fileID,
         function: String = #function,
+        line: UInt = #line,
         _ body: (Self) -> Void
     ) async throws -> T {
         return try await withCheckedThrowingContinuation(
@@ -51,17 +55,21 @@ extension CheckedContinuation: NonThrowingContinuable where E == Never {
     /// at the loss of additional runtime checks.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes a `CheckedContinuation` parameter.
     ///           You must resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     @inlinable
     public static func with(
+        file: String = #fileID,
         function: String = #function,
+        line: UInt = #line,
         _ body: (Self) -> Void
     ) async -> T {
         return await withCheckedContinuation(function: function, body)
@@ -87,10 +95,12 @@ extension UnsafeContinuation: ThrowingContinuable where E == Error {
     /// Use `CheckedContinuation` to capture relevant data in case of runtime errors.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes an `UnsafeContinuation` parameter.
     ///           You must resume the continuation exactly once.
     ///
@@ -98,7 +108,9 @@ extension UnsafeContinuation: ThrowingContinuable where E == Error {
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
     public static func with(
+        file: String = #fileID,
         function: String = #function,
+        line: UInt = #line,
         _ body: (Self) -> Void
     ) async throws -> T {
         return try await withUnsafeThrowingContinuation(body)
@@ -113,17 +125,21 @@ extension UnsafeContinuation: NonThrowingContinuable where E == Never {
     /// Use `CheckedContinuation` to capture relevant data in case of runtime errors.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes an `UnsafeContinuation` parameter.
     ///           You must resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     @inlinable
     public static func with(
+        file: String = #fileID,
         function: String = #function,
+        line: UInt = #line,
         _ body: (Self) -> Void
     ) async -> T {
         return await withUnsafeContinuation(body)

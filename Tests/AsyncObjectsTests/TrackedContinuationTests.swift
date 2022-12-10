@@ -58,7 +58,7 @@ class TrackedContinuationTests: XCTestCase {
             await Self.checkExecInterval(durationInSeconds: 0) {
                 do {
                     try await TrackedContinuation<C>
-                        .withCancellation {
+                        .withCancellation(id: .init()) {
                             $0.cancel()
                         } operation: { _ in
                             // Do nothing
@@ -84,7 +84,7 @@ class TrackedContinuationTests: XCTestCase {
                 XCTAssertTrue(Task.isCancelled)
                 do {
                     try await TrackedContinuation<C>
-                        .withCancellation {
+                        .withCancellation(id: .init()) {
                             $0.cancel()
                         } operation: { _ in
                             // Do nothing
@@ -108,13 +108,15 @@ class TrackedContinuationTests: XCTestCase {
                     XCTFail("Unexpected task progression")
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
-                await TrackedContinuation<C>.withCancellation { _ in
-                } operation: { continuation in
-                    Task {
-                        defer { continuation.resume() }
-                        try await Self.sleep(seconds: 1)
+                await TrackedContinuation<C>
+                    .withCancellation(id: .init()) { _ in
+                        // Do nothing
+                    } operation: { continuation in
+                        Task {
+                            defer { continuation.resume() }
+                            try await Self.sleep(seconds: 1)
+                        }
                     }
-                }
             }
         }
         task.cancel()

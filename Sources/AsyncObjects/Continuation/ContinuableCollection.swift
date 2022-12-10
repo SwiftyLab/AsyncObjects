@@ -57,7 +57,8 @@ internal protocol ContinuableCollection {
 extension ContinuableCollection
 where
     Self: AnyObject, Self: Sendable, Continuation: TrackableContinuable,
-    Continuation: Sendable, Continuation.Value: ThrowingContinuable, Key == UUID
+    Continuation: Sendable, Continuation.Value: ThrowingContinuable,
+    Key: Sendable, Key == Continuation.ID
 {
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
     /// Continuation can be cancelled with error if current task is cancelled, by invoking `removeContinuation`.
@@ -82,7 +83,8 @@ where
         withKey key: Key,
         file: String, function: String, line: UInt
     ) async rethrows -> Continuation.Success {
-        return try await Continuation.withCancellation { continuation in
+        return try await Continuation.withCancellation(id: key) {
+            continuation in
             Task { [weak self] in
                 await self?.removeContinuation(
                     continuation, withKey: key,

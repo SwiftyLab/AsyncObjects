@@ -7,21 +7,28 @@
 @rethrows
 @usableFromInline
 internal protocol TrackableContinuable: Continuable {
+    associatedtype ID
     associatedtype Value: Continuable
     where Value.Success == Success, Value.Failure == Failure
 
     /// Creates a trackable continuation from provided continuation.
     ///
     /// The provided  continuation is bound and resumption state is tracked.
-    ///
     /// - Parameters:
     ///   - value: The continuation value to store. After passing the continuation
     ///            with this method, don’t use it outside of this object.
+    ///   - id: Optional id to associate new instance with.
+    ///   - file: The file where track continuation requested.
+    ///   - function: The function where track continuation requested.
+    ///   - line: The line where track continuation requested.
     ///
     /// - Returns: The newly created trackable continuation.
     /// - Important: After passing the continuation with this method,
     ///              don’t use it outside of this object.
-    init(with value: Value?)
+    init(
+        with value: Value?, id: ID?,
+        file: String, function: String, line: UInt
+    )
     /// Store the provided continuation if no continuation was provided during initialization.
     ///
     /// Use this method to pass continuation if continuation can't be provided during initialization.
@@ -47,10 +54,12 @@ where Self: Sendable, Value: ThrowingContinuable {
     /// still runs to allow cancellation of the continuation and to run some cleanup code.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - handler: A handler immediately invoked if task is cancelled.
     ///   - operation: A closure that takes an `TrackableContinuable` parameter.
     ///                You must resume the continuation at least once.
@@ -60,14 +69,20 @@ where Self: Sendable, Value: ThrowingContinuable {
     ///           this function throws that error.
     @usableFromInline
     static func withCancellation(
+        id: ID,
+        file: String = #fileID,
         function: String = #function,
+        line: UInt = #line,
         handler: @escaping @Sendable (Self) -> Void,
         operation: @escaping (Self) -> Void
     ) async rethrows -> Success {
-        let cancellable = Self(with: nil)
+        let cancellable = Self(
+            with: nil, id: id,
+            file: file, function: function, line: line
+        )
         return try await withTaskCancellationHandler {
             return try await Value.with(
-                function: function
+                file: file, function: function, line: line
             ) { continuation in
                 cancellable.add(continuation: continuation)
                 operation(cancellable)
@@ -84,10 +99,12 @@ where Self: Sendable, Value: ThrowingContinuable {
     /// by keeping track of underlying continuation value state.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes a `TrackableContinuable` parameter.
     ///           You must resume the continuation at least once.
     ///
@@ -95,11 +112,20 @@ where Self: Sendable, Value: ThrowingContinuable {
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @usableFromInline
     static func with(
+        file: String = #fileID,
         function: String = #function,
+        line: UInt = #line,
         _ body: (Self) -> Void
     ) async rethrows -> Success {
-        return try await Value.with(function: function) { continuation in
-            body(Self(with: continuation))
+        return try await Value.with(
+            file: file, function: function, line: line
+        ) { continuation in
+            body(
+                Self(
+                    with: continuation, id: nil,
+                    file: file, function: function, line: line
+                )
+            )
         }
     }
 }
@@ -115,10 +141,12 @@ where Self: Sendable, Value: NonThrowingContinuable {
     /// still runs to allow cancellation of the continuation and to run some cleanup code.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - handler: A handler immediately invoked if task is cancelled.
     ///   - operation: A closure that takes an `TrackableContinuable` parameter.
     ///                You must resume the continuation at least once.
@@ -128,14 +156,20 @@ where Self: Sendable, Value: NonThrowingContinuable {
     ///           this function throws that error.
     @usableFromInline
     internal static func withCancellation(
+        id: ID,
+        file: String = #fileID,
         function: String = #function,
+        line: UInt = #line,
         handler: @escaping @Sendable (Self) -> Void,
         operation: @escaping (Self) -> Void
     ) async -> Success {
-        let cancellable = Self(with: nil)
+        let cancellable = Self(
+            with: nil, id: id,
+            file: file, function: function, line: line
+        )
         return await withTaskCancellationHandler {
             return await Value.with(
-                function: function
+                file: file, function: function, line: line
             ) { continuation in
                 cancellable.add(continuation: continuation)
                 operation(cancellable)
@@ -152,21 +186,32 @@ where Self: Sendable, Value: NonThrowingContinuable {
     /// by keeping track of underlying continuation value state.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes a `TrackableContinuable` parameter.
     ///           You must resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     @usableFromInline
     internal static func with(
+        file: String = #fileID,
         function: String = #function,
+        line: UInt = #line,
         _ body: (Self) -> Void
     ) async -> Success {
-        return await Value.with(function: function) { continuation in
-            body(Self(with: continuation))
+        return await Value.with(
+            file: file, function: function, line: line
+        ) { continuation in
+            body(
+                Self(
+                    with: continuation, id: nil,
+                    file: file, function: function, line: line
+                )
+            )
         }
     }
 }

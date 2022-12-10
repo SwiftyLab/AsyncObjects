@@ -395,7 +395,7 @@ public actor TaskQueue: AsyncObject, LoggableActor {
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) async throws {
-        try await Continuation.withCancellation { continuation in
+        try await Continuation.withCancellation(id: key) { continuation in
             Task { [weak self] in
                 await self?.dequeueContinuation(
                     (value: continuation, flags: flags), withKey: key,

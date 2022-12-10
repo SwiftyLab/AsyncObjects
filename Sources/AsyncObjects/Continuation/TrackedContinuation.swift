@@ -1,3 +1,9 @@
+#if swift(>=5.7)
+import Foundation
+#else
+@preconcurrency import Foundation
+#endif
+
 /// A mechanism to interface between synchronous and asynchronous code,
 /// with tracking state data.
 ///
@@ -17,7 +23,9 @@
 /// - Important: The continuation stored mustn't be
 ///              resumed or used outside of this object.
 @usableFromInline
-internal final class TrackedContinuation<C: Continuable>: TrackableContinuable {
+internal final class TrackedContinuation<C: Continuable>: TrackableContinuable,
+    Loggable
+{
     /// Tracks the status of continuation resuming for ``TrackedContinuation``.
     ///
     /// Depending upon ``TrackedContinuation`` status the ``TrackedContinuation/resume(with:)``
@@ -41,10 +49,30 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable {
         case resumed
     }
 
+    /// The invocation context from which continuation tracked.
+    @usableFromInline
+    struct Context: Sendable {
+        /// Optional id to associated to the continuation instance.
+        @usableFromInline
+        let id: UUID?
+        /// The file where track continuation requested.
+        @usableFromInline
+        let file: String
+        /// The function where track continuation requested.
+        @usableFromInline
+        let function: String
+        /// The line where track continuation requested.
+        @usableFromInline
+        let line: UInt
+    }
+
     /// The current status for continuation resumption.
     private var status: Status = .waiting
     /// The actual continuation for which state is tracked.
     private var value: C?
+    /// Invocation context for the tracked continuation.
+    @usableFromInline
+    let context: Context
 
     /// Checks whether continuation is already resumed
     /// or to be resumed with provided value.
@@ -67,14 +95,26 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable {
     /// - Parameters:
     ///   - value: The continuation value to store. After passing the continuation
     ///            with this method, don’t use it outside of this object.
+    ///   - id: Optional id to associate new instance with.
+    ///   - file: The file where track continuation requested.
+    ///   - function: The function where track continuation requested.
+    ///   - line: The line where track continuation requested.
     ///
     /// - Returns: The newly created tracked continuation.
     /// - Important: The continuation passed mustn't be resumed before.
     ///              After passing the continuation with this method,
     ///              don’t use it outside of this object.
     @usableFromInline
-    init(with value: C? = nil) {
+    init(
+        with value: C? = nil,
+        id: UUID? = nil,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         self.value = value
+        self.context = .init(id: id, file: file, function: function, line: line)
+        log("Initialized")
     }
 
     /// Store the provided continuation if no continuation was provided during initialization.
@@ -93,6 +133,7 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable {
     ///              invoking this method will cause runtime exception.
     @usableFromInline
     func add(continuation: C) {
+        log("Adding")
         precondition(
             value == nil,
             "Continuation can be provided only once"
@@ -107,6 +148,7 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable {
         default:
             break
         }
+        log("Added")
     }
 
     /// Resume the task awaiting the continuation by having it either return normally
@@ -130,8 +172,57 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable {
         default:
             fatalError("Multiple resume invoked")
         }
+        log("Resumed")
     }
 }
 
-//extension TrackedContinuation: @unchecked Sendable where C.Success: Sendable {}
+extension TrackedContinuation: @unchecked Sendable where C.Success: Sendable {}
 extension TrackedContinuation.Status: Sendable where C.Success: Sendable {}
+
+#if canImport(Logging)
+import Logging
+
+extension TrackedContinuation {
+    /// Type specific metadata to attach to all log messages.
+    @usableFromInline
+    var metadata: Logger.Metadata {
+        return [
+            "obj": "\(self)",
+            "id": "\(context.id != nil ? "\(context.id!)" : "nil")",
+            "status": "\(status)",
+            "value": "\(value != nil ? "\(value!)" : "nil")",
+        ]
+    }
+
+    /// Log a message attaching the default type specific metadata
+    /// and optional identifier.
+    ///
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_TRACE` is set log level is set to `trace`.
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_DEBUG` is set log level is set to `debug`.
+    /// Otherwise log level is set to `info`.
+    ///
+    /// - Parameters:
+    ///   - message: The message to be logged.
+    @inlinable
+    func log(_ message: @autoclosure () -> Logger.Message) {
+        logger.log(
+            level: level, message(), metadata: self.metadata,
+            file: context.file, function: context.function, line: context.line
+        )
+    }
+}
+#else
+extension TrackedContinuation {
+    /// Log a message attaching the default type specific metadata
+    /// and optional identifier.
+    ///
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_TRACE` is set log level is set to `trace`.
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_DEBUG` is set log level is set to `debug`.
+    /// Otherwise log level is set to `info`.
+    ///
+    /// - Parameters:
+    ///   - message: The message to be logged.
+    @inlinable
+    func log(_ message: @autoclosure () -> String) { /* Do nothing */  }
+}
+#endif
