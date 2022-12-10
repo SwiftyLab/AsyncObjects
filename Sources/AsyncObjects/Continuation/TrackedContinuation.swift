@@ -163,6 +163,7 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable,
     /// - Parameter result: A value to either return or throw from the continuation.
     @usableFromInline
     func resume(with result: Result<C.Success, C.Failure>) {
+        log("Resuming")
         switch (status, value) {
         case (_, .some(let value)):
             value.resume(with: result)

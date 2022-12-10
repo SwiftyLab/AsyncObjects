@@ -140,8 +140,8 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection, LoggableActor {
         incrementCount()
         guard !continuations.isEmpty else { return }
         let (key, continuation) = continuations.removeFirst()
-        log("Resumed", id: key, file: file, function: function, line: line)
         continuation.resume()
+        log("Resumed", id: key, file: file, function: function, line: line)
     }
 
     // MARK: Public
