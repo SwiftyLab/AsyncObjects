@@ -42,12 +42,10 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection,
 {
     /// The suspended tasks continuation type.
     @usableFromInline
-    internal typealias Continuation = SafeContinuation<
+    internal typealias Continuation = TrackedContinuation<
         GlobalContinuation<Void, Error>
     >
-    /// The platform dependent lock used to synchronize continuations tracking.
-    @usableFromInline
-    internal let locker: Locker = .init()
+
     /// The continuations stored with an associated key for all the suspended task that are waiting to be resumed.
     @usableFromInline
     internal private(set) var continuations:
@@ -111,7 +109,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection,
     ) {
         guard !continuation.resumed else {
             log(
-                "Already resumed", id: key,
+                "Already resumed, not tracking", id: key,
                 file: file, function: function, line: line
             )
             return
@@ -131,6 +129,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection,
     /// from `continuations` map and resumes with `CancellationError`.
     ///
     /// - Parameters:
+    ///   - continuation: The continuation to remove and cancel.
     ///   - key: The key in the map.
     ///   - file: The file remove request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#fileID`).
@@ -140,16 +139,20 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection,
     ///           explicitly as it defaults to `#line`).
     @inlinable
     internal func removeContinuation(
+        _ continuation: Continuation,
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) {
-        guard let _ = continuations.removeValue(forKey: key) else {
+        continuations.removeValue(forKey: key)
+        guard !continuation.resumed else {
             log(
-                "Not tracked for cancellation", id: key,
+                "Already resumed, not cancelling", id: key,
                 file: file, function: function, line: line
             )
             return
         }
+
+        continuation.cancel()
         log("Cancelled", id: key, file: file, function: function, line: line)
     }
 

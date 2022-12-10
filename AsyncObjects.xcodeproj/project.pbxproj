@@ -21,7 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		406566C141931E51CFCE4B8D /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = 2F47541C0776B07302F70604 /* AsyncObjects.docc */; };
+		BB028CDED6BCD928C0AAF339 /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = ED492FF628B26125C8C62E41 /* AsyncObjects.docc */; };
 		OBJ_121 /* AsyncCountdownEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AsyncCountdownEvent.swift */; };
 		OBJ_122 /* AsyncEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AsyncEvent.swift */; };
 		OBJ_123 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* AsyncSemaphore.swift */; };
@@ -32,8 +32,8 @@
 		OBJ_128 /* Continuable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* Continuable.swift */; };
 		OBJ_129 /* ContinuableCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* ContinuableCollection.swift */; };
 		OBJ_130 /* GlobalContinuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* GlobalContinuation.swift */; };
-		OBJ_131 /* SafeContinuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_23 /* SafeContinuation.swift */; };
-		OBJ_132 /* SynchronizedContinuable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_24 /* SynchronizedContinuable.swift */; };
+		OBJ_131 /* TrackableContinuable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_23 /* TrackableContinuable.swift */; };
+		OBJ_132 /* TrackedContinuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_24 /* TrackedContinuation.swift */; };
 		OBJ_133 /* Task.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* Task.swift */; };
 		OBJ_134 /* TaskGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* TaskGroup.swift */; };
 		OBJ_135 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* Future.swift */; };
@@ -52,11 +52,11 @@
 		OBJ_166 /* CancellationSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_43 /* CancellationSourceTests.swift */; };
 		OBJ_167 /* LockerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_44 /* LockerTests.swift */; };
 		OBJ_168 /* NonThrowingFutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_45 /* NonThrowingFutureTests.swift */; };
-		OBJ_169 /* SafeContinuationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_46 /* SafeContinuationTests.swift */; };
-		OBJ_170 /* StandardLibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_47 /* StandardLibraryTests.swift */; };
-		OBJ_171 /* TaskOperationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_48 /* TaskOperationTests.swift */; };
-		OBJ_172 /* TaskQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_49 /* TaskQueueTests.swift */; };
-		OBJ_173 /* ThrowingFutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* ThrowingFutureTests.swift */; };
+		OBJ_169 /* StandardLibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_46 /* StandardLibraryTests.swift */; };
+		OBJ_170 /* TaskOperationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_47 /* TaskOperationTests.swift */; };
+		OBJ_171 /* TaskQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_48 /* TaskQueueTests.swift */; };
+		OBJ_172 /* ThrowingFutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_49 /* ThrowingFutureTests.swift */; };
+		OBJ_173 /* TrackedContinuationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* TrackedContinuationTests.swift */; };
 		OBJ_174 /* XCTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* XCTestCase.swift */; };
 		OBJ_176 /* AsyncObjects.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = asyncobjects::AsyncObjects::Product /* AsyncObjects.framework */; };
 		OBJ_177 /* OrderedCollections.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = swift-collections::OrderedCollections::Product /* OrderedCollections.framework */; };
@@ -114,7 +114,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		2F47541C0776B07302F70604 /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
+		ED492FF628B26125C8C62E41 /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
 		OBJ_100 /* OrderedSet+Partial SetAlgebra+Predicates.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial SetAlgebra+Predicates.swift"; sourceTree = "<group>"; };
 		OBJ_101 /* OrderedSet+RandomAccessCollection.swift */ = {isa = PBXFileReference; path = "OrderedSet+RandomAccessCollection.swift"; sourceTree = "<group>"; };
 		OBJ_102 /* OrderedSet+ReserveCapacity.swift */ = {isa = PBXFileReference; path = "OrderedSet+ReserveCapacity.swift"; sourceTree = "<group>"; };
@@ -136,8 +136,8 @@
 		OBJ_20 /* Continuable.swift */ = {isa = PBXFileReference; path = Continuable.swift; sourceTree = "<group>"; };
 		OBJ_21 /* ContinuableCollection.swift */ = {isa = PBXFileReference; path = ContinuableCollection.swift; sourceTree = "<group>"; };
 		OBJ_22 /* GlobalContinuation.swift */ = {isa = PBXFileReference; path = GlobalContinuation.swift; sourceTree = "<group>"; };
-		OBJ_23 /* SafeContinuation.swift */ = {isa = PBXFileReference; path = SafeContinuation.swift; sourceTree = "<group>"; };
-		OBJ_24 /* SynchronizedContinuable.swift */ = {isa = PBXFileReference; path = SynchronizedContinuable.swift; sourceTree = "<group>"; };
+		OBJ_23 /* TrackableContinuable.swift */ = {isa = PBXFileReference; path = TrackableContinuable.swift; sourceTree = "<group>"; };
+		OBJ_24 /* TrackedContinuation.swift */ = {isa = PBXFileReference; path = TrackedContinuation.swift; sourceTree = "<group>"; };
 		OBJ_26 /* Task.swift */ = {isa = PBXFileReference; path = Task.swift; sourceTree = "<group>"; };
 		OBJ_27 /* TaskGroup.swift */ = {isa = PBXFileReference; path = TaskGroup.swift; sourceTree = "<group>"; };
 		OBJ_28 /* Future.swift */ = {isa = PBXFileReference; path = Future.swift; sourceTree = "<group>"; };
@@ -154,11 +154,11 @@
 		OBJ_43 /* CancellationSourceTests.swift */ = {isa = PBXFileReference; path = CancellationSourceTests.swift; sourceTree = "<group>"; };
 		OBJ_44 /* LockerTests.swift */ = {isa = PBXFileReference; path = LockerTests.swift; sourceTree = "<group>"; };
 		OBJ_45 /* NonThrowingFutureTests.swift */ = {isa = PBXFileReference; path = NonThrowingFutureTests.swift; sourceTree = "<group>"; };
-		OBJ_46 /* SafeContinuationTests.swift */ = {isa = PBXFileReference; path = SafeContinuationTests.swift; sourceTree = "<group>"; };
-		OBJ_47 /* StandardLibraryTests.swift */ = {isa = PBXFileReference; path = StandardLibraryTests.swift; sourceTree = "<group>"; };
-		OBJ_48 /* TaskOperationTests.swift */ = {isa = PBXFileReference; path = TaskOperationTests.swift; sourceTree = "<group>"; };
-		OBJ_49 /* TaskQueueTests.swift */ = {isa = PBXFileReference; path = TaskQueueTests.swift; sourceTree = "<group>"; };
-		OBJ_50 /* ThrowingFutureTests.swift */ = {isa = PBXFileReference; path = ThrowingFutureTests.swift; sourceTree = "<group>"; };
+		OBJ_46 /* StandardLibraryTests.swift */ = {isa = PBXFileReference; path = StandardLibraryTests.swift; sourceTree = "<group>"; };
+		OBJ_47 /* TaskOperationTests.swift */ = {isa = PBXFileReference; path = TaskOperationTests.swift; sourceTree = "<group>"; };
+		OBJ_48 /* TaskQueueTests.swift */ = {isa = PBXFileReference; path = TaskQueueTests.swift; sourceTree = "<group>"; };
+		OBJ_49 /* ThrowingFutureTests.swift */ = {isa = PBXFileReference; path = ThrowingFutureTests.swift; sourceTree = "<group>"; };
+		OBJ_50 /* TrackedContinuationTests.swift */ = {isa = PBXFileReference; path = TrackedContinuationTests.swift; sourceTree = "<group>"; };
 		OBJ_51 /* XCTestCase.swift */ = {isa = PBXFileReference; path = XCTestCase.swift; sourceTree = "<group>"; };
 		OBJ_58 /* _HashTable+Bucket.swift */ = {isa = PBXFileReference; path = "_HashTable+Bucket.swift"; sourceTree = "<group>"; };
 		OBJ_59 /* _HashTable+BucketIterator.swift */ = {isa = PBXFileReference; path = "_HashTable+BucketIterator.swift"; sourceTree = "<group>"; };
@@ -245,7 +245,7 @@
 				OBJ_34 /* TaskOperation.swift */,
 				OBJ_35 /* TaskQueue.swift */,
 				OBJ_36 /* TaskTracker.swift */,
-				2F47541C0776B07302F70604 /* AsyncObjects.docc */,
+				ED492FF628B26125C8C62E41 /* AsyncObjects.docc */,
 			);
 			name = AsyncObjects;
 			path = Sources/AsyncObjects;
@@ -289,8 +289,8 @@
 				OBJ_20 /* Continuable.swift */,
 				OBJ_21 /* ContinuableCollection.swift */,
 				OBJ_22 /* GlobalContinuation.swift */,
-				OBJ_23 /* SafeContinuation.swift */,
-				OBJ_24 /* SynchronizedContinuable.swift */,
+				OBJ_23 /* TrackableContinuable.swift */,
+				OBJ_24 /* TrackedContinuation.swift */,
 			);
 			name = Continuation;
 			path = Continuation;
@@ -344,11 +344,11 @@
 				OBJ_43 /* CancellationSourceTests.swift */,
 				OBJ_44 /* LockerTests.swift */,
 				OBJ_45 /* NonThrowingFutureTests.swift */,
-				OBJ_46 /* SafeContinuationTests.swift */,
-				OBJ_47 /* StandardLibraryTests.swift */,
-				OBJ_48 /* TaskOperationTests.swift */,
-				OBJ_49 /* TaskQueueTests.swift */,
-				OBJ_50 /* ThrowingFutureTests.swift */,
+				OBJ_46 /* StandardLibraryTests.swift */,
+				OBJ_47 /* TaskOperationTests.swift */,
+				OBJ_48 /* TaskQueueTests.swift */,
+				OBJ_49 /* ThrowingFutureTests.swift */,
+				OBJ_50 /* TrackedContinuationTests.swift */,
 				OBJ_51 /* XCTestCase.swift */,
 			);
 			name = AsyncObjectsTests;
@@ -633,8 +633,8 @@
 				OBJ_128 /* Continuable.swift in Sources */,
 				OBJ_129 /* ContinuableCollection.swift in Sources */,
 				OBJ_130 /* GlobalContinuation.swift in Sources */,
-				OBJ_131 /* SafeContinuation.swift in Sources */,
-				OBJ_132 /* SynchronizedContinuable.swift in Sources */,
+				OBJ_131 /* TrackableContinuable.swift in Sources */,
+				OBJ_132 /* TrackedContinuation.swift in Sources */,
 				OBJ_133 /* Task.swift in Sources */,
 				OBJ_134 /* TaskGroup.swift in Sources */,
 				OBJ_135 /* Future.swift in Sources */,
@@ -644,7 +644,7 @@
 				OBJ_139 /* TaskOperation.swift in Sources */,
 				OBJ_140 /* TaskQueue.swift in Sources */,
 				OBJ_141 /* TaskTracker.swift in Sources */,
-				406566C141931E51CFCE4B8D /* AsyncObjects.docc in Sources */,
+				BB028CDED6BCD928C0AAF339 /* AsyncObjects.docc in Sources */,
 			);
 		};
 		OBJ_150 /* Sources */ = {
@@ -663,11 +663,11 @@
 				OBJ_166 /* CancellationSourceTests.swift in Sources */,
 				OBJ_167 /* LockerTests.swift in Sources */,
 				OBJ_168 /* NonThrowingFutureTests.swift in Sources */,
-				OBJ_169 /* SafeContinuationTests.swift in Sources */,
-				OBJ_170 /* StandardLibraryTests.swift in Sources */,
-				OBJ_171 /* TaskOperationTests.swift in Sources */,
-				OBJ_172 /* TaskQueueTests.swift in Sources */,
-				OBJ_173 /* ThrowingFutureTests.swift in Sources */,
+				OBJ_169 /* StandardLibraryTests.swift in Sources */,
+				OBJ_170 /* TaskOperationTests.swift in Sources */,
+				OBJ_171 /* TaskQueueTests.swift in Sources */,
+				OBJ_172 /* ThrowingFutureTests.swift in Sources */,
+				OBJ_173 /* TrackedContinuationTests.swift in Sources */,
 				OBJ_174 /* XCTestCase.swift in Sources */,
 			);
 		};

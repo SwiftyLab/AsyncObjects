@@ -161,16 +161,14 @@ public actor TaskQueue: AsyncObject, LoggableActor {
 
     /// The suspended tasks continuation type.
     @usableFromInline
-    internal typealias Continuation = SafeContinuation<
+    internal typealias Continuation = TrackedContinuation<
         GlobalContinuation<Void, Error>
     >
     /// A mechanism to queue tasks in ``TaskQueue``, to be resumed when queue is freed
     /// and provided flags are satisfied.
     @usableFromInline
     internal typealias QueuedContinuation = (value: Continuation, flags: Flags)
-    /// The platform dependent lock used to synchronize continuations tracking.
-    @usableFromInline
-    internal let locker: Locker = .init()
+
     /// The list of tasks currently queued and would be resumed one by one when current barrier task ends.
     @usableFromInline
     private(set) var queue: OrderedDictionary<UUID, QueuedContinuation> = [:]
@@ -249,7 +247,8 @@ public actor TaskQueue: AsyncObject, LoggableActor {
     ) {
         guard !continuation.value.resumed else {
             log(
-                "Already resumed", flags: continuation.flags, id: key,
+                "Already resumed, not tracking",
+                flags: continuation.flags, id: key,
                 file: file, function: function, line: line
             )
             return
@@ -273,6 +272,7 @@ public actor TaskQueue: AsyncObject, LoggableActor {
     /// Remove continuation associated with provided key from queue.
     ///
     /// - Parameters:
+    ///   - continuation: The continuation and flags to remove and cancel.
     ///   - flags: The flags associated that determine the execution behavior of task.
     ///   - key: The key in the continuation queue.
     ///   - file: The file remove request originates from (there's usually no need to pass it
@@ -283,17 +283,21 @@ public actor TaskQueue: AsyncObject, LoggableActor {
     ///           explicitly as it defaults to `#line`).
     @inlinable
     internal func dequeueContinuation(
-        flags: Flags,
+        _ continuation: QueuedContinuation,
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) {
-        guard let _ = queue.removeValue(forKey: key) else {
+        let (continuation, flags) = continuation
+        queue.removeValue(forKey: key)
+        guard !continuation.resumed else {
             log(
-                "Not tracked for cancellation", id: key,
+                "Already resumed, not cancelling", id: key,
                 file: file, function: function, line: line
             )
             return
         }
+
+        continuation.cancel()
         log(
             "Cancelled", flags: flags, id: key,
             file: file, function: function, line: line
@@ -391,20 +395,17 @@ public actor TaskQueue: AsyncObject, LoggableActor {
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) async throws {
-        try await Continuation.withCancellation(
-            synchronizedWith: locker
-        ) {
+        try await Continuation.withCancellation { continuation in
             Task { [weak self] in
                 await self?.dequeueContinuation(
-                    flags: flags, withKey: key,
+                    (value: continuation, flags: flags), withKey: key,
                     file: file, function: function, line: line
                 )
             }
         } operation: { continuation in
             Task { [weak self] in
                 await self?.queueContinuation(
-                    (value: continuation, flags: flags),
-                    atKey: key,
+                    (value: continuation, flags: flags), atKey: key,
                     file: file, function: function, line: line
                 )
             }

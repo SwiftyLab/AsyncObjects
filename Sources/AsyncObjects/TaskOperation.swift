@@ -224,7 +224,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     // MARK: AsyncObject
     /// The suspended tasks continuation type.
     @usableFromInline
-    internal typealias Continuation = SafeContinuation<
+    internal typealias Continuation = TrackedContinuation<
         GlobalContinuation<Void, Error>
     >
     /// The continuations stored with an associated key for all the suspended task that are waiting for operation completion.
@@ -251,7 +251,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         locker.perform {
             guard !continuation.resumed else {
                 log(
-                    "Already resumed", id: key,
+                    "Already resumed, not tracking", id: key,
                     file: file, function: function, line: line
                 )
                 return
@@ -275,6 +275,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// from `continuations` map.
     ///
     /// - Parameters:
+    ///   - continuation: The continuation to remove and cancel.
     ///   - key: The key in the map.
     ///   - file: The file remove request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#fileID`).
@@ -284,17 +285,21 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///           explicitly as it defaults to `#line`).
     @inlinable
     internal func removeContinuation(
+        _ continuation: Continuation,
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) {
         locker.perform {
-            guard let _ = continuations.removeValue(forKey: key) else {
+            continuations.removeValue(forKey: key)
+            guard !continuation.resumed else {
                 log(
-                    "Not tracked for cancellation", id: key,
+                    "Already resumed, not cancelling", id: key,
                     file: file, function: function, line: line
                 )
                 return
             }
+
+            continuation.cancel()
             log(
                 "Cancelled", id: key,
                 file: file, function: function, line: line

@@ -49,12 +49,10 @@ public actor Future<Output: Sendable, Failure: Error>: LoggableActor {
     public typealias FutureResult = Result<Output, Failure>
     /// The suspended tasks continuation type.
     @usableFromInline
-    internal typealias Continuation = SafeContinuation<
+    internal typealias Continuation = TrackedContinuation<
         GlobalContinuation<Output, Failure>
     >
-    /// The platform dependent lock used to synchronize continuations tracking.
-    @usableFromInline
-    internal let locker: Locker = .init()
+
     /// The continuations stored with an associated key for all the suspended task
     /// that are waiting for future to be fulfilled.
     @usableFromInline
@@ -83,7 +81,7 @@ public actor Future<Output: Sendable, Failure: Error>: LoggableActor {
     ) {
         guard !continuation.resumed else {
             log(
-                "Already resumed", id: key,
+                "Already resumed, not tracking", id: key,
                 file: file, function: function, line: line
             )
             return
@@ -629,6 +627,7 @@ extension Future where Failure == Error {
     /// from `continuations` map and resumes with `CancellationError`.
     ///
     /// - Parameters:
+    ///   - continuation: The continuation to remove and cancel.
     ///   - key: The key in the map.
     ///   - file: The file remove request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#fileID`).
@@ -638,16 +637,20 @@ extension Future where Failure == Error {
     ///           explicitly as it defaults to `#line`).
     @inlinable
     internal func removeContinuation(
+        _ continuation: Continuation,
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) {
-        guard let _ = continuations.removeValue(forKey: key) else {
+        continuations.removeValue(forKey: key)
+        guard !continuation.resumed else {
             log(
-                "Not tracked for cancellation", id: key,
+                "Already resumed, not cancelling", id: key,
                 file: file, function: function, line: line
             )
             return
         }
+
+        continuation.cancel()
         log("Cancelled", id: key, file: file, function: function, line: line)
     }
 
@@ -674,12 +677,10 @@ extension Future where Failure == Error {
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) async throws -> Output {
-        return try await Continuation.withCancellation(
-            synchronizedWith: locker
-        ) {
+        return try await Continuation.withCancellation { continuation in
             Task { [weak self] in
                 await self?.removeContinuation(
-                    withKey: key,
+                    continuation, withKey: key,
                     file: file, function: function, line: line
                 )
             }

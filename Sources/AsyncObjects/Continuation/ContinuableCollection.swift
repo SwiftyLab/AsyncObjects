@@ -6,20 +6,14 @@ import Foundation
 
 /// A type that manages a collection of continuations with an associated key.
 ///
-/// A MUTual EXclusion object is used to synchronize continuations state.
+/// While removing continuation, the continuation should be cancelled
 @rethrows
 internal protocol ContinuableCollection {
     /// The continuation item type in collection.
     associatedtype Continuation: Continuable
     /// The key type that is associated with each continuation item.
     associatedtype Key: Hashable
-    /// The  MUTual EXclusion object type used
-    /// to synchronize continuation state.
-    associatedtype Lock: Exclusible
 
-    /// The  MUTual EXclusion object used
-    /// to synchronize continuation state.
-    var locker: Lock { get }
     /// Add continuation with the provided key to collection for tracking.
     ///
     /// - Parameters:
@@ -29,19 +23,19 @@ internal protocol ContinuableCollection {
     ///   - function: The function add request originates from.
     ///   - line: The line add request originates from.
     func addContinuation(
-        _ continuation: Continuation,
-        withKey key: Key,
+        _ continuation: Continuation, withKey key: Key,
         file: String, function: String, line: UInt
     ) async
     /// Remove continuation with the associated key from collection out of tracking.
     ///
     /// - Parameters:
+    ///   - continuation: The continuation value to remove and cancel.
     ///   - key: The key for continuation to remove.
     ///   - file: The file remove request originates from.
     ///   - function: The function remove request originates from.
     ///   - line: The line remove request originates from.
     func removeContinuation(
-        withKey key: Key,
+        _ continuation: Continuation, withKey key: Key,
         file: String, function: String, line: UInt
     ) async
     /// Suspends the current task, then calls the given closure with a continuation for the current task.
@@ -62,9 +56,8 @@ internal protocol ContinuableCollection {
 
 extension ContinuableCollection
 where
-    Self: AnyObject, Self: Sendable, Continuation: SynchronizedContinuable,
-    Continuation: Sendable, Continuation.Value: ThrowingContinuable,
-    Continuation.Lock == Lock, Key == UUID
+    Self: AnyObject, Self: Sendable, Continuation: TrackableContinuable,
+    Continuation: Sendable, Continuation.Value: ThrowingContinuable, Key == UUID
 {
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
     /// Continuation can be cancelled with error if current task is cancelled, by invoking `removeContinuation`.
@@ -89,12 +82,10 @@ where
         withKey key: Key,
         file: String, function: String, line: UInt
     ) async rethrows -> Continuation.Success {
-        return try await Continuation.withCancellation(
-            synchronizedWith: locker
-        ) {
+        return try await Continuation.withCancellation { continuation in
             Task { [weak self] in
                 await self?.removeContinuation(
-                    withKey: key,
+                    continuation, withKey: key,
                     file: file, function: function, line: line
                 )
             }
