@@ -50,23 +50,6 @@ var settings: [SwiftSetting] = {
     return settings
 }()
 
-var testSettings: [SwiftSetting] = {
-    var settings: [SwiftSetting] = []
-
-    if ProcessInfo.processInfo.environment["SWIFTCI_CONCURRENCY_CHECKS"] != nil {
-        settings.append(
-            .unsafeFlags([
-                "-Xfrontend",
-                "-warn-concurrency",
-                "-enable-actor-data-race-checks",
-                "-require-explicit-sendable",
-            ])
-        )
-    }
-
-    return settings
-}()
-
 let appleGitHub = "https://github.com/apple"
 let package = Package(
     name: "AsyncObjects",
@@ -87,6 +70,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "AsyncObjects", dependencies: dependencies, swiftSettings: settings),
-        .testTarget(name: "AsyncObjectsTests", dependencies: ["AsyncObjects"], swiftSettings: testSettings),
+        .testTarget(name: "AsyncObjectsTests", dependencies: ["AsyncObjects"]),
     ]
 )

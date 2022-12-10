@@ -105,8 +105,8 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection, LoggableActor {
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) {
+        incrementCount()
         guard let _ = continuations.removeValue(forKey: key) else {
-            incrementCount()
             log(
                 "Not tracked for cancellation", id: key,
                 file: file, function: function, line: line
@@ -114,7 +114,6 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection, LoggableActor {
             return
         }
 
-        incrementCount()
         log("Cancelled", id: key, file: file, function: function, line: line)
     }
 

@@ -101,8 +101,7 @@ where
         } operation: { continuation in
             Task { [weak self] in
                 await self?.addContinuation(
-                    continuation,
-                    withKey: key,
+                    continuation, withKey: key,
                     file: file, function: function, line: line
                 )
             }
