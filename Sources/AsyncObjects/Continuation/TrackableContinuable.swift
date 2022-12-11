@@ -43,8 +43,7 @@ internal protocol TrackableContinuable: Continuable {
     func add(continuation: Value)
 }
 
-extension TrackableContinuable
-where Self: Sendable, Value: ThrowingContinuable {
+extension TrackableContinuable where Self: Sendable, Value: Sendable & ThrowingContinuable {
     /// Suspends the current task, then calls the given operation with a `TrackableContinuable`
     /// for the current task with a cancellation handler that’s immediately invoked if the current task is canceled.
     ///
@@ -61,7 +60,8 @@ where Self: Sendable, Value: ThrowingContinuable {
     ///               related to misuse of this continuation.
     ///   - line: The line from which suspension requested.
     ///   - handler: A handler immediately invoked if task is cancelled.
-    ///   - operation: A closure that takes an `TrackableContinuable` parameter.
+    ///   - operation: A closure that takes an `TrackableContinuable` parameter and
+    ///                a pre-initialization handler that needs to run before managing continuation.
     ///                You must resume the continuation at least once.
     ///
     /// - Returns: The value passed to the continuation by the operation.
@@ -74,7 +74,7 @@ where Self: Sendable, Value: ThrowingContinuable {
         function: String = #function,
         line: UInt = #line,
         handler: @escaping @Sendable (Self) -> Void,
-        operation: @escaping (Self) -> Void
+        operation: @escaping (Self, @escaping @Sendable () -> Void) -> Void
     ) async rethrows -> Success {
         let cancellable = Self(
             with: nil, id: id,
@@ -84,8 +84,9 @@ where Self: Sendable, Value: ThrowingContinuable {
             return try await Value.with(
                 file: file, function: function, line: line
             ) { continuation in
-                cancellable.add(continuation: continuation)
-                operation(cancellable)
+                operation(cancellable) {
+                    cancellable.add(continuation: continuation)
+                }
             }
         } onCancel: {
             handler(cancellable)
@@ -130,8 +131,7 @@ where Self: Sendable, Value: ThrowingContinuable {
     }
 }
 
-extension TrackableContinuable
-where Self: Sendable, Value: NonThrowingContinuable {
+extension TrackableContinuable where Self: Sendable, Value: Sendable & NonThrowingContinuable {
     /// Suspends the current task, then calls the given operation with a `TrackableContinuable`
     /// for the current task with a cancellation handler that’s immediately invoked if the current task is canceled.
     ///
@@ -148,8 +148,9 @@ where Self: Sendable, Value: NonThrowingContinuable {
     ///               related to misuse of this continuation.
     ///   - line: The line from which suspension requested.
     ///   - handler: A handler immediately invoked if task is cancelled.
-    ///   - operation: A closure that takes an `TrackableContinuable` parameter.
-    ///                You must resume the continuation at least once.
+    ///   - operation: A closure that takes an `TrackableContinuable` parameter and
+    ///                a pre-initialization handler that needs to run before managing continuation.
+    ///                You must resume the continuation at least once.                
     ///
     /// - Returns: The value passed to the continuation by the operation.
     /// - Throws: If cancelled or `resume(throwing:)` is called on the continuation,
@@ -161,7 +162,7 @@ where Self: Sendable, Value: NonThrowingContinuable {
         function: String = #function,
         line: UInt = #line,
         handler: @escaping @Sendable (Self) -> Void,
-        operation: @escaping (Self) -> Void
+        operation: @escaping (Self, @escaping @Sendable () -> Void) -> Void
     ) async -> Success {
         let cancellable = Self(
             with: nil, id: id,
@@ -171,8 +172,9 @@ where Self: Sendable, Value: NonThrowingContinuable {
             return await Value.with(
                 file: file, function: function, line: line
             ) { continuation in
-                cancellable.add(continuation: continuation)
-                operation(cancellable)
+                operation(cancellable) {
+                    cancellable.add(continuation: continuation)
+                }
             }
         } onCancel: {
             handler(cancellable)

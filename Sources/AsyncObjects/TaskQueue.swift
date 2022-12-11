@@ -239,12 +239,19 @@ public actor TaskQueue: AsyncObject, LoggableActor {
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line queue request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
+    ///   - preinit: The pre-initialization handler to run
+    ///              in the beginning of this method.
+    ///
+    /// - Important: The pre-initialization handler must run
+    ///              before any logic in this method. 
     @inlinable
     internal func queueContinuation(
         _ continuation: QueuedContinuation,
         atKey key: UUID,
-        file: String, function: String, line: UInt
+        file: String, function: String, line: UInt,
+        preinit: @escaping @Sendable () -> Void
     ) {
+        preinit()
         guard !continuation.value.resumed else {
             log(
                 "Already resumed, not tracking",
@@ -402,11 +409,12 @@ public actor TaskQueue: AsyncObject, LoggableActor {
                     file: file, function: function, line: line
                 )
             }
-        } operation: { continuation in
+        } operation: { continuation, preinit in
             Task { [weak self] in
                 await self?.queueContinuation(
                     (value: continuation, flags: flags), atKey: key,
-                    file: file, function: function, line: line
+                    file: file, function: function, line: line,
+                    preinit: preinit
                 )
             }
         }

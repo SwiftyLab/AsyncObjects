@@ -242,13 +242,20 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line add request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
+    ///   - preinit: The pre-initialization handler to run
+    ///              in the beginning of this method.
+    ///
+    /// - Important: The pre-initialization handler must run
+    ///              before any logic in this method. 
     @inlinable
     internal func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID,
-        file: String, function: String, line: UInt
+        file: String, function: String, line: UInt,
+        preinit: @escaping @Sendable () -> Void
     ) {
         locker.perform {
+            preinit()
             guard !continuation.resumed else {
                 log(
                     "Already resumed, not tracking", id: key,

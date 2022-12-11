@@ -60,8 +60,8 @@ class TrackedContinuationTests: XCTestCase {
                     try await TrackedContinuation<C>
                         .withCancellation(id: .init()) {
                             $0.cancel()
-                        } operation: { _ in
-                            // Do nothing
+                        } operation: { _, preinit in
+                            preinit()
                         }
                     XCTFail("Unexpected task progression")
                 } catch {
@@ -86,8 +86,8 @@ class TrackedContinuationTests: XCTestCase {
                     try await TrackedContinuation<C>
                         .withCancellation(id: .init()) {
                             $0.cancel()
-                        } operation: { _ in
-                            // Do nothing
+                        } operation: { _, preinit in
+                            preinit()
                         }
                     XCTFail("Unexpected task progression")
                 } catch {
@@ -111,7 +111,8 @@ class TrackedContinuationTests: XCTestCase {
                 await TrackedContinuation<C>
                     .withCancellation(id: .init()) { _ in
                         // Do nothing
-                    } operation: { continuation in
+                    } operation: { continuation, preinit in
+                        preinit()
                         Task {
                             defer { continuation.resume() }
                             try await Self.sleep(seconds: 1)

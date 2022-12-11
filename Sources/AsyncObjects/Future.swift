@@ -73,12 +73,19 @@ public actor Future<Output: Sendable, Failure: Error>: LoggableActor {
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line add request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
+    ///   - preinit: The pre-initialization handler to run
+    ///              in the beginning of this method.
+    ///
+    /// - Important: The pre-initialization handler must run
+    ///              before any logic in this method. 
     @inlinable
     internal func addContinuation(
         _ continuation: Continuation,
         withKey key: UUID,
-        file: String, function: String, line: UInt
+        file: String, function: String, line: UInt,
+        preinit: @escaping @Sendable () -> Void
     ) {
+        preinit()
         guard !continuation.resumed else {
             log(
                 "Already resumed, not tracking", id: key,
@@ -307,7 +314,8 @@ extension Future where Failure == Never {
             Task { [weak self] in
                 await self?.addContinuation(
                     continuation, withKey: key,
-                    file: file, function: function, line: line
+                    file: file, function: function, line: line,
+                    preinit: { /* Do nothing */ }
                 )
             }
         }
@@ -685,11 +693,12 @@ extension Future where Failure == Error {
                     file: file, function: function, line: line
                 )
             }
-        } operation: { continuation in
+        } operation: { continuation, preinit in
             Task { [weak self] in
                 await self?.addContinuation(
                     continuation, withKey: key,
-                    file: file, function: function, line: line
+                    file: file, function: function, line: line,
+                    preinit: preinit
                 )
             }
         }

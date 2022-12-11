@@ -22,9 +22,15 @@ internal protocol ContinuableCollection {
     ///   - file: The file add request originates from.
     ///   - function: The function add request originates from.
     ///   - line: The line add request originates from.
+    ///   - preinit: The pre-initialization handler to run
+    ///              in the beginning of this method.
+    ///
+    /// - Important: The pre-initialization handler must run
+    ///              before any logic in this method.
     func addContinuation(
         _ continuation: Continuation, withKey key: Key,
-        file: String, function: String, line: UInt
+        file: String, function: String, line: UInt,
+        preinit: @escaping @Sendable () -> Void
     ) async
     /// Remove continuation with the associated key from collection out of tracking.
     ///
@@ -54,12 +60,7 @@ internal protocol ContinuableCollection {
     ) async rethrows -> Continuation.Success
 }
 
-extension ContinuableCollection
-where
-    Self: AnyObject, Self: Sendable, Continuation: TrackableContinuable,
-    Continuation: Sendable, Continuation.Value: ThrowingContinuable,
-    Key: Sendable, Key == Continuation.ID
-{
+extension ContinuableCollection where Self: AnyObject & Sendable, Continuation: TrackableContinuable & Sendable, Continuation.Value: Sendable & ThrowingContinuable, Key: Sendable, Key == Continuation.ID {
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
     /// Continuation can be cancelled with error if current task is cancelled, by invoking `removeContinuation`.
     ///
@@ -91,11 +92,12 @@ where
                     file: file, function: function, line: line
                 )
             }
-        } operation: { continuation in
+        } operation: { continuation, preinit in
             Task { [weak self] in
                 await self?.addContinuation(
                     continuation, withKey: key,
-                    file: file, function: function, line: line
+                    file: file, function: function, line: line,
+                    preinit: preinit
                 )
             }
         }

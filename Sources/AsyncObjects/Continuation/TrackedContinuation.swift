@@ -133,7 +133,7 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable,
     ///              invoking this method will cause runtime exception.
     @usableFromInline
     func add(continuation: C) {
-        log("Adding")
+        log("Adding continuation \(continuation)")
         precondition(
             value == nil,
             "Continuation can be provided only once"
@@ -148,7 +148,7 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable,
         default:
             break
         }
-        log("Added")
+        log("Added continuation \(continuation)")
     }
 
     /// Resume the task awaiting the continuation by having it either return normally
@@ -163,7 +163,7 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable,
     /// - Parameter result: A value to either return or throw from the continuation.
     @usableFromInline
     func resume(with result: Result<C.Success, C.Failure>) {
-        log("Resuming")
+        log("Resuming with \(result)")
         switch (status, value) {
         case (_, .some(let value)):
             value.resume(with: result)
@@ -173,7 +173,7 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable,
         default:
             fatalError("Multiple resume invoked")
         }
-        log("Resumed")
+        log("Resumed with \(result)")
     }
 }
 
@@ -191,7 +191,7 @@ extension TrackedContinuation {
             "obj": "\(self)",
             "id": "\(context.id != nil ? "\(context.id!)" : "nil")",
             "status": "\(status)",
-            "value": "\(value != nil ? "\(value!)" : "nil")",
+            "value": value != nil ? "some" : "nil",
         ]
     }
 
