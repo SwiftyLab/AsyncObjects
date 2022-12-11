@@ -252,6 +252,11 @@ public actor TaskQueue: AsyncObject, LoggableActor {
         preinit: @escaping @Sendable () -> Void
     ) {
         preinit()
+        log(
+            "Adding", flags: continuation.flags, id: key,
+            file: file, function: function, line: line
+        )
+
         guard !continuation.value.resumed else {
             log(
                 "Already resumed, not tracking",
@@ -295,10 +300,15 @@ public actor TaskQueue: AsyncObject, LoggableActor {
         file: String, function: String, line: UInt
     ) {
         let (continuation, flags) = continuation
+        log(
+            "Removing", flags: flags, id: key,
+            file: file, function: function, line: line
+        )
+
         queue.removeValue(forKey: key)
         guard !continuation.resumed else {
             log(
-                "Already resumed, not cancelling", id: key,
+                "Already resumed, not cancelling", flags: flags, id: key,
                 file: file, function: function, line: line
             )
             return

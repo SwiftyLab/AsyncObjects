@@ -256,6 +256,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ) {
         locker.perform {
             preinit()
+            log("Adding", id: key, file: file, function: function, line: line)
             guard !continuation.resumed else {
                 log(
                     "Already resumed, not tracking", id: key,
@@ -297,6 +298,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         file: String, function: String, line: UInt
     ) {
         locker.perform {
+            log("Removing", id: key, file: file, function: function, line: line)
             continuations.removeValue(forKey: key)
             guard !continuation.resumed else {
                 log(

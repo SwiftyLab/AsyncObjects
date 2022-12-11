@@ -114,6 +114,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection,
         preinit: @escaping @Sendable () -> Void
     ) {
         preinit()
+        log("Adding", id: key, file: file, function: function, line: line)
         guard !continuation.resumed else {
             log(
                 "Already resumed, not tracking", id: key,
@@ -150,6 +151,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection,
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) {
+        log("Removing", id: key, file: file, function: function, line: line)
         continuations.removeValue(forKey: key)
         guard !continuation.resumed else {
             log(
