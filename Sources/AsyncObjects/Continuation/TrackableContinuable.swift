@@ -43,7 +43,8 @@ internal protocol TrackableContinuable: Continuable {
     func add(continuation: Value)
 }
 
-extension TrackableContinuable where Self: Sendable, Value: Sendable & ThrowingContinuable {
+extension TrackableContinuable
+where Self: Sendable, Value: Sendable & ThrowingContinuable {
     /// Suspends the current task, then calls the given operation with a `TrackableContinuable`
     /// for the current task with a cancellation handler that’s immediately invoked if the current task is canceled.
     ///
@@ -131,7 +132,8 @@ extension TrackableContinuable where Self: Sendable, Value: Sendable & ThrowingC
     }
 }
 
-extension TrackableContinuable where Self: Sendable, Value: Sendable & NonThrowingContinuable {
+extension TrackableContinuable
+where Self: Sendable, Value: Sendable & NonThrowingContinuable {
     /// Suspends the current task, then calls the given operation with a `TrackableContinuable`
     /// for the current task with a cancellation handler that’s immediately invoked if the current task is canceled.
     ///
@@ -150,7 +152,7 @@ extension TrackableContinuable where Self: Sendable, Value: Sendable & NonThrowi
     ///   - handler: A handler immediately invoked if task is cancelled.
     ///   - operation: A closure that takes an `TrackableContinuable` parameter and
     ///                a pre-initialization handler that needs to run before managing continuation.
-    ///                You must resume the continuation at least once.                
+    ///                You must resume the continuation at least once.
     ///
     /// - Returns: The value passed to the continuation by the operation.
     /// - Throws: If cancelled or `resume(throwing:)` is called on the continuation,

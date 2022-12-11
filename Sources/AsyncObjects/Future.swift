@@ -77,7 +77,7 @@ public actor Future<Output: Sendable, Failure: Error>: LoggableActor {
     ///              in the beginning of this method.
     ///
     /// - Important: The pre-initialization handler must run
-    ///              before any logic in this method. 
+    ///              before any logic in this method.
     @inlinable
     internal func addContinuation(
         _ continuation: Continuation,
@@ -315,7 +315,7 @@ extension Future where Failure == Never {
                 await self?.addContinuation(
                     continuation, withKey: key,
                     file: file, function: function, line: line,
-                    preinit: { /* Do nothing */ }
+                    preinit: { /* Do nothing */  }
                 )
             }
         }

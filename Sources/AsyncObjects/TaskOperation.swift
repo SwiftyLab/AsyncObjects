@@ -246,7 +246,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     ///              in the beginning of this method.
     ///
     /// - Important: The pre-initialization handler must run
-    ///              before any logic in this method. 
+    ///              before any logic in this method.
     @inlinable
     internal func addContinuation(
         _ continuation: Continuation,

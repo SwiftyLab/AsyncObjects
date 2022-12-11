@@ -25,6 +25,7 @@ var settings: [SwiftSetting] = {
                 "-warn-concurrency",
                 "-enable-actor-data-race-checks",
                 "-require-explicit-sendable",
+                "-strict-concurrency=complete"
             ])
         )
     }

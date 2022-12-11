@@ -243,7 +243,7 @@ public actor TaskQueue: AsyncObject, LoggableActor {
     ///              in the beginning of this method.
     ///
     /// - Important: The pre-initialization handler must run
-    ///              before any logic in this method. 
+    ///              before any logic in this method.
     @inlinable
     internal func queueContinuation(
         _ continuation: QueuedContinuation,

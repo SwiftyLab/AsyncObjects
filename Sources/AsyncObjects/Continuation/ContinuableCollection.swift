@@ -60,7 +60,12 @@ internal protocol ContinuableCollection {
     ) async rethrows -> Continuation.Success
 }
 
-extension ContinuableCollection where Self: AnyObject & Sendable, Continuation: TrackableContinuable & Sendable, Continuation.Value: Sendable & ThrowingContinuable, Key: Sendable, Key == Continuation.ID {
+extension ContinuableCollection
+where
+    Self: AnyObject & Sendable, Continuation: TrackableContinuable & Sendable,
+    Continuation.Value: Sendable & ThrowingContinuable, Key: Sendable,
+    Key == Continuation.ID
+{
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
     /// Continuation can be cancelled with error if current task is cancelled, by invoking `removeContinuation`.
     ///
@@ -80,7 +85,7 @@ extension ContinuableCollection where Self: AnyObject & Sendable, Continuation: 
     /// - Returns: The value continuation is resumed with.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    func withPromisedContinuation(
+    nonisolated func withPromisedContinuation(
         withKey key: Key,
         file: String, function: String, line: UInt
     ) async rethrows -> Continuation.Success {
