@@ -523,10 +523,8 @@ public actor TaskQueue: AsyncObject, LoggableActor {
         self.priority = priority
     }
 
-    deinit {
-        log("Deinitialized")
-        self.queue.forEach { $1.value.cancel() }
-    }
+    // TODO: Explore alternative cleanup for actor
+    // deinit { self.queue.forEach { $1.value.cancel() } }
 
     /// Executes the given operation asynchronously based on the priority and flags.
     ///

@@ -277,10 +277,8 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection,
         self.currentCount = initial
     }
 
-    deinit {
-        log("Deinitialized")
-        self.continuations.forEach { $1.cancel() }
-    }
+    // TODO: Explore alternative cleanup for actor
+    // deinit { self.continuations.forEach { $1.cancel() } }
 
     /// Increments the countdown event current count by the specified value.
     ///

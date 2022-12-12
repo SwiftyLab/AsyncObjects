@@ -168,10 +168,8 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection, LoggableActor {
         self.count = Int(limit)
     }
 
-    deinit {
-        log("Deinitialized")
-        self.continuations.forEach { $1.cancel() }
-    }
+    // TODO: Explore alternative cleanup for actor
+    // deinit { self.continuations.forEach { $1.cancel() } }
 
     /// Signals (increments) a semaphore.
     ///

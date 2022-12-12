@@ -169,7 +169,6 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     }
 
     deinit {
-        log("Deinitialized")
         execTask?.cancel()
         locker.perform { self.continuations.forEach { $1.cancel() } }
     }
