@@ -164,7 +164,10 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection, LoggableActor {
         self.signalled = signalled
     }
 
-    deinit { self.continuations.forEach { $0.value.cancel() } }
+    deinit {
+        log("Deinitialized")
+        self.continuations.forEach { $1.cancel() }
+    }
 
     /// Resets signal of event.
     ///

@@ -117,7 +117,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
             locker.perform {
                 _isFinished = newValue
                 guard newValue, !continuations.isEmpty else { return }
-                continuations.forEach { $0.value.resume() }
+                continuations.forEach { $1.resume() }
                 continuations = [:]
             }
             didChangeValue(forKey: "isFinished")
@@ -169,8 +169,9 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     }
 
     deinit {
+        log("Deinitialized")
         execTask?.cancel()
-        locker.perform { self.continuations.forEach { $0.value.cancel() } }
+        locker.perform { self.continuations.forEach { $1.cancel() } }
     }
 
     /// Begins the execution of the operation.

@@ -195,9 +195,10 @@ public actor Future<Output: Sendable, Failure: Error>: LoggableActor {
     #endif
 
     deinit {
+        log("Deinitialized")
         guard Failure.self is Error.Protocol else { return }
         (continuations as! [UUID: GlobalContinuation<Output, Error>])
-            .forEach { $0.value.cancel() }
+            .forEach { $1.cancel() }
     }
 
     /// Fulfill the future by producing the given value and notify subscribers.

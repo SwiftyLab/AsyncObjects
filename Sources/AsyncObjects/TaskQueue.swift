@@ -523,7 +523,10 @@ public actor TaskQueue: AsyncObject, LoggableActor {
         self.priority = priority
     }
 
-    deinit { self.queue.forEach { $1.value.cancel() } }
+    deinit {
+        log("Deinitialized")
+        self.queue.forEach { $1.value.cancel() }
+    }
 
     /// Executes the given operation asynchronously based on the priority and flags.
     ///
@@ -867,7 +870,7 @@ extension TaskQueue {
     ///   - line: The line this log message originates from (there's usually
     ///           no need to pass it explicitly as it defaults to `#line`).
     @inlinable
-    func log(
+    nonisolated func log(
         _ message: @autoclosure () -> String,
         flags: Flags,
         id: UUID? = nil,

@@ -155,7 +155,7 @@ extension LoggableActor {
     ///   - line: The line this log message originates from (there's usually
     ///           no need to pass it explicitly as it defaults to `#line`).
     @inlinable
-    func log(
+    nonisolated func log(
         _ message: @autoclosure () -> String,
         id: UUID? = nil,
         file: String = #fileID,

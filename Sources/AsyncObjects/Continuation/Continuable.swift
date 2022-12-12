@@ -188,6 +188,7 @@ public extension Continuable {
     /// The task continues executing when its executor schedules it.
     ///
     /// - Parameter value: The value to return from the continuation.
+    @inlinable
     func resume(returning value: Success) {
         self.resume(with: .success(value))
     }
@@ -198,8 +199,9 @@ public extension Continuable {
     ///
     /// After calling this method, control immediately returns to the caller.
     /// The task continues executing when its executor schedules it.
-    func resume(returning value: Success = ()) where Success == Void {
-        self.resume(with: .success(value))
+    @inlinable
+    func resume() where Success == Void {
+        self.resume(with: .success(()))
     }
 
     /// Resume the task awaiting the continuation by having it throw an error from its suspension point.
@@ -210,6 +212,7 @@ public extension Continuable {
     /// The task continues executing when its executor schedules it.
     ///
     /// - Parameter error: The error to throw from the continuation.
+    @inlinable
     func resume(throwing error: Failure) {
         self.resume(with: .failure(error))
     }
