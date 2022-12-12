@@ -276,7 +276,11 @@ public actor Future<Output: Sendable, Failure: Error>: LoggableActor {
         function: String = #function,
         line: UInt = #line
     ) {
-        guard self.result == nil else { return }
+        guard self.result == nil else {
+            log("Already fulfilled", file: file, function: function, line: line)
+            return
+        }
+
         self.result = result
         continuations.forEach { key, value in
             value.resume(with: result)

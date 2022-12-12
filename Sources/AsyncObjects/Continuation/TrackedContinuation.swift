@@ -133,7 +133,7 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable,
     ///              invoking this method will cause runtime exception.
     @usableFromInline
     func add(continuation: C) {
-        log("Adding continuation \(continuation)")
+        log("Adding continuation")
         precondition(
             value == nil,
             "Continuation can be provided only once"
@@ -148,7 +148,7 @@ internal final class TrackedContinuation<C: Continuable>: TrackableContinuable,
         default:
             break
         }
-        log("Added continuation \(continuation)")
+        log("Added continuation")
     }
 
     /// Resume the task awaiting the continuation by having it either return normally

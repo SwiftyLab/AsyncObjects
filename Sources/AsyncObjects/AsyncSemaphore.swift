@@ -148,6 +148,7 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection, LoggableActor {
     internal func signalSemaphore(file: String, function: String, line: UInt) {
         incrementCount()
         guard !continuations.isEmpty else { return }
+        log("Signalling", file: file, function: function, line: line)
         let (key, continuation) = continuations.removeFirst()
         continuation.resume()
         log("Resumed", id: key, file: file, function: function, line: line)
