@@ -32,6 +32,7 @@ extension CheckedContinuation: ThrowingContinuable where E == Error {
     /// - Returns: The value passed to the continuation by the closure.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
+    @_unsafeInheritExecutor
     public static func with(
         file: String = #fileID,
         function: String = #function,
@@ -66,6 +67,7 @@ extension CheckedContinuation: NonThrowingContinuable where E == Never {
     ///
     /// - Returns: The value passed to the continuation by the closure.
     @inlinable
+    @_unsafeInheritExecutor
     public static func with(
         file: String = #fileID,
         function: String = #function,
@@ -107,6 +109,7 @@ extension UnsafeContinuation: ThrowingContinuable where E == Error {
     /// - Returns: The value passed to the continuation by the closure.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
+    @_unsafeInheritExecutor
     public static func with(
         file: String = #fileID,
         function: String = #function,
@@ -136,6 +139,7 @@ extension UnsafeContinuation: NonThrowingContinuable where E == Never {
     ///
     /// - Returns: The value passed to the continuation by the closure.
     @inlinable
+    @_unsafeInheritExecutor
     public static func with(
         file: String = #fileID,
         function: String = #function,
