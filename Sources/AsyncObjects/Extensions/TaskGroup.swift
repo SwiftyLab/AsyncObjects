@@ -8,7 +8,6 @@ public extension TaskGroup {
     ///               pass `nil` to set the child task’s priority to the priority of the group.
     ///   - operation: The operation to execute as part of the task group.
     @inlinable
-    @_unsafeInheritExecutor
     mutating func addTaskAndStart(
         priority: TaskPriority? = nil,
         operation: @escaping @Sendable () async -> ChildTaskResult
@@ -35,7 +34,6 @@ public extension ThrowingTaskGroup {
     ///               pass `nil` to set the child task’s priority to the priority of the group.
     ///   - operation: The operation to execute as part of the task group.
     @inlinable
-    @_unsafeInheritExecutor
     mutating func addTaskAndStart(
         priority: TaskPriority? = nil,
         operation: @escaping @Sendable () async throws -> ChildTaskResult

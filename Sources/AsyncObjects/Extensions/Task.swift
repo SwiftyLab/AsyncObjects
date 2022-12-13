@@ -14,7 +14,6 @@ public extension Task {
     /// - Throws: Error from the given operation.
     @inlinable
     @discardableResult
-    @_unsafeInheritExecutor
     static func withCancellableTask(
         priority: TaskPriority?,
         operation: @Sendable @escaping () async throws -> Success

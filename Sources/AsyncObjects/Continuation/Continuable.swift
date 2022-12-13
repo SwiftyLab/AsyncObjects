@@ -140,7 +140,6 @@ internal protocol ThrowingContinuable: Continuable where Failure == Error {
     ///
     /// - Returns: The value passed to the continuation by the closure.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
-    @_unsafeInheritExecutor
     static func with(
         file: String, function: String, line: UInt,
         _ body: (Self) -> Void
@@ -170,7 +169,6 @@ internal protocol NonThrowingContinuable: Continuable where Failure == Never {
     ///           You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
-    @_unsafeInheritExecutor
     static func with(
         file: String, function: String, line: UInt,
         _ body: (Self) -> Void

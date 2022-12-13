@@ -69,7 +69,6 @@ where Self: Sendable, Value: Sendable & ThrowingContinuable {
     /// - Throws: If cancelled or `resume(throwing:)` is called on the continuation,
     ///           this function throws that error.
     @usableFromInline
-    @_unsafeInheritExecutor
     static func withCancellation(
         id: ID,
         file: String = #fileID,
@@ -114,7 +113,6 @@ where Self: Sendable, Value: Sendable & ThrowingContinuable {
     /// - Returns: The value passed to the continuation by the closure.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @usableFromInline
-    @_unsafeInheritExecutor
     static func with(
         file: String = #fileID,
         function: String = #function,
@@ -160,7 +158,6 @@ where Self: Sendable, Value: Sendable & NonThrowingContinuable {
     /// - Throws: If cancelled or `resume(throwing:)` is called on the continuation,
     ///           this function throws that error.
     @usableFromInline
-    @_unsafeInheritExecutor
     internal static func withCancellation(
         id: ID,
         file: String = #fileID,
@@ -204,7 +201,6 @@ where Self: Sendable, Value: Sendable & NonThrowingContinuable {
     ///
     /// - Returns: The value passed to the continuation by the closure.
     @usableFromInline
-    @_unsafeInheritExecutor
     internal static func with(
         file: String = #fileID,
         function: String = #function,
