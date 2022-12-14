@@ -80,14 +80,18 @@ class TaskQueueTests: XCTestCase {
 class TaskQueueTimeoutTests: XCTestCase {
 
     private static func checkWaitTimeoutOnQueue(
-        option: TaskOption
+        option: TaskOption,
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line
     ) async throws {
         let queue = TaskQueue(priority: option.queue)
         try await Self.checkExecInterval(
             name: "For queue priority: \(option.queue.str), "
                 + "task priority: \(option.task.str) "
                 + "and flags: \(option.flags.rawValue)",
-            durationInSeconds: 1
+            durationInSeconds: 1,
+            file: file, function: function, line: line
         ) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
@@ -103,10 +107,14 @@ class TaskQueueTimeoutTests: XCTestCase {
                 group.addTask {
                     do {
                         try await queue.wait(forSeconds: 1)
-                        XCTFail("Unexpected task progression")
+                        XCTFail(
+                            "Unexpected task progression",
+                            file: file, line: line
+                        )
                     } catch {
                         XCTAssertTrue(
-                            type(of: error) == DurationTimeoutError.self
+                            type(of: error) == DurationTimeoutError.self,
+                            file: file, line: line
                         )
                     }
                 }
@@ -144,14 +152,18 @@ class TaskQueueTimeoutTests: XCTestCase {
     @available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
     private static func checkWaitTimeoutOnQueue<C: Clock>(
         option: TaskOption,
-        clock: C
+        clock: C,
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line
     ) async throws where C.Duration == Duration {
         let queue = TaskQueue(priority: option.queue)
         try await Self.checkExecInterval(
             name: "For queue priority: \(option.queue.str), "
                 + "task priority: \(option.task.str) "
                 + "and flags: \(option.flags.rawValue)",
-            durationInSeconds: 1
+            durationInSeconds: 1,
+            file: file, function: function, line: line
         ) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
@@ -167,11 +179,15 @@ class TaskQueueTimeoutTests: XCTestCase {
                 group.addTask {
                     do {
                         try await queue.wait(forSeconds: 1, clock: clock)
-                        XCTFail("Unexpected task progression")
+                        XCTFail(
+                            "Unexpected task progression",
+                            file: file, line: line
+                        )
                     } catch {
                         XCTAssertTrue(
                             type(of: error)
-                                == TimeoutError<ContinuousClock>.self
+                                == TimeoutError<ContinuousClock>.self,
+                            file: file, line: line
                         )
                     }
                 }
@@ -944,13 +960,19 @@ fileprivate extension XCTestCase {
         queue: TaskPriority?, task: TaskPriority?, flags: TaskQueue.Flags
     )
 
-    static func checkWaitOnQueue(option: TaskOption) async throws {
+    static func checkWaitOnQueue(
+        option: TaskOption,
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line
+    ) async throws {
         let queue = TaskQueue(priority: option.queue)
         try await Self.checkExecInterval(
             name: "For queue priority: \(option.queue.str), "
                 + "task priority: \(option.task.str) "
                 + "and flags: \(option.flags.rawValue)",
-            durationInSeconds: 1
+            durationInSeconds: 1,
+            file: file, function: function, line: line
         ) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {

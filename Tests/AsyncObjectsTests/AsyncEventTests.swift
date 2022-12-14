@@ -184,14 +184,18 @@ fileprivate extension XCTestCase {
     static func checkWait(
         for event: AsyncEvent,
         signalIn interval: UInt64 = 1,
-        durationInSeconds seconds: Int = 1
+        durationInSeconds seconds: Int = 1,
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line
     ) async throws {
         Task.detached {
             try await Self.sleep(seconds: interval)
             event.signal()
         }
         try await Self.checkExecInterval(
-            durationInSeconds: seconds
+            durationInSeconds: seconds,
+            file: file, function: function, line: line
         ) { try await event.wait() }
     }
 }
