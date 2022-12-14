@@ -26,7 +26,9 @@ import OrderedCollections
 /// // release after executing critical async tasks
 /// defer { semaphore.signal() }
 /// ```
-public actor AsyncSemaphore: AsyncObject, ContinuableCollection, LoggableActor {
+public actor AsyncSemaphore: AsyncObject, ContinuableCollectionActor,
+    LoggableActor
+{
     /// The suspended tasks continuation type.
     @usableFromInline
     internal typealias Continuation = TrackedContinuation<

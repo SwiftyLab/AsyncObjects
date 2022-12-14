@@ -37,7 +37,7 @@ import OrderedCollections
 ///
 /// Use the ``limit`` parameter to indicate concurrent low priority usage, i.e. if limit set to zero,
 /// only one low priority usage allowed at one time.
-public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection,
+public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
     LoggableActor
 {
     /// The suspended tasks continuation type.
