@@ -38,9 +38,31 @@ Pod::Spec.new do |s|
   }
 
   s.dependency 'OrderedCollections', '~> 1.0.0'
+  s.default_subspecs = :none
+
+  s.subspec 'Checked' do |ss|
+    ss.pod_target_xcconfig = {
+      'OTHER_SWIFT_FLAGS' => '-D ASYNCOBJECTS_USE_CHECKEDCONTINUATION'
+    }
+  end
+
+  s.subspec 'Logging' do |ss|
+    ss.dependency 'Logging', '~> 1.0.0'
+    # ss.default_subspec = 'Info'
+
+    for level in ['Debug', 'Info', 'Trace'] do
+      ss.subspec level do |sss|
+        sss.pod_target_xcconfig = {
+          'OTHER_SWIFT_FLAGS' => "-D ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_#{level.upcase}"
+        }
+      end
+    end
+  end
 
   s.test_spec do |ts|
     ts.source_files = "Tests/#{s.name}Tests/**/*.swift"
+    ts.dependency "#{s.name}/Checked"
+    ts.dependency "#{s.name}/Logging"
     ts.scheme = { :parallelizable => true }
   end
 end

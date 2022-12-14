@@ -59,7 +59,7 @@ jobs:
               "swift": "5.7"
             },
             {
-              "os": "ubuntu-latest",
+              "os": "ubuntu-20.04",
               "swift": "5.6"
             }
           ]

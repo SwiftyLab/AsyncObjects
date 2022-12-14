@@ -39,7 +39,7 @@ import Foundation
 /// // or cancel future with error
 /// await future.fulfill(throwing: CancellationError())
 /// ```
-public actor Future<Output: Sendable, Failure: Error> {
+public actor Future<Output: Sendable, Failure: Error>: LoggableActor {
     /// A type that represents a closure to invoke in the future, when an element or error is available.
     ///
     /// The promise closure receives one parameter: a `Result` that contains
@@ -49,12 +49,10 @@ public actor Future<Output: Sendable, Failure: Error> {
     public typealias FutureResult = Result<Output, Failure>
     /// The suspended tasks continuation type.
     @usableFromInline
-    internal typealias Continuation = SafeContinuation<
+    internal typealias Continuation = TrackedContinuation<
         GlobalContinuation<Output, Failure>
     >
-    /// The platform dependent lock used to synchronize continuations tracking.
-    @usableFromInline
-    internal let locker: Locker = .init()
+
     /// The continuations stored with an associated key for all the suspended task
     /// that are waiting for future to be fulfilled.
     @usableFromInline
@@ -69,14 +67,42 @@ public actor Future<Output: Sendable, Failure: Error> {
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
+    ///   - file: The file add request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function add request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line add request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///   - preinit: The pre-initialization handler to run
+    ///              in the beginning of this method.
+    ///
+    /// - Important: The pre-initialization handler must run
+    ///              before any logic in this method.
     @inlinable
     internal func addContinuation(
         _ continuation: Continuation,
-        withKey key: UUID = .init()
+        withKey key: UUID,
+        file: String, function: String, line: UInt,
+        preinit: @Sendable () -> Void
     ) {
-        guard !continuation.resumed else { return }
-        if let result = result { continuation.resume(with: result); return }
+        preinit()
+        log("Adding", id: key, file: file, function: function, line: line)
+        guard !continuation.resumed else {
+            log(
+                "Already resumed, not tracking", id: key,
+                file: file, function: function, line: line
+            )
+            return
+        }
+
+        if let result = result {
+            continuation.resume(with: result)
+            log("Resumed", id: key, file: file, function: function, line: line)
+            return
+        }
+
         continuations[key] = continuation
+        log("Tracking", id: key, file: file, function: function, line: line)
     }
 
     /// Creates a future that can be fulfilled later by ``fulfill(with:file:function:line:)`` or
@@ -168,11 +194,12 @@ public actor Future<Output: Sendable, Failure: Error> {
     }
     #endif
 
-    deinit {
-        guard Failure.self is Error.Protocol else { return }
-        (continuations as! [UUID: GlobalContinuation<Output, Error>])
-            .forEach { $0.value.cancel() }
-    }
+    // TODO: Explore alternative cleanup for actor
+    // deinit {
+    //     guard Failure.self is Error.Protocol else { return }
+    //     (continuations as! [UUID: GlobalContinuation<Output, Error>])
+    //         .forEach { $1.cancel() }
+    // }
 
     /// Fulfill the future by producing the given value and notify subscribers.
     ///
@@ -249,10 +276,21 @@ public actor Future<Output: Sendable, Failure: Error> {
         function: String = #function,
         line: UInt = #line
     ) {
-        guard self.result == nil else { return }
+        guard self.result == nil else {
+            log("Already fulfilled", file: file, function: function, line: line)
+            return
+        }
+
         self.result = result
-        continuations.forEach { $0.value.resume(with: result) }
+        continuations.forEach { key, value in
+            value.resume(with: result)
+            log(
+                "Fulfilled", id: key,
+                file: file, function: function, line: line
+            )
+        }
         continuations = [:]
+        log("Fulfilled", file: file, function: function, line: line)
     }
 }
 
@@ -263,12 +301,28 @@ extension Future where Failure == Never {
     /// Spins up a new continuation and requests to track it with key by invoking `addContinuation`.
     /// This operation doesn't check for cancellation.
     ///
+    /// - Parameters:
+    ///   - key: The key associated to task, that requested suspension.
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
     /// - Returns: The value continuation is resumed with.
     @inlinable
-    internal nonisolated func withPromisedContinuation() async -> Output {
+    internal nonisolated func withPromisedContinuation(
+        withKey key: UUID,
+        file: String, function: String, line: UInt
+    ) async -> Output {
         return await Continuation.with { continuation in
             Task { [weak self] in
-                await self?.addContinuation(continuation)
+                await self?.addContinuation(
+                    continuation, withKey: key,
+                    file: file, function: function, line: line,
+                    preinit: { /* Do nothing */  }
+                )
             }
         }
     }
@@ -291,8 +345,20 @@ extension Future where Failure == Never {
         function: String = #function,
         line: UInt = #line
     ) async -> Output {
-        if let result = result { return try! result.get() }
-        return await withPromisedContinuation()
+        if let result = result {
+            log("Received", file: file, function: function, line: line)
+            return try! result.get()
+        }
+
+        let key = UUID()
+        log("Waiting", id: key, file: file, function: function, line: line)
+        defer {
+            log("Received", id: key, file: file, function: function, line: line)
+        }
+        return await withPromisedContinuation(
+            withKey: key,
+            file: file, function: function, line: line
+        )
     }
 
     /// Combines into a single future, for all futures to be fulfilled.
@@ -574,10 +640,33 @@ extension Future where Failure == Error {
     /// Remove continuation associated with provided key
     /// from `continuations` map and resumes with `CancellationError`.
     ///
-    /// - Parameter key: The key in the map.
+    /// - Parameters:
+    ///   - continuation: The continuation to remove and cancel.
+    ///   - key: The key in the map.
+    ///   - file: The file remove request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function remove request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line remove request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func removeContinuation(withKey key: UUID) {
+    internal func removeContinuation(
+        _ continuation: Continuation,
+        withKey key: UUID,
+        file: String, function: String, line: UInt
+    ) {
+        log("Removing", id: key, file: file, function: function, line: line)
         continuations.removeValue(forKey: key)
+        guard !continuation.resumed else {
+            log(
+                "Already resumed, not cancelling", id: key,
+                file: file, function: function, line: line
+            )
+            return
+        }
+
+        continuation.cancel()
+        log("Cancelled", id: key, file: file, function: function, line: line)
     }
 
     /// Suspends the current task, then calls the given closure with a throwing continuation for the current task.
@@ -587,22 +676,37 @@ extension Future where Failure == Error {
     /// This operation cooperatively checks for cancellation and reacting to it by invoking `removeContinuation`.
     /// Continuation can be resumed with error and some cleanup code can be run here.
     ///
-    /// - Returns: The value continuation is resumed with.
+    /// - Parameters:
+    ///   - key: The key associated to task, that requested suspension.
+    ///   - file: The file wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function wait request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line wait request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
+    /// - Returns: The value continuation is resumed with.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    internal nonisolated func withPromisedContinuation() async throws -> Output
-    {
-        let key = UUID()
-        return try await Continuation.withCancellation(
-            synchronizedWith: locker
-        ) {
+    internal nonisolated func withPromisedContinuation(
+        withKey key: UUID,
+        file: String, function: String, line: UInt
+    ) async throws -> Output {
+        return try await Continuation.withCancellation(id: key) {
+            continuation in
             Task { [weak self] in
-                await self?.removeContinuation(withKey: key)
+                await self?.removeContinuation(
+                    continuation, withKey: key,
+                    file: file, function: function, line: line
+                )
             }
-        } operation: { continuation in
+        } operation: { continuation, preinit in
             Task { [weak self] in
-                await self?.addContinuation(continuation, withKey: key)
+                await self?.addContinuation(
+                    continuation, withKey: key,
+                    file: file, function: function, line: line,
+                    preinit: preinit
+                )
             }
         }
     }
@@ -628,8 +732,20 @@ extension Future where Failure == Error {
         function: String = #function,
         line: UInt = #line
     ) async throws -> Output {
-        if let result = result { return try result.get() }
-        return try await withPromisedContinuation()
+        if let result = result {
+            log("Received", file: file, function: function, line: line)
+            return try result.get()
+        }
+
+        let key = UUID()
+        log("Waiting", id: key, file: file, function: function, line: line)
+        defer {
+            log("Received", id: key, file: file, function: function, line: line)
+        }
+        return try await withPromisedContinuation(
+            withKey: key,
+            file: file, function: function, line: line
+        )
     }
 
     /// Combines into a single future, for all futures to be fulfilled, or for any to be rejected.
@@ -966,3 +1082,18 @@ private extension Result where Failure == Error {
     /// The cancelled error result.
     static var cancelled: Self { .failure(CancellationError()) }
 }
+
+#if canImport(Logging)
+import Logging
+
+extension Future {
+    /// Type specific metadata to attach to all log messages.
+    @usableFromInline
+    var metadata: Logger.Metadata {
+        return [
+            "obj": "\(self)(\(Unmanaged.passUnretained(self).toOpaque()))",
+            "result": "\(result != nil ? "\(result!)" : "nil")",
+        ]
+    }
+}
+#endif

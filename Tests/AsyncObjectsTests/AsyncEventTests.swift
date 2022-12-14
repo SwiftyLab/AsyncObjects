@@ -85,13 +85,6 @@ class AsyncEventTimeoutTests: XCTestCase {
             }
         }
     }
-
-    func testWaitZeroTimeout() async throws {
-        let event = AsyncEvent(signaledInitially: true)
-        try await Self.checkExecInterval(durationInSeconds: 0) {
-            try await event.wait(forNanoseconds: 0)
-        }
-    }
 }
 
 #if swift(>=5.7)
@@ -147,19 +140,6 @@ class AsyncEventClockTimeoutTests: XCTestCase {
             }
         }
     }
-
-    func testWaitZeroTimeout() async throws {
-        guard
-            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
-        else {
-            throw XCTSkip("Clock API not available")
-        }
-        let clock: ContinuousClock = .continuous
-        let event = AsyncEvent(signaledInitially: true)
-        try await Self.checkExecInterval(duration: .seconds(0), clock: clock) {
-            try await event.wait(forSeconds: 0, clock: clock)
-        }
-    }
 }
 #endif
 
@@ -204,14 +184,18 @@ fileprivate extension XCTestCase {
     static func checkWait(
         for event: AsyncEvent,
         signalIn interval: UInt64 = 1,
-        durationInSeconds seconds: Int = 1
+        durationInSeconds seconds: Int = 1,
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line
     ) async throws {
         Task.detached {
             try await Self.sleep(seconds: interval)
             event.signal()
         }
         try await Self.checkExecInterval(
-            durationInSeconds: seconds
+            durationInSeconds: seconds,
+            file: file, function: function, line: line
         ) { try await event.wait() }
     }
 }

@@ -27,6 +27,9 @@ extension XCTestCase {
     static func checkExecInterval<T: DivisiveArithmetic>(
         name: String? = nil,
         durationInSeconds seconds: T = .zero,
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line,
         for task: () async throws -> Void
     ) async rethrows where T: Comparable {
         let second: T = 1_000_000_000
@@ -35,10 +38,20 @@ extension XCTestCase {
         guard
             let span = T(exactly: DispatchTime.now().uptimeNanoseconds - time),
             case let duration = span / second
-        else { XCTFail("Invalid number type: \(T.self)"); return }
+        else {
+            XCTFail("Invalid number type: \(T.self)", file: file, line: line)
+            return
+        }
+
         let assertions = {
-            XCTAssertLessThanOrEqual(duration, seconds + 1)
-            XCTAssertGreaterThanOrEqual(duration, seconds - 1)
+            XCTAssertLessThanOrEqual(
+                duration, seconds + 1,
+                file: file, line: line
+            )
+            XCTAssertGreaterThanOrEqual(
+                duration, seconds - 1,
+                file: file, line: line
+            )
         }
         runAssertions(with: name, assertions)
     }
@@ -46,6 +59,9 @@ extension XCTestCase {
     static func checkExecInterval<R: RangeExpression>(
         name: String? = nil,
         durationInRange range: R,
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line,
         for task: () async throws -> Void
     ) async rethrows where R.Bound: DivisiveArithmetic {
         let second: R.Bound = 1_000_000_000
@@ -56,11 +72,16 @@ extension XCTestCase {
                 exactly: DispatchTime.now().uptimeNanoseconds - time
             ),
             case let duration = span / second
-        else { XCTFail("Invalid range type: \(R.self)"); return }
+        else {
+            XCTFail("Invalid range type: \(R.self)", file: file, line: line)
+            return
+        }
+
         let assertions = {
             XCTAssertTrue(
                 range.contains(duration),
-                "\(duration) not present in \(range)"
+                "\(duration) not present in \(range)",
+                file: file, line: line
             )
         }
         runAssertions(with: name, assertions)
@@ -94,13 +115,16 @@ extension XCTestCase {
         name: String? = nil,
         duration: C.Instant.Duration = .zero,
         clock: C,
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line,
         for task: () async throws -> Void
     ) async rethrows where C.Duration == Duration {
         let result = try await clock.measure { try await task() }
         let assertions = {
             XCTAssertLessThanOrEqual(
-                abs(duration.components.seconds - result.components.seconds),
-                1
+                abs(duration.components.seconds - result.components.seconds), 1,
+                file: file, line: line
             )
         }
         runAssertions(with: name, assertions)

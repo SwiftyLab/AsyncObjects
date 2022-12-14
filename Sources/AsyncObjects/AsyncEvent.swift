@@ -25,15 +25,13 @@ import Foundation
 /// // signal event after completing some task
 /// event.signal()
 /// ```
-public actor AsyncEvent: AsyncObject, ContinuableCollection {
+public actor AsyncEvent: AsyncObject, ContinuableCollection, LoggableActor {
     /// The suspended tasks continuation type.
     @usableFromInline
-    internal typealias Continuation = SafeContinuation<
+    internal typealias Continuation = TrackedContinuation<
         GlobalContinuation<Void, Error>
     >
-    /// The platform dependent lock used to synchronize continuations tracking.
-    @usableFromInline
-    internal let locker: Locker = .init()
+
     /// The continuations stored with an associated key for all the suspended task that are waiting for event signal.
     @usableFromInline
     internal private(set) var continuations: [UUID: Continuation] = [:]
@@ -48,38 +46,111 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
+    ///   - file: The file add request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function add request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line add request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///   - preinit: The pre-initialization handler to run
+    ///              in the beginning of this method.
+    ///
+    /// - Important: The pre-initialization handler must run
+    ///              before any logic in this method.
     @inlinable
     internal func addContinuation(
         _ continuation: Continuation,
-        withKey key: UUID
+        withKey key: UUID,
+        file: String, function: String, line: UInt,
+        preinit: @Sendable () -> Void
     ) {
-        guard !continuation.resumed else { return }
-        guard !signalled else { continuation.resume(); return }
+        preinit()
+        log("Adding", id: key, file: file, function: function, line: line)
+        guard !continuation.resumed else {
+            log(
+                "Already resumed, not tracking", id: key,
+                file: file, function: function, line: line
+            )
+            return
+        }
+
+        guard !signalled else {
+            continuation.resume()
+            log("Resumed", id: key, file: file, function: function, line: line)
+            return
+        }
+
         continuations[key] = continuation
+        log("Tracking", id: key, file: file, function: function, line: line)
     }
 
     /// Remove continuation associated with provided key
     /// from `continuations` map and resumes with `CancellationError`.
     ///
-    /// - Parameter key: The key in the map.
+    /// - Parameters:
+    ///   - continuation: The continuation to remove and cancel.
+    ///   - key: The key in the map.
+    ///   - file: The file remove request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function remove request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line remove request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func removeContinuation(withKey key: UUID) {
+    internal func removeContinuation(
+        _ continuation: Continuation,
+        withKey key: UUID,
+        file: String, function: String, line: UInt
+    ) {
+        log("Removing", id: key, file: file, function: function, line: line)
         continuations.removeValue(forKey: key)
+        guard !continuation.resumed else {
+            log(
+                "Already resumed, not cancelling", id: key,
+                file: file, function: function, line: line
+            )
+            return
+        }
+
+        continuation.cancel()
+        log("Cancelled", id: key, file: file, function: function, line: line)
     }
 
     /// Resets signal of event.
+    ///
+    /// - Parameters:
+    ///   - file: The file reset originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function reset originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line reset originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func resetEvent() {
+    internal func resetEvent(file: String, function: String, line: UInt) {
         signalled = false
+        log("Reset", file: file, function: function, line: line)
     }
 
     /// Signals the event and resumes all the tasks
     /// suspended and waiting for signal.
+    ///
+    /// - Parameters:
+    ///   - file: The file signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func signalEvent() {
-        continuations.forEach { $0.value.resume() }
+    internal func signalEvent(file: String, function: String, line: UInt) {
+        log("Signalling", file: file, function: function, line: line)
+        continuations.forEach { key, value in
+            value.resume()
+            log("Resumed", id: key, file: file, function: function, line: line)
+        }
         continuations = [:]
         signalled = true
+        log("Signalled", file: file, function: function, line: line)
     }
 
     // MARK: Public
@@ -93,7 +164,8 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
         self.signalled = signalled
     }
 
-    deinit { self.continuations.forEach { $0.value.cancel() } }
+    // TODO: Explore alternative cleanup for actor
+    // deinit { self.continuations.forEach { $1.cancel() } }
 
     /// Resets signal of event.
     ///
@@ -112,7 +184,7 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await resetEvent() }
+        Task { await resetEvent(file: file, function: function, line: line) }
     }
 
     /// Signals the event.
@@ -132,7 +204,7 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await signalEvent() }
+        Task { await signalEvent(file: file, function: function, line: line) }
     }
 
     /// Waits for event signal, or proceeds if already signalled.
@@ -155,7 +227,32 @@ public actor AsyncEvent: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) async throws {
-        guard !signalled else { return }
-        try await withPromisedContinuation()
+        guard !signalled else {
+            log("Acquired", file: file, function: function, line: line)
+            return
+        }
+
+        let key = UUID()
+        log("Waiting", id: key, file: file, function: function, line: line)
+        try await withPromisedContinuation(
+            withKey: key,
+            file: file, function: function, line: line
+        )
+        log("Received", id: key, file: file, function: function, line: line)
     }
 }
+
+#if canImport(Logging)
+import Logging
+
+extension AsyncEvent {
+    /// Type specific metadata to attach to all log messages.
+    @usableFromInline
+    var metadata: Logger.Metadata {
+        return [
+            "obj": "\(self)(\(Unmanaged.passUnretained(self).toOpaque()))",
+            "signalled": "\(signalled)",
+        ]
+    }
+}
+#endif

@@ -26,15 +26,13 @@ import OrderedCollections
 /// // release after executing critical async tasks
 /// defer { semaphore.signal() }
 /// ```
-public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
+public actor AsyncSemaphore: AsyncObject, ContinuableCollection, LoggableActor {
     /// The suspended tasks continuation type.
     @usableFromInline
-    internal typealias Continuation = SafeContinuation<
+    internal typealias Continuation = TrackedContinuation<
         GlobalContinuation<Void, Error>
     >
-    /// The platform dependent lock used to synchronize continuations tracking.
-    @usableFromInline
-    internal let locker: Locker = .init()
+
     /// The continuations stored with an associated key for all the suspended task that are waiting for access to resource.
     @usableFromInline
     internal private(set) var continuations:
@@ -58,25 +56,76 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
     /// - Parameters:
     ///   - continuation: The `continuation` to add.
     ///   - key: The key in the map.
+    ///   - file: The file add request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function add request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line add request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///   - preinit: The pre-initialization handler to run
+    ///              in the beginning of this method.
+    ///
+    /// - Important: The pre-initialization handler must run
+    ///              before any logic in this method.
     @inlinable
     internal func addContinuation(
         _ continuation: Continuation,
-        withKey key: UUID
+        withKey key: UUID,
+        file: String, function: String, line: UInt,
+        preinit: @Sendable () -> Void
     ) {
+        preinit()
         count -= 1
-        guard !continuation.resumed else { return }
-        guard count <= 0 else { continuation.resume(); return }
+        log("Adding", id: key, file: file, function: function, line: line)
+        guard !continuation.resumed else {
+            log(
+                "Already resumed, not tracking", id: key,
+                file: file, function: function, line: line
+            )
+            return
+        }
+
+        guard count <= 0 else {
+            continuation.resume()
+            log("Resumed", id: key, file: file, function: function, line: line)
+            return
+        }
+
         continuations[key] = continuation
+        log("Tracking", id: key, file: file, function: function, line: line)
     }
 
     /// Remove continuation associated with provided key
     /// from `continuations` map and resumes with `CancellationError`.
     ///
-    /// - Parameter key: The key in the map.
+    /// - Parameters:
+    ///   - continuation: The continuation to remove and cancel.
+    ///   - key: The key in the map.
+    ///   - file: The file remove request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function remove request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line remove request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func removeContinuation(withKey key: UUID) {
-        continuations.removeValue(forKey: key)
+    internal func removeContinuation(
+        _ continuation: Continuation,
+        withKey key: UUID,
+        file: String, function: String, line: UInt
+    ) {
+        log("Removing", id: key, file: file, function: function, line: line)
         incrementCount()
+        continuations.removeValue(forKey: key)
+        guard !continuation.resumed else {
+            log(
+                "Already resumed, not cancelling", id: key,
+                file: file, function: function, line: line
+            )
+            return
+        }
+
+        continuation.cancel()
+        log("Cancelled", id: key, file: file, function: function, line: line)
     }
 
     /// Increments semaphore count within limit provided.
@@ -87,12 +136,22 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
     }
 
     /// Signals (increments) and releases a semaphore.
+    ///
+    /// - Parameters:
+    ///   - file: The file signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function signal originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line signal originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func signalSemaphore() {
+    internal func signalSemaphore(file: String, function: String, line: UInt) {
         incrementCount()
         guard !continuations.isEmpty else { return }
-        let (_, continuation) = continuations.removeFirst()
+        log("Signalling", file: file, function: function, line: line)
+        let (key, continuation) = continuations.removeFirst()
         continuation.resume()
+        log("Resumed", id: key, file: file, function: function, line: line)
     }
 
     // MARK: Public
@@ -110,7 +169,8 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
         self.count = Int(limit)
     }
 
-    deinit { self.continuations.forEach { $0.value.cancel() } }
+    // TODO: Explore alternative cleanup for actor
+    // deinit { self.continuations.forEach { $1.cancel() } }
 
     /// Signals (increments) a semaphore.
     ///
@@ -131,7 +191,9 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await signalSemaphore() }
+        Task {
+            await signalSemaphore(file: file, function: function, line: line)
+        }
     }
 
     /// Waits for, or decrements, a semaphore.
@@ -154,7 +216,34 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection {
         function: String = #function,
         line: UInt = #line
     ) async throws {
-        guard count <= 1 else { count -= 1; return }
-        try await withPromisedContinuation()
+        guard count <= 1 else {
+            count -= 1
+            log("Acquired", file: file, function: function, line: line)
+            return
+        }
+
+        let key = UUID()
+        log("Waiting", id: key, file: file, function: function, line: line)
+        try await withPromisedContinuation(
+            withKey: key,
+            file: file, function: function, line: line
+        )
+        log("Received", id: key, file: file, function: function, line: line)
     }
 }
+
+#if canImport(Logging)
+import Logging
+
+extension AsyncSemaphore {
+    /// Type specific metadata to attach to all log messages.
+    @usableFromInline
+    var metadata: Logger.Metadata {
+        return [
+            "obj": "\(self)(\(Unmanaged.passUnretained(self).toOpaque()))",
+            "limit": "\(limit)",
+            "count": "\(count)",
+        ]
+    }
+}
+#endif

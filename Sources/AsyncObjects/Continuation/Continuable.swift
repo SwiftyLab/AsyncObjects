@@ -40,17 +40,20 @@ where Failure == Error {
     /// subsequent resumes have different behaviors depending on type implementing.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes the throwing continuation parameter.
     ///           You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
+    @_unsafeInheritExecutor
     static func with(
-        function: String,
+        file: String, function: String, line: UInt,
         _ body: (Self) -> Void
     ) async throws -> Success
 }
@@ -69,16 +72,19 @@ where Failure == Never {
     /// subsequent resumes have different behavior depending on type implementing.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes the non-throwing continuation parameter.
     ///           You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
+    @_unsafeInheritExecutor
     static func with(
-        function: String,
+        file: String, function: String, line: UInt,
         _ body: (Self) -> Void
     ) async -> Success
 }
@@ -123,17 +129,19 @@ internal protocol ThrowingContinuable: Continuable where Failure == Error {
     /// subsequent resumes have different behaviors depending on type implementing.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes the throwing continuation parameter.
     ///           You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     static func with(
-        function: String,
+        file: String, function: String, line: UInt,
         _ body: (Self) -> Void
     ) async throws -> Success
 }
@@ -151,16 +159,18 @@ internal protocol NonThrowingContinuable: Continuable where Failure == Never {
     /// subsequent resumes have different behavior depending on type implementing.
     ///
     /// - Parameters:
+    ///   - file: The file from which suspension requested.
     ///   - function: A string identifying the declaration
     ///               that is the notional source for the continuation,
     ///               used to identify the continuation in runtime diagnostics
     ///               related to misuse of this continuation.
+    ///   - line: The line from which suspension requested.
     ///   - body: A closure that takes the non-throwing continuation parameter.
     ///           You can resume the continuation exactly once.
     ///
     /// - Returns: The value passed to the continuation by the closure.
     static func with(
-        function: String,
+        file: String, function: String, line: UInt,
         _ body: (Self) -> Void
     ) async -> Success
 }
@@ -180,6 +190,7 @@ public extension Continuable {
     /// The task continues executing when its executor schedules it.
     ///
     /// - Parameter value: The value to return from the continuation.
+    @inlinable
     func resume(returning value: Success) {
         self.resume(with: .success(value))
     }
@@ -190,8 +201,9 @@ public extension Continuable {
     ///
     /// After calling this method, control immediately returns to the caller.
     /// The task continues executing when its executor schedules it.
-    func resume(returning value: Success = ()) where Success == Void {
-        self.resume(with: .success(value))
+    @inlinable
+    func resume() where Success == Void {
+        self.resume(with: .success(()))
     }
 
     /// Resume the task awaiting the continuation by having it throw an error from its suspension point.
@@ -202,6 +214,7 @@ public extension Continuable {
     /// The task continues executing when its executor schedules it.
     ///
     /// - Parameter error: The error to throw from the continuation.
+    @inlinable
     func resume(throwing error: Failure) {
         self.resume(with: .failure(error))
     }

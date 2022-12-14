@@ -91,10 +91,16 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
         taskCount count: Int = 1,
         withDelay delay: UInt64 = 2,
         timeout: UInt64 = 1,
-        durationInSeconds seconds: Int = 0
+        durationInSeconds seconds: Int = 0,
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line
     ) async throws {
         let semaphore = AsyncSemaphore(value: value)
-        try await Self.checkExecInterval(durationInSeconds: seconds) {
+        try await Self.checkExecInterval(
+            durationInSeconds: seconds,
+            file: file, function: function, line: line
+        ) {
             try await withThrowingTaskGroup(of: Bool.self) { group in
                 for _ in 0..<count {
                     group.addTask {
@@ -115,16 +121,13 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
                 for try await success in group {
                     if success { successes += 1 } else { failures += 1 }
                 }
-                XCTAssertEqual(successes, value)
-                XCTAssertEqual(failures, UInt(count) - value)
-            }
-        }
-    }
 
-    func testWaitZeroTimeout() async throws {
-        let semaphore = AsyncSemaphore(value: 1)
-        try await Self.checkExecInterval(durationInSeconds: 0) {
-            try await semaphore.wait(forNanoseconds: 0)
+                XCTAssertEqual(successes, value, file: file, line: line)
+                XCTAssertEqual(
+                    failures, UInt(count) - value,
+                    file: file, line: line
+                )
+            }
         }
     }
 
@@ -206,10 +209,16 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
         withDelay delay: UInt64 = 2,
         timeout: UInt64 = 1,
         durationInSeconds seconds: Int = 0,
-        clock: C
+        clock: C,
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line
     ) async throws where C.Duration == Duration {
         let semaphore = AsyncSemaphore(value: value)
-        try await Self.checkExecInterval(durationInSeconds: seconds) {
+        try await Self.checkExecInterval(
+            durationInSeconds: seconds,
+            file: file, function: function, line: line
+        ) {
             try await withThrowingTaskGroup(of: Bool.self) { group in
                 for _ in 0..<count {
                     group.addTask {
@@ -233,22 +242,13 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
                 for try await success in group {
                     if success { successes += 1 } else { failures += 1 }
                 }
-                XCTAssertEqual(successes, value)
-                XCTAssertEqual(failures, UInt(count) - value)
-            }
-        }
-    }
 
-    func testWaitZeroTimeout() async throws {
-        guard
-            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
-        else {
-            throw XCTSkip("Clock API not available")
-        }
-        let clock: ContinuousClock = .continuous
-        let semaphore = AsyncSemaphore(value: 1)
-        try await Self.checkExecInterval(duration: .seconds(0), clock: clock) {
-            try await semaphore.wait(forSeconds: 0, clock: clock)
+                XCTAssertEqual(successes, value, file: file, line: line)
+                XCTAssertEqual(
+                    failures, UInt(count) - value,
+                    file: file, line: line
+                )
+            }
         }
     }
 
@@ -395,9 +395,15 @@ fileprivate extension XCTestCase {
         for semaphore: AsyncSemaphore,
         taskCount count: Int = 1,
         withDelay delay: UInt64 = 1,
-        durationInSeconds seconds: Int = 1
+        durationInSeconds seconds: Int = 1,
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line
     ) async throws {
-        try await Self.checkExecInterval(durationInSeconds: seconds) {
+        try await Self.checkExecInterval(
+            durationInSeconds: seconds,
+            file: file, function: function, line: line
+        ) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for _ in 0..<count {
                     group.addTask {
