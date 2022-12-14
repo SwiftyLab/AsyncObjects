@@ -30,7 +30,7 @@ internal protocol ContinuableCollection {
     func addContinuation(
         _ continuation: Continuation, withKey key: Key,
         file: String, function: String, line: UInt,
-        preinit: @escaping @Sendable () -> Void
+        preinit: @Sendable () -> Void
     ) async
     /// Remove continuation with the associated key from collection out of tracking.
     ///

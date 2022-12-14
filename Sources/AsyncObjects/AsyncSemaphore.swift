@@ -72,7 +72,7 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection, LoggableActor {
         _ continuation: Continuation,
         withKey key: UUID,
         file: String, function: String, line: UInt,
-        preinit: @escaping @Sendable () -> Void
+        preinit: @Sendable () -> Void
     ) {
         preinit()
         count -= 1

@@ -74,8 +74,8 @@ where Self: Sendable, Value: Sendable & ThrowingContinuable {
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line,
-        handler: @escaping @Sendable (Self) -> Void,
-        operation: @escaping (Self, @escaping @Sendable () -> Void) -> Void
+        handler: @Sendable (Self) -> Void,
+        operation: (Self, @escaping @Sendable () -> Void) -> Void
     ) async rethrows -> Success {
         let cancellable = Self(
             with: nil, id: id,
@@ -163,8 +163,8 @@ where Self: Sendable, Value: Sendable & NonThrowingContinuable {
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line,
-        handler: @escaping @Sendable (Self) -> Void,
-        operation: @escaping (Self, @escaping @Sendable () -> Void) -> Void
+        handler: @Sendable (Self) -> Void,
+        operation: (Self, @escaping @Sendable () -> Void) -> Void
     ) async -> Success {
         let cancellable = Self(
             with: nil, id: id,

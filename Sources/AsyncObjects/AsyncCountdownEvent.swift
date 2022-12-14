@@ -111,7 +111,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollection,
         _ continuation: Continuation,
         withKey key: UUID,
         file: String, function: String, line: UInt,
-        preinit: @escaping @Sendable () -> Void
+        preinit: @Sendable () -> Void
     ) {
         preinit()
         log("Adding", id: key, file: file, function: function, line: line)

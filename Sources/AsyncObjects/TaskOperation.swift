@@ -252,7 +252,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         _ continuation: Continuation,
         withKey key: UUID,
         file: String, function: String, line: UInt,
-        preinit: @escaping @Sendable () -> Void
+        preinit: @Sendable () -> Void
     ) {
         locker.perform {
             preinit()
