@@ -26,7 +26,7 @@ jobs:
   # analyze:
   #   name: Analyze
   #   if: github.event_name != 'workflow_dispatch'
-  #   uses: SwiftyLab/ci/.github/workflows/codeql-analysis.yml@main
+  #   uses: SwiftyLab/ci/.github/workflows/codeql-analysis.yml@parallel
   #   permissions:
   #     actions: read
   #     contents: read
@@ -46,7 +46,7 @@ jobs:
 
   swift-package-test:
     name: Swift Package
-    uses: SwiftyLab/ci/.github/workflows/swift-package.yml@main
+    uses: SwiftyLab/ci/.github/workflows/swift-package.yml@parallel
     secrets: inherit
     with:
       codecov-swift: '5.7'
@@ -67,75 +67,21 @@ jobs:
 
   cocoapods-test:
     name: CocoaPods
-    uses: SwiftyLab/ci/.github/workflows/cocoapods.yml@main
-    with:
-      matrix: >
-        {
-          "include": [
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "macos"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "watchos"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "tvos"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "ios"
-            }
-          ]
-        }
+    uses: SwiftyLab/ci/.github/workflows/cocoapods.yml@parallel
 
   xcode-test:
     name: Xcode
-    uses: SwiftyLab/ci/.github/workflows/xcode.yml@main
+    uses: SwiftyLab/ci/.github/workflows/xcode.yml@parallel
     with:
-      matrix: >
-        {
-          "include": [
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "macOS"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "watchOS"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "tvOS"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "iOS"
-            },
-            {
-              "os": "macos-12",
-              "xcode": "latest-stable",
-              "platform": "mac-catalyst"
-            }
-          ]
-        }
+      os: macos-12
+      xcode: '13.3.1'
 
   ci:
     name: CI
     if: github.event_name == 'push'
     needs: [swift-package-test, xcode-test, cocoapods-test]
     # needs: [analyze, swift-package-test, xcode-test, cocoapods-test]
-    uses: SwiftyLab/ci/.github/workflows/ci.yml@main
+    uses: SwiftyLab/ci/.github/workflows/ci.yml@parallel
 
   cd:
     name: CD
@@ -151,7 +97,7 @@ jobs:
     # (needs.analyze.result == 'success' || needs.analyze.result == 'skipped')
     needs: [ci, swift-package-test, xcode-test, cocoapods-test]
     # needs: [ci, analyze, swift-package-test, xcode-test, cocoapods-test]
-    uses: SwiftyLab/ci/.github/workflows/cd.yml@main
+    uses: SwiftyLab/ci/.github/workflows/cd.yml@parallel
     with:
       os: macos-12
       version: ${{ github.event.inputs.version }}
