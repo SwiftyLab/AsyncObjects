@@ -115,8 +115,8 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollectionActor,
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) {
-        log("Removing", id: key, file: file, function: function, line: line)
         incrementCount()
+        log("Removing", id: key, file: file, function: function, line: line)
         continuations.removeValue(forKey: key)
         guard !continuation.resumed else {
             log(
