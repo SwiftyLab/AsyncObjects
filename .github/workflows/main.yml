@@ -64,10 +64,6 @@ jobs:
             },
             {
               "os": "windows-latest",
-              "swift": "5.7"
-            },
-            {
-              "os": "windows-latest",
               "swift": "5.6"
             }
           ]
