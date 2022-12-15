@@ -25,7 +25,8 @@ import Foundation
 /// // signal event after completing some task
 /// event.signal()
 /// ```
-public actor AsyncEvent: AsyncObject, ContinuableCollection, LoggableActor {
+public actor AsyncEvent: AsyncObject, ContinuableCollectionActor, LoggableActor
+{
     /// The suspended tasks continuation type.
     @usableFromInline
     internal typealias Continuation = TrackedContinuation<

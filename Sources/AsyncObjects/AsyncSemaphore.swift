@@ -26,7 +26,9 @@ import OrderedCollections
 /// // release after executing critical async tasks
 /// defer { semaphore.signal() }
 /// ```
-public actor AsyncSemaphore: AsyncObject, ContinuableCollection, LoggableActor {
+public actor AsyncSemaphore: AsyncObject, ContinuableCollectionActor,
+    LoggableActor
+{
     /// The suspended tasks continuation type.
     @usableFromInline
     internal typealias Continuation = TrackedContinuation<
@@ -113,8 +115,8 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollection, LoggableActor {
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) {
-        log("Removing", id: key, file: file, function: function, line: line)
         incrementCount()
+        log("Removing", id: key, file: file, function: function, line: line)
         continuations.removeValue(forKey: key)
         guard !continuation.resumed else {
             log(

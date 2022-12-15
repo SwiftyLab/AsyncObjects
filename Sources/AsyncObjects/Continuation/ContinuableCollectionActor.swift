@@ -1,14 +1,21 @@
 #if swift(>=5.7)
 import Foundation
+
+/// An actor type that manages a collection of continuations with an associated key.
+///
+/// On `Swift 5.7` and above [actor isolation bug with protocol conformance](https://forums.swift.org/t/actor-isolation-is-broken-by-protocol-conformance/57040)
+/// is fixed, and hence original protocol can be used without any issue.
+typealias ContinuableCollectionActor = ContinuableCollection
 #else
 @preconcurrency import Foundation
-#endif
 
-/// A type that manages a collection of continuations with an associated key.
+/// An actor type that manages a collection of continuations with an associated key.
+///
+/// This is to avoid [actor isolation bug with protocol conformance on older `Swift` versions](https://forums.swift.org/t/actor-isolation-is-broken-by-protocol-conformance/57040).
 ///
 /// While removing continuation, the continuation should be cancelled.
 @rethrows
-internal protocol ContinuableCollection {
+internal protocol ContinuableCollectionActor: Actor {
     /// The continuation item type in collection.
     associatedtype Continuation: Continuable
     /// The key type that is associated with each continuation item.
@@ -31,7 +38,7 @@ internal protocol ContinuableCollection {
         _ continuation: Continuation, withKey key: Key,
         file: String, function: String, line: UInt,
         preinit: @Sendable () -> Void
-    ) async
+    )
     /// Remove continuation with the associated key from collection out of tracking.
     ///
     /// - Parameters:
@@ -43,7 +50,7 @@ internal protocol ContinuableCollection {
     func removeContinuation(
         _ continuation: Continuation, withKey key: Key,
         file: String, function: String, line: UInt
-    ) async
+    )
     /// Suspends the current task, then calls the given closure with a continuation for the current task.
     ///
     /// - Parameters:
@@ -60,7 +67,7 @@ internal protocol ContinuableCollection {
     ) async rethrows -> Continuation.Success
 }
 
-extension ContinuableCollection
+extension ContinuableCollectionActor
 where
     Self: AnyObject & Sendable, Continuation: TrackableContinuable & Sendable,
     Continuation.Value: Sendable & ThrowingContinuable, Key: Sendable,
@@ -108,3 +115,4 @@ where
         }
     }
 }
+#endif
