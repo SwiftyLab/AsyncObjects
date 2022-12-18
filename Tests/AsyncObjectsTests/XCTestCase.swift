@@ -45,11 +45,11 @@ extension XCTestCase {
 
         let assertions = {
             XCTAssertLessThanOrEqual(
-                duration, seconds + 1,
+                duration, seconds + 3,
                 file: file, line: line
             )
             XCTAssertGreaterThanOrEqual(
-                duration, seconds - 1,
+                duration, seconds - 3,
                 file: file, line: line
             )
         }
@@ -123,7 +123,7 @@ extension XCTestCase {
         let result = try await clock.measure { try await task() }
         let assertions = {
             XCTAssertLessThanOrEqual(
-                abs(duration.components.seconds - result.components.seconds), 1,
+                abs(duration.components.seconds - result.components.seconds), 3,
                 file: file, line: line
             )
         }

@@ -51,7 +51,9 @@ var settings: [SwiftSetting] = {
     return settings
 }()
 
-let appleGitHub = "https://github.com/apple"
+let github = "https://github.com"
+let appleGitHub = "\(github)/apple"
+
 let package = Package(
     name: "AsyncObjects",
     platforms: [
