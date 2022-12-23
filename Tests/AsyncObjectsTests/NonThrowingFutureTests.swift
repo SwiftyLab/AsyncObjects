@@ -99,8 +99,6 @@ class NonThrowingFutureCombiningTests: XCTestCase {
                     let value = await allFuture.get()
                     XCTAssertEqual(value, [1, 3, 2])
                 }
-                // Make sure previous tasks started
-                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -136,8 +134,6 @@ class NonThrowingFutureCombiningTests: XCTestCase {
                         }
                     }
                 }
-                // Make sure previous tasks started
-                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -168,8 +164,6 @@ class NonThrowingFutureCombiningTests: XCTestCase {
                         XCTAssertEqual(value, 1)
                     }
                 }
-                // Make sure previous tasks started
-                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
@@ -200,8 +194,6 @@ class NonThrowingFutureCombiningTests: XCTestCase {
                         XCTAssertEqual(value, 1)
                     }
                 }
-                // Make sure previous tasks started
-                try await Self.sleep(seconds: 0.01)
                 group.addTask {
                     try await Self.sleep(seconds: 1)
                     await future1.fulfill(producing: 1)
