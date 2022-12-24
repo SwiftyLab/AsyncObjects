@@ -7,7 +7,7 @@ class TaskOperationTests: XCTestCase {
 
     func testTaskOperation() async throws {
         let operation = TaskOperation {
-            (try? await Self.sleep(seconds: 3)) != nil
+            (try? await self.sleep(seconds: 3)) != nil
         }
         XCTAssertTrue(operation.isAsynchronous)
         XCTAssertFalse(operation.isExecuting)
@@ -42,7 +42,7 @@ class TaskOperationTests: XCTestCase {
 
     func testThrowingTaskOperation() async throws {
         let operation = TaskOperation {
-            try await Self.sleep(seconds: 3)
+            try await self.sleep(seconds: 3)
         }
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
@@ -72,20 +72,20 @@ class TaskOperationTests: XCTestCase {
 
     func testTaskOperationAsyncWait() async throws {
         let operation = TaskOperation {
-            (try? await Self.sleep(seconds: 3)) != nil
+            (try? await self.sleep(seconds: 3)) != nil
         }
         operation.signal()
-        try await Self.checkExecInterval(
+        try await self.checkExecInterval(
             durationInRange: ...3
         ) { try await operation.wait() }
     }
 
     func testDeinit() async throws {
-        let operation = TaskOperation { try await Self.sleep(seconds: 1) }
+        let operation = TaskOperation { try await self.sleep(seconds: 1) }
         operation.signal()
         try await operation.wait()
         self.addTeardownBlock { [weak operation] in
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             XCTAssertNil(operation)
         }
     }
@@ -95,7 +95,7 @@ class TaskOperationTests: XCTestCase {
             for _ in 0..<10 {
                 group.addTask {
                     let operation = TaskOperation {}
-                    try await Self.checkExecInterval(durationInSeconds: 0) {
+                    try await self.checkExecInterval(durationInSeconds: 0) {
                         try await withThrowingTaskGroup(of: Void.self) { g in
                             g.addTask { try await operation.wait() }
                             g.addTask { operation.signal() }
@@ -114,10 +114,10 @@ class TaskOperationTimeoutTests: XCTestCase {
 
     func testWait() async throws {
         let operation = TaskOperation {
-            (try? await Self.sleep(seconds: 1)) != nil
+            (try? await self.sleep(seconds: 1)) != nil
         }
         operation.signal()
-        try await Self.checkExecInterval(durationInSeconds: 1) {
+        try await self.checkExecInterval(durationInSeconds: 1) {
             try await operation.wait(forSeconds: 2)
         }
     }
@@ -130,10 +130,10 @@ class TaskOperationTimeoutTests: XCTestCase {
 
     func testWaitTimeout() async throws {
         let operation = TaskOperation {
-            (try? await Self.sleep(seconds: 3)) != nil
+            (try? await self.sleep(seconds: 3)) != nil
         }
         operation.signal()
-        await Self.checkExecInterval(durationInSeconds: 1) {
+        await self.checkExecInterval(durationInSeconds: 1) {
             do {
                 try await operation.wait(forSeconds: 1)
                 XCTFail("Unexpected task progression")
@@ -156,10 +156,10 @@ class TaskOperationClockTimeoutTests: XCTestCase {
         }
         let clock: ContinuousClock = .continuous
         let operation = TaskOperation {
-            (try? await Self.sleep(seconds: 1, clock: clock)) != nil
+            (try? await self.sleep(seconds: 1, clock: clock)) != nil
         }
         operation.signal()
-        try await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+        try await self.checkExecInterval(duration: .seconds(1), clock: clock) {
             try await operation.wait(forSeconds: 2, clock: clock)
         }
     }
@@ -173,7 +173,7 @@ class TaskOperationClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let operation = TaskOperation { /* Do nothing */  }
         operation.signal()
-        try await Self.checkExecInterval(duration: .seconds(0), clock: clock) {
+        try await self.checkExecInterval(duration: .seconds(0), clock: clock) {
             try await operation.wait(forSeconds: 2, clock: clock)
         }
     }
@@ -186,10 +186,10 @@ class TaskOperationClockTimeoutTests: XCTestCase {
         }
         let clock: ContinuousClock = .continuous
         let operation = TaskOperation {
-            (try? await Self.sleep(seconds: 3, clock: clock)) != nil
+            (try? await self.sleep(seconds: 3, clock: clock)) != nil
         }
         operation.signal()
-        await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+        await self.checkExecInterval(duration: .seconds(1), clock: clock) {
             do {
                 try await operation.wait(forSeconds: 1, clock: clock)
                 XCTFail("Unexpected task progression")
@@ -208,7 +208,7 @@ class TaskOperationCancellationTests: XCTestCase {
 
     func testCancellation() async throws {
         let operation = TaskOperation {
-            (try? await Self.sleep(seconds: 3)) != nil
+            (try? await self.sleep(seconds: 3)) != nil
         }
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
@@ -248,7 +248,7 @@ class TaskOperationCancellationTests: XCTestCase {
 
     func testThrowingCancellation() async throws {
         let operation = TaskOperation {
-            try await Self.sleep(seconds: 3)
+            try await self.sleep(seconds: 3)
         }
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
@@ -283,9 +283,9 @@ class TaskOperationCancellationTests: XCTestCase {
     }
 
     func testWaitCancellation() async throws {
-        let operation = TaskOperation { try await Self.sleep(seconds: 10) }
+        let operation = TaskOperation { try await self.sleep(seconds: 10) }
         let task = Task.detached {
-            try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await self.checkExecInterval(durationInSeconds: 0) {
                 try await operation.wait()
             }
         }
@@ -299,11 +299,11 @@ class TaskOperationCancellationTests: XCTestCase {
     }
 
     func testAlreadyCancelledTask() async throws {
-        let operation = TaskOperation { try await Self.sleep(seconds: 10) }
+        let operation = TaskOperation { try await self.sleep(seconds: 10) }
         let task = Task.detached {
-            try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await self.checkExecInterval(durationInSeconds: 0) {
                 do {
-                    try await Self.sleep(seconds: 5)
+                    try await self.sleep(seconds: 5)
                     XCTFail("Unexpected task progression")
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
@@ -322,7 +322,7 @@ class TaskOperationCancellationTests: XCTestCase {
     func testDeinit() async throws {
         let operation = TaskOperation {
             do {
-                try await Self.sleep(seconds: 2)
+                try await self.sleep(seconds: 2)
                 XCTFail("Unexpected task progression")
             } catch {
                 XCTAssertTrue(type(of: error) == CancellationError.self)
@@ -330,7 +330,7 @@ class TaskOperationCancellationTests: XCTestCase {
         }
         operation.signal()
         self.addTeardownBlock { [weak operation] in
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             XCTAssertNil(operation)
         }
     }
@@ -344,16 +344,16 @@ class TaskOperationTaskManagementTests: XCTestCase {
     ) -> TaskOperation<Void> {
         return TaskOperation(flags: track ? .trackUnstructuredTasks : []) {
             Task {
-                try await Self.sleep(seconds: 1)
+                try await self.sleep(seconds: 1)
             }
             Task {
-                try await Self.sleep(seconds: 2)
+                try await self.sleep(seconds: 2)
             }
             Task {
-                try await Self.sleep(seconds: 3)
+                try await self.sleep(seconds: 3)
             }
             Task.detached {
-                try await Self.sleep(seconds: 5)
+                try await self.sleep(seconds: 5)
             }
         }
     }
@@ -361,7 +361,7 @@ class TaskOperationTaskManagementTests: XCTestCase {
     func testOperationWithoutTrackingChildTasks() async throws {
         let operation = createOperationWithChildTasks(track: false)
         operation.signal()
-        try await Self.checkExecInterval(durationInSeconds: 0) {
+        try await self.checkExecInterval(durationInSeconds: 0) {
             try await operation.wait()
         }
     }
@@ -369,13 +369,13 @@ class TaskOperationTaskManagementTests: XCTestCase {
     func testOperationWithTrackingChildTasks() async throws {
         let operation = createOperationWithChildTasks(track: true)
         operation.signal()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await operation.wait()
         }
     }
 
     func testNotStartedError() async throws {
-        let operation = TaskOperation { try await Self.sleep(seconds: 1) }
+        let operation = TaskOperation { try await self.sleep(seconds: 1) }
         let result = await operation.result
         switch result {
         case .success: XCTFail("Unexpected operation result")
@@ -389,7 +389,7 @@ class TaskOperationTaskManagementTests: XCTestCase {
     }
 
     func testNotStartedCancellationError() async throws {
-        let operation = TaskOperation { try await Self.sleep(seconds: 1) }
+        let operation = TaskOperation { try await self.sleep(seconds: 1) }
         operation.cancel()
         let result = await operation.result
         switch result {

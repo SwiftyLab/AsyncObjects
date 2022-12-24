@@ -312,7 +312,7 @@ extension Future where Failure == Never {
     ///
     /// - Returns: The value continuation is resumed with.
     @inlinable
-    internal nonisolated func withPromisedContinuation(
+    internal func withPromisedContinuation(
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) async -> Output {
@@ -688,7 +688,7 @@ extension Future where Failure == Error {
     /// - Returns: The value continuation is resumed with.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    internal nonisolated func withPromisedContinuation(
+    internal func withPromisedContinuation(
         withKey key: UUID,
         file: String, function: String, line: UInt
     ) async throws -> Output {

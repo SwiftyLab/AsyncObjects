@@ -15,10 +15,10 @@ class TaskQueueTests: XCTestCase {
         let queue = TaskQueue()
         Task.detached {
             try await queue.exec(flags: .block) {
-                try await Self.sleep(seconds: 3)
+                try await self.sleep(seconds: 3)
             }
         }
-        try await Self.sleep(seconds: 1)
+        try await self.sleep(seconds: 1)
         queue.signal()
         let blocked = await queue.blocked
         XCTAssertTrue(blocked)
@@ -50,12 +50,12 @@ class TaskQueueTests: XCTestCase {
     func testTaskExecutionWithJustAddingTasks() async throws {
         let queue = TaskQueue()
         queue.addTask(flags: .barrier) {
-            try await Self.sleep(seconds: 2)
+            try await self.sleep(seconds: 2)
         }
         // Make sure previous tasks started
-        try await Self.sleep(seconds: 0.001)
-        try await Self.checkExecInterval(durationInSeconds: 2) {
-            queue.addTask { try! await Self.sleep(seconds: 2) }
+        try await self.sleep(seconds: 0.001)
+        try await self.checkExecInterval(durationInSeconds: 2) {
+            queue.addTask { try! await self.sleep(seconds: 2) }
             try await queue.wait()
         }
     }
@@ -63,14 +63,14 @@ class TaskQueueTests: XCTestCase {
     func testDeinit() async throws {
         let queue = TaskQueue()
         try await queue.exec(flags: .barrier) {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
         }
         try await queue.exec {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
         }
-        try await Self.sleep(seconds: 0.001)
+        try await self.sleep(seconds: 0.001)
         self.addTeardownBlock { [weak queue] in
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             XCTAssertNil(queue)
         }
     }
@@ -86,7 +86,7 @@ class TaskQueueTimeoutTests: XCTestCase {
         line: UInt = #line
     ) async throws {
         let queue = TaskQueue(priority: option.queue)
-        try await Self.checkExecInterval(
+        try await self.checkExecInterval(
             name: "For queue priority: \(option.queue.str), "
                 + "task priority: \(option.task.str) "
                 + "and flags: \(option.flags.rawValue)",
@@ -94,14 +94,14 @@ class TaskQueueTimeoutTests: XCTestCase {
             file: file, function: function, line: line
         ) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                await withUnsafeContinuation { continuation in
+                await waitForResume { continuation in
                     group.addTask {
                         try await queue.exec(
                             priority: option.task,
                             flags: [option.flags, .block]
                         ) {
                             continuation.resume()
-                            try await Self.sleep(seconds: 2)
+                            try await self.sleep(seconds: 2)
                         }
                     }
                 }
@@ -159,7 +159,7 @@ class TaskQueueTimeoutTests: XCTestCase {
         line: UInt = #line
     ) async throws where C.Duration == Duration {
         let queue = TaskQueue(priority: option.queue)
-        try await Self.checkExecInterval(
+        try await self.checkExecInterval(
             name: "For queue priority: \(option.queue.str), "
                 + "task priority: \(option.task.str) "
                 + "and flags: \(option.flags.rawValue)",
@@ -167,14 +167,14 @@ class TaskQueueTimeoutTests: XCTestCase {
             file: file, function: function, line: line
         ) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                await withUnsafeContinuation { continuation in
+                await waitForResume { continuation in
                     group.addTask {
                         try await queue.exec(
                             priority: option.task,
                             flags: [option.flags, .block]
                         ) {
                             continuation.resume()
-                            try await Self.sleep(seconds: 2, clock: clock)
+                            try await self.sleep(seconds: 2, clock: clock)
                         }
                     }
                 }
@@ -239,16 +239,16 @@ class TaskQueueBlockOperationTests: XCTestCase {
 
     func testExecutionOfTwoOperations() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask {
                     try await queue.exec(flags: .block) {
-                        try await Self.sleep(seconds: 1)
+                        try await self.sleep(seconds: 1)
                     }
                 }
                 group.addTask {
                     try await queue.exec(flags: .block) {
-                        try await Self.sleep(seconds: 2)
+                        try await self.sleep(seconds: 2)
                     }
                 }
                 try await group.waitForAll()
@@ -258,19 +258,19 @@ class TaskQueueBlockOperationTests: XCTestCase {
 
     func testExecutionOfTaskBeforeOperation() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 1) {
+        try await self.checkExecInterval(durationInSeconds: 1) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                await withUnsafeContinuation { continuation in
+                await waitForResume { continuation in
                     group.addTask {
                         try await queue.exec {
                             continuation.resume()
-                            try await Self.sleep(seconds: 1)
+                            try await self.sleep(seconds: 1)
                         }
                     }
                 }
                 group.addTask {
                     try await queue.exec(flags: .block) {
-                        try await Self.sleep(seconds: 1)
+                        try await self.sleep(seconds: 1)
                     }
                 }
                 try await group.waitForAll()
@@ -280,19 +280,19 @@ class TaskQueueBlockOperationTests: XCTestCase {
 
     func testExecutionOfTaskAfterOperation() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                await withUnsafeContinuation { continuation in
+                await waitForResume { continuation in
                     group.addTask {
                         try await queue.exec(flags: .block) {
                             continuation.resume()
-                            try await Self.sleep(seconds: 2)
+                            try await self.sleep(seconds: 2)
                         }
                     }
                 }
                 group.addTask {
                     try await queue.exec {
-                        try await Self.sleep(seconds: 1)
+                        try await self.sleep(seconds: 1)
                     }
                 }
                 try await group.waitForAll()
@@ -303,10 +303,10 @@ class TaskQueueBlockOperationTests: XCTestCase {
     func testCancellation() async throws {
         let queue = TaskQueue()
         queue.addTask(flags: .block) {
-            try await Self.sleep(seconds: 10)
+            try await self.sleep(seconds: 10)
         }
         let task = Task.detached {
-            try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await self.checkExecInterval(durationInSeconds: 0) {
                 await queue.exec(flags: .block) {}
                 try await queue.wait()
             }
@@ -323,12 +323,12 @@ class TaskQueueBlockOperationTests: XCTestCase {
     func testAlreadyCancelledTask() async throws {
         let queue = TaskQueue()
         queue.addTask(flags: .block) {
-            try await Self.sleep(seconds: 10)
+            try await self.sleep(seconds: 10)
         }
         let task = Task.detached {
-            try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await self.checkExecInterval(durationInSeconds: 0) {
                 do {
-                    try await Self.sleep(seconds: 5)
+                    try await self.sleep(seconds: 5)
                     XCTFail("Unexpected task progression")
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
@@ -347,16 +347,16 @@ class TaskQueueBlockOperationTests: XCTestCase {
 
     func testCancellationWithoutBlocking() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    try await Self.sleep(seconds: 1)
+                    try await self.sleep(seconds: 1)
                     // Throws error for waiting method
                     throw CancellationError()
                 }
                 group.addTask {
                     try await queue.exec(flags: .block) {
-                        try await Self.sleep(seconds: 2)
+                        try await self.sleep(seconds: 2)
                     }
                 }
                 do {
@@ -366,7 +366,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
                     group.cancelAll()
                 }
                 try await queue.exec {
-                    try await Self.sleep(seconds: 2)
+                    try await self.sleep(seconds: 2)
                 }
             }
         }
@@ -374,21 +374,21 @@ class TaskQueueBlockOperationTests: XCTestCase {
 
     func testMultipleCancellationWithoutBlocking() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    try await Self.sleep(seconds: 1)
+                    try await self.sleep(seconds: 1)
                     // Throws error for waiting method
                     throw CancellationError()
                 }
                 group.addTask {
                     try await queue.exec(flags: .block) {
-                        try await Self.sleep(seconds: 2)
+                        try await self.sleep(seconds: 2)
                     }
                 }
                 group.addTask {
                     try await queue.exec(flags: .block) {
-                        try await Self.sleep(seconds: 3)
+                        try await self.sleep(seconds: 3)
                     }
                 }
                 do {
@@ -398,7 +398,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
                     group.cancelAll()
                 }
                 try await queue.exec {
-                    try await Self.sleep(seconds: 2)
+                    try await self.sleep(seconds: 2)
                 }
             }
         }
@@ -406,26 +406,26 @@ class TaskQueueBlockOperationTests: XCTestCase {
 
     func testMixedeCancellationWithoutBlocking() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    try await Self.sleep(seconds: 1)
+                    try await self.sleep(seconds: 1)
                     // Throws error for waiting method
                     throw CancellationError()
                 }
                 group.addTask {
                     try await queue.exec(flags: .block) {
-                        try await Self.sleep(seconds: 2)
+                        try await self.sleep(seconds: 2)
                     }
                 }
                 group.addTask {
                     try await queue.exec(flags: .block) {
-                        try await Self.sleep(seconds: 3)
+                        try await self.sleep(seconds: 3)
                     }
                 }
                 group.addTask {
                     try await queue.exec {
-                        try await Self.sleep(seconds: 4)
+                        try await self.sleep(seconds: 4)
                     }
                 }
                 do {
@@ -435,7 +435,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
                     group.cancelAll()
                 }
                 try await queue.exec {
-                    try await Self.sleep(seconds: 2)
+                    try await self.sleep(seconds: 2)
                 }
             }
         }
@@ -447,16 +447,16 @@ class TaskQueueBarrierOperationTests: XCTestCase {
 
     func testExecutionOfTwoOperations() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
-                        try await Self.sleep(seconds: 2)
+                        try await self.sleep(seconds: 2)
                     }
                 }
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
-                        try await Self.sleep(seconds: 1)
+                        try await self.sleep(seconds: 1)
                     }
                 }
                 try await group.waitForAll()
@@ -466,19 +466,19 @@ class TaskQueueBarrierOperationTests: XCTestCase {
 
     func testExecutionOfTaskBeforeOperation() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                await withUnsafeContinuation { continuation in
+                await waitForResume { continuation in
                     group.addTask {
                         try await queue.exec {
                             continuation.resume()
-                            try await Self.sleep(seconds: 2)
+                            try await self.sleep(seconds: 2)
                         }
                     }
                 }
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
-                        try await Self.sleep(seconds: 1)
+                        try await self.sleep(seconds: 1)
                     }
                 }
                 try await group.waitForAll()
@@ -488,19 +488,19 @@ class TaskQueueBarrierOperationTests: XCTestCase {
 
     func testExecutionOfTaskAfterOperation() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                await withUnsafeContinuation { continuation in
+                await waitForResume { continuation in
                     group.addTask {
                         try await queue.exec(flags: .barrier) {
                             continuation.resume()
-                            try await Self.sleep(seconds: 2)
+                            try await self.sleep(seconds: 2)
                         }
                     }
                 }
                 group.addTask {
                     try await queue.exec {
-                        try await Self.sleep(seconds: 1)
+                        try await self.sleep(seconds: 1)
                     }
                 }
                 try await group.waitForAll()
@@ -511,10 +511,10 @@ class TaskQueueBarrierOperationTests: XCTestCase {
     func testCancellation() async throws {
         let queue = TaskQueue()
         queue.addTask(flags: .barrier) {
-            try await Self.sleep(seconds: 10)
+            try await self.sleep(seconds: 10)
         }
         let task = Task.detached {
-            try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await self.checkExecInterval(durationInSeconds: 0) {
                 await queue.exec(flags: .barrier) {}
                 try await queue.wait()
             }
@@ -531,12 +531,12 @@ class TaskQueueBarrierOperationTests: XCTestCase {
     func testAlreadyCancelledTask() async throws {
         let queue = TaskQueue()
         queue.addTask(flags: .barrier) {
-            try await Self.sleep(seconds: 10)
+            try await self.sleep(seconds: 10)
         }
         let task = Task.detached {
-            try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await self.checkExecInterval(durationInSeconds: 0) {
                 do {
-                    try await Self.sleep(seconds: 5)
+                    try await self.sleep(seconds: 5)
                     XCTFail("Unexpected task progression")
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
@@ -555,16 +555,16 @@ class TaskQueueBarrierOperationTests: XCTestCase {
 
     func testCancellationWithoutBlocking() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    try await Self.sleep(seconds: 1)
+                    try await self.sleep(seconds: 1)
                     // Throws error for waiting method
                     throw CancellationError()
                 }
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
-                        try await Self.sleep(seconds: 2)
+                        try await self.sleep(seconds: 2)
                     }
                 }
                 do {
@@ -574,7 +574,7 @@ class TaskQueueBarrierOperationTests: XCTestCase {
                     group.cancelAll()
                 }
                 try await queue.exec {
-                    try await Self.sleep(seconds: 2)
+                    try await self.sleep(seconds: 2)
                 }
             }
         }
@@ -582,21 +582,21 @@ class TaskQueueBarrierOperationTests: XCTestCase {
 
     func testMultipleCancellationWithoutBlocking() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    try await Self.sleep(seconds: 1)
+                    try await self.sleep(seconds: 1)
                     // Throws error for waiting method
                     throw CancellationError()
                 }
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
-                        try await Self.sleep(seconds: 3)
+                        try await self.sleep(seconds: 3)
                     }
                 }
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
-                        try await Self.sleep(seconds: 2)
+                        try await self.sleep(seconds: 2)
                     }
                 }
                 do {
@@ -606,7 +606,7 @@ class TaskQueueBarrierOperationTests: XCTestCase {
                     group.cancelAll()
                 }
                 try await queue.exec {
-                    try await Self.sleep(seconds: 2)
+                    try await self.sleep(seconds: 2)
                 }
             }
         }
@@ -614,26 +614,26 @@ class TaskQueueBarrierOperationTests: XCTestCase {
 
     func testMixedCancellationWithoutBlocking() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 await group.addTaskAndStart {
-                    try await Self.sleep(seconds: 1)
+                    try await self.sleep(seconds: 1)
                     // Throws error for waiting method
                     throw CancellationError()
                 }
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
-                        try await Self.sleep(seconds: 3)
+                        try await self.sleep(seconds: 3)
                     }
                 }
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
-                        try await Self.sleep(seconds: 2)
+                        try await self.sleep(seconds: 2)
                     }
                 }
                 group.addTask {
                     try await queue.exec {
-                        try await Self.sleep(seconds: 4)
+                        try await self.sleep(seconds: 4)
                     }
                 }
                 do {
@@ -643,7 +643,7 @@ class TaskQueueBarrierOperationTests: XCTestCase {
                     group.cancelAll()
                 }
                 try await queue.exec {
-                    try await Self.sleep(seconds: 2)
+                    try await self.sleep(seconds: 2)
                 }
             }
         }
@@ -655,19 +655,19 @@ class TaskQueueMixedOperationTests: XCTestCase {
 
     func testExecutionOfBlockTaskBeforeBarrierOperation() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                await withUnsafeContinuation { continuation in
+                await waitForResume { continuation in
                     group.addTask {
                         try await queue.exec(flags: .block) {
                             continuation.resume()
-                            try await Self.sleep(seconds: 2)
+                            try await self.sleep(seconds: 2)
                         }
                     }
                 }
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
-                        try await Self.sleep(seconds: 1)
+                        try await self.sleep(seconds: 1)
                     }
                 }
                 try await group.waitForAll()
@@ -677,19 +677,19 @@ class TaskQueueMixedOperationTests: XCTestCase {
 
     func testExecutionOfBlockTaskAfterBarrierOperation() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                await withUnsafeContinuation { continuation in
+                await waitForResume { continuation in
                     group.addTask {
                         try await queue.exec(flags: .barrier) {
                             continuation.resume()
-                            try await Self.sleep(seconds: 2)
+                            try await self.sleep(seconds: 2)
                         }
                     }
                 }
                 group.addTask {
                     try await queue.exec(flags: .block) {
-                        try await Self.sleep(seconds: 1)
+                        try await self.sleep(seconds: 1)
                     }
                 }
                 try await group.waitForAll()
@@ -702,31 +702,34 @@ class TaskQueueMixedOperationTests: XCTestCase {
     {
         let queue = TaskQueue()
         // Concurrent + Barrier
-        try await Self.checkExecInterval(durationInSeconds: 5) {
+        try await self.checkExecInterval(durationInSeconds: 5) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                await withUnsafeContinuation { continuation in
+                await waitForResume { continuation in
                     group.addTask {
                         try await queue.exec {
                             continuation.resume()
-                            try await Self.sleep(seconds: 2)
+                            try await self.sleep(seconds: 2)
                         }
                     }
                 }
                 group.addTask {
                     try await queue.exec(flags: .block) {
-                        try await Self.sleep(seconds: 1)
+                        try await self.sleep(seconds: 1)
                     }
                 }
-                while let (_, (_, flags)) = await Task(priority: .background, operation: {
-                    let items = await queue.queue
-                    return items.reversed().first
-                }).value {
+                while let (_, (_, flags)) = await Task(
+                    priority: .background,
+                    operation: {
+                        let items = await queue.queue
+                        return items.reversed().first
+                    }
+                ).value {
                     guard flags.contains(.block) else { continue }
                     break
                 }
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
-                        try await Self.sleep(seconds: 3)
+                        try await self.sleep(seconds: 3)
                     }
                 }
                 try await group.waitForAll()
@@ -739,31 +742,34 @@ class TaskQueueMixedOperationTests: XCTestCase {
     {
         let queue = TaskQueue()
         // Concurrent + Barrier + Block
-        await Self.checkExecInterval(durationInSeconds: 6) {
+        await self.checkExecInterval(durationInSeconds: 6) {
             await withTaskGroup(of: Void.self) { group in
-                await withUnsafeContinuation { continuation in
+                await waitForResume { continuation in
                     group.addTask {
                         await queue.exec {
                             continuation.resume()
-                            try! await Self.sleep(seconds: 3)
+                            try! await self.sleep(seconds: 3)
                         }
                     }
                 }
                 group.addTask {
                     await queue.exec(flags: .barrier) {
-                        try! await Self.sleep(seconds: 2)
+                        try! await self.sleep(seconds: 2)
                     }
                 }
-                while let (_, (_, flags)) = await Task(priority: .background, operation: {
-                    let items = await queue.queue
-                    return items.reversed().first
-                }).value {
+                while let (_, (_, flags)) = await Task(
+                    priority: .background,
+                    operation: {
+                        let items = await queue.queue
+                        return items.reversed().first
+                    }
+                ).value {
                     guard flags.contains(.barrier) else { continue }
                     break
                 }
                 group.addTask {
                     await queue.exec(flags: .block) {
-                        try! await Self.sleep(seconds: 1)
+                        try! await self.sleep(seconds: 1)
                     }
                 }
                 await group.waitForAll()
@@ -775,16 +781,16 @@ class TaskQueueMixedOperationTests: XCTestCase {
     /// https://forums.swift.org/t/concurrency-suspending-an-actor-async-func-until-the-actor-meets-certain-conditions/56580
     func testBarrierTaskWithMultipleConcurrentTasks() async throws {
         let queue = TaskQueue()
-        await Self.checkExecInterval(durationInSeconds: 8) {
+        await self.checkExecInterval(durationInSeconds: 8) {
             await withTaskGroup(of: Void.self) { group in
                 await withTaskGroup(of: Void.self) { cgroup in
                     for i in 0..<3 {
                         cgroup.addTask {
-                            await withUnsafeContinuation { continuation in
+                            await waitForResume { continuation in
                                 Task {
                                     await queue.exec {
                                         continuation.resume()
-                                        try! await Self.sleep(seconds: i + 1)
+                                        try! await self.sleep(seconds: i + 1)
                                     }
                                 }
                             }
@@ -794,29 +800,32 @@ class TaskQueueMixedOperationTests: XCTestCase {
                 }
                 group.addTask {
                     await queue.exec(flags: .barrier) {
-                        try! await Self.sleep(seconds: 2)
+                        try! await self.sleep(seconds: 2)
                     }
                 }
-                while let (_, (_, flags)) = await Task(priority: .background, operation: {
-                    let items = await queue.queue
-                    return items.reversed().first
-                }).value {
+                while let (_, (_, flags)) = await Task(
+                    priority: .background,
+                    operation: {
+                        let items = await queue.queue
+                        return items.reversed().first
+                    }
+                ).value {
                     guard flags.contains(.barrier) else { continue }
                     break
                 }
                 group.addTask {
                     await queue.exec {
-                        try! await Self.sleep(seconds: 1)
+                        try! await self.sleep(seconds: 1)
                     }
                 }
                 group.addTask {
                     await queue.exec {
-                        try! await Self.sleep(seconds: 2)
+                        try! await self.sleep(seconds: 2)
                     }
                 }
                 group.addTask {
                     await queue.exec {
-                        try! await Self.sleep(seconds: 3)
+                        try! await self.sleep(seconds: 3)
                     }
                 }
             }
@@ -825,16 +834,16 @@ class TaskQueueMixedOperationTests: XCTestCase {
 
     func testCancellableAndNonCancellableTasksWithBarrier() async throws {
         let queue = TaskQueue()
-        try await Self.checkExecInterval(durationInSeconds: 3) {
+        try await self.checkExecInterval(durationInSeconds: 3) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 try await withThrowingTaskGroup(of: Void.self) { cgroup in
                     for i in 0..<3 {
                         cgroup.addTask {
-                            await withUnsafeContinuation { continuation in
+                            await waitForResume { continuation in
                                 Task {
                                     try await queue.exec {
                                         continuation.resume()
-                                        try await Self.sleep(seconds: i + 1)
+                                        try await self.sleep(seconds: i + 1)
                                     }
                                 }
                             }
@@ -844,25 +853,28 @@ class TaskQueueMixedOperationTests: XCTestCase {
                 }
                 group.addTask {
                     try await queue.exec(flags: .barrier) {
-                        try await Self.sleep(seconds: 2)
+                        try await self.sleep(seconds: 2)
                     }
                 }
-                while let (_, (_, flags)) = await Task(priority: .background, operation: {
-                    let items = await queue.queue
-                    return items.reversed().first
-                }).value {
+                while let (_, (_, flags)) = await Task(
+                    priority: .background,
+                    operation: {
+                        let items = await queue.queue
+                        return items.reversed().first
+                    }
+                ).value {
                     guard flags.contains(.barrier) else { continue }
                     break
                 }
                 group.addTask {
                     try await queue.exec {
-                        try await Self.sleep(seconds: 2)
+                        try await self.sleep(seconds: 2)
                     }
                 }
                 group.addTask {
                     await queue.exec {
                         do {
-                            try await Self.sleep(seconds: 3)
+                            try await self.sleep(seconds: 3)
                             XCTFail("Unexpected task progression")
                         } catch {
                             XCTAssertTrue(
@@ -874,7 +886,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
                 group.addTask {
                     await queue.exec {
                         do {
-                            try await Self.sleep(seconds: 4)
+                            try await self.sleep(seconds: 4)
                             XCTFail("Unexpected task progression")
                         } catch {
                             XCTAssertTrue(
@@ -883,9 +895,12 @@ class TaskQueueMixedOperationTests: XCTestCase {
                         }
                     }
                 }
-                while await Task(priority: .background, operation: {
-                    return !(await queue.blocked)
-                }).value { }
+                while await Task(
+                    priority: .background,
+                    operation: {
+                        return !(await queue.blocked)
+                    }
+                ).value {}
                 group.cancelAll()
             }
         }
@@ -898,10 +913,10 @@ class TaskQueueCancellationTests: XCTestCase {
     func testWaitCancellation() async throws {
         let queue = TaskQueue()
         queue.addTask(flags: .barrier) {
-            try await Self.sleep(seconds: 10)
+            try await self.sleep(seconds: 10)
         }
         let task = Task.detached {
-            try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await self.checkExecInterval(durationInSeconds: 0) {
                 try await queue.wait()
             }
         }
@@ -917,12 +932,12 @@ class TaskQueueCancellationTests: XCTestCase {
     func testAlreadyCancelledTask() async throws {
         let queue = TaskQueue()
         queue.addTask(flags: .barrier) {
-            try await Self.sleep(seconds: 10)
+            try await self.sleep(seconds: 10)
         }
         let task = Task.detached {
-            try await Self.checkExecInterval(durationInSeconds: 0) {
+            try await self.checkExecInterval(durationInSeconds: 0) {
                 do {
-                    try await Self.sleep(seconds: 5)
+                    try await self.sleep(seconds: 5)
                     XCTFail("Unexpected task progression")
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
@@ -940,22 +955,22 @@ class TaskQueueCancellationTests: XCTestCase {
 
     func testCancellableAndNonCancellableTasks() async throws {
         let queue = TaskQueue()
-        await Self.checkExecInterval(durationInSeconds: 0) {
+        await self.checkExecInterval(durationInSeconds: 0) {
             await withThrowingTaskGroup(of: Void.self) { group in
                 group.addTask {
                     try await queue.exec {
-                        try await Self.sleep(seconds: 2)
+                        try await self.sleep(seconds: 2)
                     }
                 }
                 group.addTask {
                     try await queue.exec {
-                        try await Self.sleep(seconds: 3)
+                        try await self.sleep(seconds: 3)
                     }
                 }
                 group.addTask {
                     await queue.exec {
                         do {
-                            try await Self.sleep(seconds: 4)
+                            try await self.sleep(seconds: 4)
                             XCTFail("Unexpected task progression")
                         } catch {
                             XCTAssertTrue(
@@ -982,7 +997,7 @@ fileprivate extension XCTestCase {
         line: UInt = #line
     ) async throws {
         let queue = TaskQueue(priority: option.queue)
-        try await Self.checkExecInterval(
+        try await self.checkExecInterval(
             name: "For queue priority: \(option.queue.str), "
                 + "task priority: \(option.task.str) "
                 + "and flags: \(option.flags.rawValue)",
@@ -990,14 +1005,14 @@ fileprivate extension XCTestCase {
             file: file, function: function, line: line
         ) {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                await withUnsafeContinuation { continuation in
+                await waitForResume { continuation in
                     group.addTask {
                         try await queue.exec(
                             priority: option.task,
                             flags: option.flags
                         ) {
                             continuation.resume()
-                            try await Self.sleep(seconds: 1)
+                            try await self.sleep(seconds: 1)
                         }
                     }
                 }

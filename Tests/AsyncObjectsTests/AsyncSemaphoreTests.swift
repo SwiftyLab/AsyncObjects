@@ -6,17 +6,17 @@ class AsyncSemaphoreTests: XCTestCase {
 
     func testWaitWithTasksLessThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        try await Self.checkSemaphoreWait(for: semaphore, taskCount: 2)
+        try await self.checkSemaphoreWait(for: semaphore, taskCount: 2)
     }
 
     func testWaitWithTasksEqualToCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        try await Self.checkSemaphoreWait(for: semaphore, taskCount: 3)
+        try await self.checkSemaphoreWait(for: semaphore, taskCount: 3)
     }
 
     func testWaitWithTasksGreaterThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        try await Self.checkSemaphoreWait(
+        try await self.checkSemaphoreWait(
             for: semaphore,
             taskCount: 5,
             durationInSeconds: 2
@@ -26,8 +26,8 @@ class AsyncSemaphoreTests: XCTestCase {
     func testSignaledWaitWithTasksGreaterThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
         semaphore.signal()
-        try await Self.sleep(seconds: 0.001)
-        try await Self.checkSemaphoreWait(
+        try await self.sleep(seconds: 0.001)
+        try await self.checkSemaphoreWait(
             for: semaphore,
             taskCount: 4,
             durationInSeconds: 2
@@ -53,12 +53,12 @@ class AsyncSemaphoreTests: XCTestCase {
     func testDeinit() async throws {
         let semaphore = AsyncSemaphore()
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             semaphore.signal()
         }
         try await semaphore.wait()
         self.addTeardownBlock { [weak semaphore] in
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             XCTAssertNil(semaphore)
         }
     }
@@ -68,7 +68,7 @@ class AsyncSemaphoreTests: XCTestCase {
             for _ in 0..<10 {
                 group.addTask {
                     let semaphore = AsyncSemaphore(value: 1)
-                    try await Self.checkExecInterval(durationInSeconds: 0) {
+                    try await self.checkExecInterval(durationInSeconds: 0) {
                         try await withThrowingTaskGroup(of: Void.self) {
                             group in
                             group.addTask { try await semaphore.wait() }
@@ -86,7 +86,7 @@ class AsyncSemaphoreTests: XCTestCase {
 @MainActor
 class AsyncSemaphoreTimeoutTests: XCTestCase {
 
-    static func checkSemaphoreWaitWithTimeOut(
+    func checkSemaphoreWaitWithTimeOut(
         value: UInt = 3,
         taskCount count: Int = 1,
         withDelay delay: UInt64 = 2,
@@ -97,7 +97,7 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
         line: UInt = #line
     ) async throws {
         let semaphore = AsyncSemaphore(value: value)
-        try await Self.checkExecInterval(
+        try await self.checkExecInterval(
             durationInSeconds: seconds,
             file: file, function: function, line: line
         ) {
@@ -111,7 +111,7 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
                         } catch {
                             success = false
                         }
-                        try await Self.sleep(seconds: delay)
+                        try await self.sleep(seconds: delay)
                         if success { semaphore.signal() }
                         return success
                     }
@@ -133,7 +133,7 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
 
     func testMutexWaitTimeout() async throws {
         let mutex = AsyncSemaphore()
-        await Self.checkExecInterval(durationInSeconds: 1) {
+        await self.checkExecInterval(durationInSeconds: 1) {
             do {
                 try await mutex.wait(forSeconds: 1)
                 XCTFail("Unexpected task progression")
@@ -146,16 +146,16 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
     func testMutexWait() async throws {
         let mutex = AsyncSemaphore()
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             mutex.signal()
         }
-        try await Self.checkExecInterval(durationInSeconds: 1) {
+        try await self.checkExecInterval(durationInSeconds: 1) {
             try await mutex.wait(forSeconds: 2)
         }
     }
 
     func testWaitTimeoutWithTasksLessThanCount() async throws {
-        try await Self.checkSemaphoreWaitWithTimeOut(
+        try await self.checkSemaphoreWaitWithTimeOut(
             taskCount: 3,
             timeout: 3,
             durationInSeconds: 2
@@ -163,7 +163,7 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
     }
 
     func testWaitTimeoutWithTasksGreaterThanCount() async throws {
-        try await Self.checkSemaphoreWaitWithTimeOut(
+        try await self.checkSemaphoreWaitWithTimeOut(
             taskCount: 5,
             timeout: 1,
             durationInSeconds: 2
@@ -172,13 +172,13 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
 
     func testWaitCancellationOnTimeoutWithTasksGreaterThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        try await Self.checkExecInterval(durationInSeconds: 4) {
+        try await self.checkExecInterval(durationInSeconds: 4) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for index in 0..<8 {
                     group.addTask {
                         if index <= 3 || index.isMultiple(of: 2) {
                             try await semaphore.wait()
-                            try await Self.sleep(seconds: 2)
+                            try await self.sleep(seconds: 2)
                             semaphore.signal()
                         } else {
                             do {
@@ -203,7 +203,7 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
 class AsyncSemaphoreClockTimeoutTests: XCTestCase {
 
     @available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
-    static func checkSemaphoreWaitWithTimeOut<C: Clock>(
+    func checkSemaphoreWaitWithTimeOut<C: Clock>(
         value: UInt = 3,
         taskCount count: Int = 1,
         withDelay delay: UInt64 = 2,
@@ -215,7 +215,7 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
         line: UInt = #line
     ) async throws where C.Duration == Duration {
         let semaphore = AsyncSemaphore(value: value)
-        try await Self.checkExecInterval(
+        try await self.checkExecInterval(
             durationInSeconds: seconds,
             file: file, function: function, line: line
         ) {
@@ -232,7 +232,7 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
                         } catch {
                             success = false
                         }
-                        try await Self.sleep(seconds: delay, clock: clock)
+                        try await self.sleep(seconds: delay, clock: clock)
                         if success { semaphore.signal() }
                         return success
                     }
@@ -260,7 +260,7 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
         }
         let clock: ContinuousClock = .continuous
         let mutex = AsyncSemaphore()
-        await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+        await self.checkExecInterval(duration: .seconds(1), clock: clock) {
             do {
                 try await mutex.wait(forSeconds: 1, clock: clock)
                 XCTFail("Unexpected task progression")
@@ -281,10 +281,10 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let mutex = AsyncSemaphore()
         Task.detached {
-            try await Self.sleep(seconds: 1, clock: clock)
+            try await self.sleep(seconds: 1, clock: clock)
             mutex.signal()
         }
-        try await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+        try await self.checkExecInterval(duration: .seconds(1), clock: clock) {
             try await mutex.wait(forSeconds: 2, clock: clock)
         }
     }
@@ -296,7 +296,7 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
             throw XCTSkip("Clock API not available")
         }
         let clock: ContinuousClock = .continuous
-        try await Self.checkSemaphoreWaitWithTimeOut(
+        try await self.checkSemaphoreWaitWithTimeOut(
             taskCount: 3,
             timeout: 3,
             durationInSeconds: 2,
@@ -311,7 +311,7 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
             throw XCTSkip("Clock API not available")
         }
         let clock: ContinuousClock = .continuous
-        try await Self.checkSemaphoreWaitWithTimeOut(
+        try await self.checkSemaphoreWaitWithTimeOut(
             taskCount: 5,
             timeout: 1,
             durationInSeconds: 2,
@@ -327,13 +327,13 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
         }
         let clock: ContinuousClock = .continuous
         let semaphore = AsyncSemaphore(value: 3)
-        try await Self.checkExecInterval(duration: .seconds(4), clock: clock) {
+        try await self.checkExecInterval(duration: .seconds(4), clock: clock) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for index in 0..<8 {
                     group.addTask {
                         if index <= 3 || index.isMultiple(of: 2) {
                             try await semaphore.wait()
-                            try await Self.sleep(seconds: 2, clock: clock)
+                            try await self.sleep(seconds: 2, clock: clock)
                             semaphore.signal()
                         } else {
                             do {
@@ -364,7 +364,7 @@ class AsyncSemaphoreCancellationTests: XCTestCase {
     func testWaitCancellation() async throws {
         let semaphore = AsyncSemaphore()
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 0) {
+            await self.checkExecInterval(durationInSeconds: 0) {
                 try? await semaphore.wait()
             }
         }
@@ -375,9 +375,9 @@ class AsyncSemaphoreCancellationTests: XCTestCase {
     func testAlreadyCancelledTask() async throws {
         let semaphore = AsyncSemaphore()
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 0) {
+            await self.checkExecInterval(durationInSeconds: 0) {
                 do {
-                    try await Self.sleep(seconds: 5)
+                    try await self.sleep(seconds: 5)
                     XCTFail("Unexpected task progression")
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
@@ -391,7 +391,7 @@ class AsyncSemaphoreCancellationTests: XCTestCase {
 
 fileprivate extension XCTestCase {
 
-    static func checkSemaphoreWait(
+    func checkSemaphoreWait(
         for semaphore: AsyncSemaphore,
         taskCount count: Int = 1,
         withDelay delay: UInt64 = 1,
@@ -400,7 +400,7 @@ fileprivate extension XCTestCase {
         function: StaticString = #function,
         line: UInt = #line
     ) async throws {
-        try await Self.checkExecInterval(
+        try await self.checkExecInterval(
             durationInSeconds: seconds,
             file: file, function: function, line: line
         ) {
@@ -409,7 +409,7 @@ fileprivate extension XCTestCase {
                     group.addTask {
                         try await semaphore.wait()
                         defer { semaphore.signal() }
-                        try await Self.sleep(seconds: delay)
+                        try await self.sleep(seconds: delay)
                     }
                 }
                 try await group.waitForAll()

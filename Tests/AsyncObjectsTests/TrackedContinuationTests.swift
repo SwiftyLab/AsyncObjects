@@ -15,7 +15,7 @@ class TrackedContinuationTests: XCTestCase {
     }
 
     func testDirectResumeWithSuccess() async throws {
-        await Self.checkExecInterval(durationInSeconds: 0) {
+        await self.checkExecInterval(durationInSeconds: 0) {
             await TrackedContinuation<GlobalContinuation<Void, Never>>.with {
                 XCTAssertFalse($0.resumed)
                 $0.resume()
@@ -26,7 +26,7 @@ class TrackedContinuationTests: XCTestCase {
 
     func testDirectResumeWithError() async throws {
         typealias C = GlobalContinuation<Void, Error>
-        await Self.checkExecInterval(durationInSeconds: 0) {
+        await self.checkExecInterval(durationInSeconds: 0) {
             do {
                 try await TrackedContinuation<C>.with { c in
                     XCTAssertFalse(c.resumed)
@@ -55,7 +55,7 @@ class TrackedContinuationTests: XCTestCase {
     func testCancellationHandlerWhenTaskCancelled() async throws {
         typealias C = GlobalContinuation<Void, Error>
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 0) {
+            await self.checkExecInterval(durationInSeconds: 0) {
                 do {
                     try await TrackedContinuation<C>
                         .withCancellation(id: .init()) {
@@ -76,9 +76,9 @@ class TrackedContinuationTests: XCTestCase {
     func testCancellationHandlerForAlreadyCancelledTask() async throws {
         typealias C = GlobalContinuation<Void, Error>
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 0) {
+            await self.checkExecInterval(durationInSeconds: 0) {
                 do {
-                    try await Self.sleep(seconds: 5)
+                    try await self.sleep(seconds: 5)
                     XCTFail("Unexpected task progression")
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
@@ -102,9 +102,9 @@ class TrackedContinuationTests: XCTestCase {
     func testNonCancellableContinuation() async throws {
         typealias C = GlobalContinuation<Void, Never>
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 1) {
+            await self.checkExecInterval(durationInSeconds: 1) {
                 do {
-                    try await Self.sleep(seconds: 5)
+                    try await self.sleep(seconds: 5)
                     XCTFail("Unexpected task progression")
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
@@ -115,7 +115,7 @@ class TrackedContinuationTests: XCTestCase {
                         preinit()
                         Task {
                             defer { continuation.resume() }
-                            try await Self.sleep(seconds: 1)
+                            try await self.sleep(seconds: 1)
                         }
                     }
             }

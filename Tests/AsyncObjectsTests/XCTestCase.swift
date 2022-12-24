@@ -7,12 +7,12 @@ extension XCTestCase {
     private static var activitySupported = ProcessInfo.processInfo.environment
         .keys.contains("__XCODE_BUILT_PRODUCTS_DIR_PATHS")
 
-    private static func runAssertions(
+    private func runAssertions(
         with name: String?,
         _ assertions: () -> Void
     ) {
         #if canImport(Darwin)
-        if let name = name, activitySupported {
+        if let name = name, Self.activitySupported {
             XCTContext.runActivity(named: name) { _ in
                 assertions()
             }
@@ -24,7 +24,7 @@ extension XCTestCase {
         #endif
     }
 
-    static func checkExecInterval<T: DivisiveArithmetic>(
+    func checkExecInterval<T: DivisiveArithmetic>(
         name: String? = nil,
         durationInSeconds seconds: T = .zero,
         file: StaticString = #filePath,
@@ -56,7 +56,7 @@ extension XCTestCase {
         runAssertions(with: name, assertions)
     }
 
-    static func checkExecInterval<R: RangeExpression>(
+    func checkExecInterval<R: RangeExpression>(
         name: String? = nil,
         durationInRange range: R,
         file: StaticString = #filePath,
@@ -87,12 +87,12 @@ extension XCTestCase {
         runAssertions(with: name, assertions)
     }
 
-    static func sleep<T: BinaryInteger>(seconds: T) async throws {
+    func sleep<T: BinaryInteger>(seconds: T) async throws {
         let second: T = 1_000_000_000
         try await Task.sleep(nanoseconds: UInt64(exactly: seconds * second)!)
     }
 
-    static func sleep<T: BinaryFloatingPoint>(seconds: T) async throws {
+    func sleep<T: BinaryFloatingPoint>(seconds: T) async throws {
         let second: T = 1_000_000_000
         try await Task.sleep(nanoseconds: UInt64(exactly: seconds * second)!)
     }
@@ -111,7 +111,7 @@ extension AsyncObject {
 @MainActor
 extension XCTestCase {
 
-    static func checkExecInterval<C: Clock>(
+    func checkExecInterval<C: Clock>(
         name: String? = nil,
         duration: C.Instant.Duration = .zero,
         clock: C,
@@ -130,7 +130,7 @@ extension XCTestCase {
         runAssertions(with: name, assertions)
     }
 
-    static func sleep<C: Clock, T: BinaryInteger>(
+    func sleep<C: Clock, T: BinaryInteger>(
         seconds: T,
         clock: C
     ) async throws where C.Duration == Duration {
@@ -140,7 +140,7 @@ extension XCTestCase {
         )
     }
 
-    static func sleep<C: Clock>(
+    func sleep<C: Clock>(
         seconds: Double,
         clock: C
     ) async throws where C.Duration == Duration {
@@ -176,3 +176,7 @@ protocol DivisiveArithmetic: Numeric {
 extension Int: DivisiveArithmetic {}
 extension Double: DivisiveArithmetic {}
 extension UInt64: DivisiveArithmetic {}
+
+func waitForResume(_ body: (UnsafeContinuation<Void, Never>) -> Void) async {
+    await withUnsafeContinuation(body)
+}

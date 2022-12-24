@@ -8,11 +8,11 @@ class AsyncObjectTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             event.signal()
             mutex.signal()
         }
-        try await Self.checkExecInterval(durationInSeconds: 1) {
+        try await self.checkExecInterval(durationInSeconds: 1) {
             try await waitForAll(event, mutex)
         }
     }
@@ -21,12 +21,12 @@ class AsyncObjectTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             event.signal()
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             mutex.signal()
         }
-        try await Self.checkExecInterval(durationInSeconds: 1) {
+        try await self.checkExecInterval(durationInSeconds: 1) {
             try await waitForAny(event, mutex)
         }
     }
@@ -35,18 +35,18 @@ class AsyncObjectTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         let op = TaskOperation {
-            try await Self.sleep(seconds: 3)
+            try await self.sleep(seconds: 3)
         }
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             event.signal()
         }
         Task.detached {
-            try await Self.sleep(seconds: 2)
+            try await self.sleep(seconds: 2)
             mutex.signal()
         }
         op.signal()
-        try await Self.checkExecInterval(durationInSeconds: 2) {
+        try await self.checkExecInterval(durationInSeconds: 2) {
             try await waitForAny(event, mutex, op, count: 2)
         }
     }
@@ -59,11 +59,11 @@ class AsyncObjectTimeoutTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             event.signal()
             mutex.signal()
         }
-        try await Self.checkExecInterval(durationInSeconds: 1) {
+        try await self.checkExecInterval(durationInSeconds: 1) {
             try await waitForAll(
                 event, mutex,
                 forNanoseconds: UInt64(2E9)
@@ -75,12 +75,12 @@ class AsyncObjectTimeoutTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             event.signal()
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             mutex.signal()
         }
-        try await Self.checkExecInterval(durationInSeconds: 1) {
+        try await self.checkExecInterval(durationInSeconds: 1) {
             try await waitForAny(
                 event, mutex,
                 forNanoseconds: UInt64(2E9)
@@ -91,7 +91,7 @@ class AsyncObjectTimeoutTests: XCTestCase {
     func testMultipleObjectWaitAllTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        await Self.checkExecInterval(durationInSeconds: 1) {
+        await self.checkExecInterval(durationInSeconds: 1) {
             do {
                 try await waitForAll(
                     event, mutex,
@@ -107,7 +107,7 @@ class AsyncObjectTimeoutTests: XCTestCase {
     func testMultipleObjectWaitAnyTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        await Self.checkExecInterval(durationInSeconds: 1) {
+        await self.checkExecInterval(durationInSeconds: 1) {
             do {
                 try await waitForAny(
                     event, mutex,
@@ -125,18 +125,18 @@ class AsyncObjectTimeoutTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         let op = TaskOperation {
-            try await Self.sleep(seconds: 4)
+            try await self.sleep(seconds: 4)
         }
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             event.signal()
         }
         Task.detached {
-            try await Self.sleep(seconds: 3)
+            try await self.sleep(seconds: 3)
             mutex.signal()
         }
         op.signal()
-        await Self.checkExecInterval(durationInSeconds: 2) {
+        await self.checkExecInterval(durationInSeconds: 2) {
             do {
                 try await waitForAny(
                     event, mutex, op,
@@ -165,11 +165,11 @@ class AsyncObjectClockTimeoutTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             event.signal()
             mutex.signal()
         }
-        try await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+        try await self.checkExecInterval(duration: .seconds(1), clock: clock) {
             try await waitForAll(
                 event, mutex,
                 until: .now + .seconds(2),
@@ -188,12 +188,12 @@ class AsyncObjectClockTimeoutTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             event.signal()
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             mutex.signal()
         }
-        try await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+        try await self.checkExecInterval(duration: .seconds(1), clock: clock) {
             try await waitForAny(
                 event, mutex,
                 until: .now + .seconds(2),
@@ -211,7 +211,7 @@ class AsyncObjectClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+        await self.checkExecInterval(duration: .seconds(1), clock: clock) {
             do {
                 try await waitForAll(
                     event, mutex,
@@ -236,7 +236,7 @@ class AsyncObjectClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+        await self.checkExecInterval(duration: .seconds(1), clock: clock) {
             do {
                 try await waitForAny(
                     event, mutex,
@@ -263,18 +263,18 @@ class AsyncObjectClockTimeoutTests: XCTestCase {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
         let op = TaskOperation {
-            try await Self.sleep(seconds: 4)
+            try await self.sleep(seconds: 4)
         }
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             event.signal()
         }
         Task.detached {
-            try await Self.sleep(seconds: 3)
+            try await self.sleep(seconds: 3)
             mutex.signal()
         }
         op.signal()
-        await Self.checkExecInterval(duration: .seconds(2), clock: clock) {
+        await self.checkExecInterval(duration: .seconds(2), clock: clock) {
             do {
                 try await waitForAny(
                     event, mutex, op,

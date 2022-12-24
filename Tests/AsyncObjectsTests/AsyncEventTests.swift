@@ -6,30 +6,30 @@ class AsyncEventTests: XCTestCase {
 
     func testWait() async throws {
         let event = AsyncEvent(signaledInitially: false)
-        try await Self.checkWait(for: event)
+        try await self.checkWait(for: event)
     }
 
     func testLockAndWait() async throws {
         let event = AsyncEvent()
         event.reset()
-        try await Self.sleep(seconds: 0.001)
-        try await Self.checkWait(for: event)
+        try await self.sleep(seconds: 0.001)
+        try await self.checkWait(for: event)
     }
 
     func testReleasedWait() async throws {
         let event = AsyncEvent()
-        try await Self.checkWait(for: event, durationInSeconds: 0)
+        try await self.checkWait(for: event, durationInSeconds: 0)
     }
 
     func testDeinit() async throws {
         let event = AsyncEvent(signaledInitially: false)
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             event.signal()
         }
         try await event.wait()
         self.addTeardownBlock { [weak event] in
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             XCTAssertNil(event)
         }
     }
@@ -39,7 +39,7 @@ class AsyncEventTests: XCTestCase {
             for _ in 0..<10 {
                 group.addTask {
                     let event = AsyncEvent(signaledInitially: false)
-                    try await Self.checkExecInterval(durationInSeconds: 0) {
+                    try await self.checkExecInterval(durationInSeconds: 0) {
                         try await withThrowingTaskGroup(of: Void.self) { g in
                             g.addTask { try await event.wait() }
                             g.addTask { event.signal() }
@@ -59,24 +59,24 @@ class AsyncEventTimeoutTests: XCTestCase {
     func testWait() async throws {
         let event = AsyncEvent(signaledInitially: false)
         Task.detached {
-            try await Self.sleep(seconds: 1)
+            try await self.sleep(seconds: 1)
             event.signal()
         }
-        try await Self.checkExecInterval(durationInSeconds: 1) {
+        try await self.checkExecInterval(durationInSeconds: 1) {
             try await event.wait(forSeconds: 2)
         }
     }
 
     func testReleasedWait() async throws {
         let event = AsyncEvent()
-        try await Self.checkExecInterval(durationInSeconds: 0) {
+        try await self.checkExecInterval(durationInSeconds: 0) {
             try await event.wait(forSeconds: 2)
         }
     }
 
     func testWaitTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
-        await Self.checkExecInterval(durationInSeconds: 1) {
+        await self.checkExecInterval(durationInSeconds: 1) {
             do {
                 try await event.wait(forSeconds: 1)
                 XCTFail("Unexpected task progression")
@@ -100,10 +100,10 @@ class AsyncEventClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let event = AsyncEvent(signaledInitially: false)
         Task.detached {
-            try await Self.sleep(seconds: 1, clock: clock)
+            try await self.sleep(seconds: 1, clock: clock)
             event.signal()
         }
-        try await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+        try await self.checkExecInterval(duration: .seconds(1), clock: clock) {
             try await event.wait(forSeconds: 2, clock: clock)
         }
     }
@@ -116,7 +116,7 @@ class AsyncEventClockTimeoutTests: XCTestCase {
         }
         let clock: ContinuousClock = .continuous
         let event = AsyncEvent()
-        try await Self.checkExecInterval(duration: .seconds(0), clock: clock) {
+        try await self.checkExecInterval(duration: .seconds(0), clock: clock) {
             try await event.wait(forSeconds: 2, clock: clock)
         }
     }
@@ -129,7 +129,7 @@ class AsyncEventClockTimeoutTests: XCTestCase {
         }
         let clock: ContinuousClock = .continuous
         let event = AsyncEvent(signaledInitially: false)
-        await Self.checkExecInterval(duration: .seconds(1), clock: clock) {
+        await self.checkExecInterval(duration: .seconds(1), clock: clock) {
             do {
                 try await event.wait(forSeconds: 1, clock: clock)
                 XCTFail("Unexpected task progression")
@@ -149,7 +149,7 @@ class AsyncEventCancellationTests: XCTestCase {
     func testWaitCancellation() async throws {
         let event = AsyncEvent(signaledInitially: false)
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 0) {
+            await self.checkExecInterval(durationInSeconds: 0) {
                 do {
                     try await event.wait()
                     XCTFail("Unexpected task progression")
@@ -165,9 +165,9 @@ class AsyncEventCancellationTests: XCTestCase {
     func testAlreadyCancelledTask() async throws {
         let event = AsyncEvent(signaledInitially: false)
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 0) {
+            await self.checkExecInterval(durationInSeconds: 0) {
                 do {
-                    try await Self.sleep(seconds: 5)
+                    try await self.sleep(seconds: 5)
                     XCTFail("Unexpected task progression")
                 } catch {}
                 XCTAssertTrue(Task.isCancelled)
@@ -181,7 +181,7 @@ class AsyncEventCancellationTests: XCTestCase {
 
 fileprivate extension XCTestCase {
 
-    static func checkWait(
+    func checkWait(
         for event: AsyncEvent,
         signalIn interval: UInt64 = 1,
         durationInSeconds seconds: Int = 1,
@@ -190,10 +190,10 @@ fileprivate extension XCTestCase {
         line: UInt = #line
     ) async throws {
         Task.detached {
-            try await Self.sleep(seconds: interval)
+            try await self.sleep(seconds: interval)
             event.signal()
         }
-        try await Self.checkExecInterval(
+        try await self.checkExecInterval(
             durationInSeconds: seconds,
             file: file, function: function, line: line
         ) { try await event.wait() }
