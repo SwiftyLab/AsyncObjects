@@ -1,5 +1,8 @@
 import XCTest
+import OrderedCollections
 @testable import AsyncObjects
+
+typealias QE = OrderedDictionary<UUID, TaskQueue.QueuedContinuation>.Element
 
 @MainActor
 class TaskQueueTests: XCTestCase {
@@ -717,7 +720,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
                         try await self.sleep(seconds: 1)
                     }
                 }
-                let waiter = Task(priority: .background) {
+                let waiter = Task(priority: .background) { () -> QE? in
                     let items = await queue.queue
                     return items.reversed().first
                 }
@@ -755,7 +758,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
                         try! await self.sleep(seconds: 2)
                     }
                 }
-                let waiter = Task(priority: .background) {
+                let waiter = Task(priority: .background) { () -> QE? in
                     let items = await queue.queue
                     return items.reversed().first
                 }
@@ -799,7 +802,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
                         try! await self.sleep(seconds: 2)
                     }
                 }
-                let waiter = Task(priority: .background) {
+                let waiter = Task(priority: .background) { () -> QE? in
                     let items = await queue.queue
                     return items.reversed().first
                 }
@@ -850,7 +853,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
                         try await self.sleep(seconds: 2)
                     }
                 }
-                let waiter = Task(priority: .background) {
+                let waiter = Task(priority: .background) { () -> QE? in
                     let items = await queue.queue
                     return items.reversed().first
                 }
