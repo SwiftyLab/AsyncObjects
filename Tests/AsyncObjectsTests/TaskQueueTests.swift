@@ -717,14 +717,12 @@ class TaskQueueMixedOperationTests: XCTestCase {
                         try await self.sleep(seconds: 1)
                     }
                 }
-                while let (_, c) = await Task(
-                    priority: .background,
-                    operation: {
-                        let items = await queue.queue
-                        return items.reversed().first
-                    }
-                ).value {
-                    guard c.flags.contains(.block) else { continue }
+                let waiter = Task(priority: .background) {
+                    let items = await queue.queue
+                    return items.reversed().first
+                }
+                while let (_, (_, flags)) = await waiter.value {
+                    guard flags.contains(.block) else { continue }
                     break
                 }
                 group.addTask {
@@ -757,14 +755,12 @@ class TaskQueueMixedOperationTests: XCTestCase {
                         try! await self.sleep(seconds: 2)
                     }
                 }
-                while let (_, c) = await Task(
-                    priority: .background,
-                    operation: {
-                        let items = await queue.queue
-                        return items.reversed().first
-                    }
-                ).value {
-                    guard c.flags.contains(.barrier) else { continue }
+                let waiter = Task(priority: .background) {
+                    let items = await queue.queue
+                    return items.reversed().first
+                }
+                while let (_, (_, flags)) = await waiter.value {
+                    guard flags.contains(.barrier) else { continue }
                     break
                 }
                 group.addTask {
@@ -803,14 +799,12 @@ class TaskQueueMixedOperationTests: XCTestCase {
                         try! await self.sleep(seconds: 2)
                     }
                 }
-                while let (_, c) = await Task(
-                    priority: .background,
-                    operation: {
-                        let items = await queue.queue
-                        return items.reversed().first
-                    }
-                ).value {
-                    guard c.flags.contains(.barrier) else { continue }
+                let waiter = Task(priority: .background) {
+                    let items = await queue.queue
+                    return items.reversed().first
+                }
+                while let (_, (_, flags)) = await waiter.value {
+                    guard flags.contains(.barrier) else { continue }
                     break
                 }
                 group.addTask {
@@ -856,14 +850,12 @@ class TaskQueueMixedOperationTests: XCTestCase {
                         try await self.sleep(seconds: 2)
                     }
                 }
-                while let (_, c) = await Task(
-                    priority: .background,
-                    operation: {
-                        let items = await queue.queue
-                        return items.reversed().first
-                    }
-                ).value {
-                    guard c.flags.contains(.barrier) else { continue }
+                let waiter = Task(priority: .background) {
+                    let items = await queue.queue
+                    return items.reversed().first
+                }
+                while let (_, (_, flags)) = await waiter.value {
+                    guard flags.contains(.barrier) else { continue }
                     break
                 }
                 group.addTask {
