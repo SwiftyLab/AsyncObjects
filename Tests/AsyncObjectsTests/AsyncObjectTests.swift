@@ -91,33 +91,26 @@ class AsyncObjectTimeoutTests: XCTestCase {
     func testMultipleObjectWaitAllTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        await self.checkExecInterval(durationInSeconds: 1) {
-            do {
-                try await waitForAll(
-                    event, mutex,
-                    forNanoseconds: UInt64(1E9)
-                )
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
+        do {
+            try await waitForAll(event, mutex, forNanoseconds: UInt64(1E9))
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
         }
     }
 
     func testMultipleObjectWaitAnyTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        await self.checkExecInterval(durationInSeconds: 1) {
-            do {
-                try await waitForAny(
-                    event, mutex,
-                    count: 2,
-                    forNanoseconds: UInt64(1E9)
-                )
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
+        do {
+            try await waitForAny(
+                event, mutex,
+                count: 2,
+                forNanoseconds: UInt64(1E9)
+            )
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
         }
     }
 
@@ -136,17 +129,15 @@ class AsyncObjectTimeoutTests: XCTestCase {
             mutex.signal()
         }
         op.signal()
-        await self.checkExecInterval(durationInSeconds: 2) {
-            do {
-                try await waitForAny(
-                    event, mutex, op,
-                    count: 2,
-                    forNanoseconds: UInt64(2E9)
-                )
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
+        do {
+            try await waitForAny(
+                event, mutex, op,
+                count: 2,
+                forNanoseconds: UInt64(2E9)
+            )
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
         }
     }
 }
@@ -211,19 +202,17 @@ class AsyncObjectClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        await self.checkExecInterval(duration: .seconds(1), clock: clock) {
-            do {
-                try await waitForAll(
-                    event, mutex,
-                    until: .now + .seconds(1),
-                    clock: clock
-                )
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(
-                    type(of: error) == TimeoutError<ContinuousClock>.self
-                )
-            }
+        do {
+            try await waitForAll(
+                event, mutex,
+                until: .now + .seconds(1),
+                clock: clock
+            )
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(
+                type(of: error) == TimeoutError<ContinuousClock>.self
+            )
         }
     }
 
@@ -236,20 +225,18 @@ class AsyncObjectClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let event = AsyncEvent(signaledInitially: false)
         let mutex = AsyncSemaphore()
-        await self.checkExecInterval(duration: .seconds(1), clock: clock) {
-            do {
-                try await waitForAny(
-                    event, mutex,
-                    count: 2,
-                    until: .now + .seconds(1),
-                    clock: clock
-                )
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(
-                    type(of: error) == TimeoutError<ContinuousClock>.self
-                )
-            }
+        do {
+            try await waitForAny(
+                event, mutex,
+                count: 2,
+                until: .now + .seconds(1),
+                clock: clock
+            )
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(
+                type(of: error) == TimeoutError<ContinuousClock>.self
+            )
         }
     }
 
@@ -274,20 +261,18 @@ class AsyncObjectClockTimeoutTests: XCTestCase {
             mutex.signal()
         }
         op.signal()
-        await self.checkExecInterval(duration: .seconds(2), clock: clock) {
-            do {
-                try await waitForAny(
-                    event, mutex, op,
-                    count: 2,
-                    until: .now + .seconds(2),
-                    clock: clock
-                )
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(
-                    type(of: error) == TimeoutError<ContinuousClock>.self
-                )
-            }
+        do {
+            try await waitForAny(
+                event, mutex, op,
+                count: 2,
+                until: .now + .seconds(2),
+                clock: clock
+            )
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(
+                type(of: error) == TimeoutError<ContinuousClock>.self
+            )
         }
     }
 }

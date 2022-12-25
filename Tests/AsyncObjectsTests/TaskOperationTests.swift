@@ -117,15 +117,13 @@ class TaskOperationTimeoutTests: XCTestCase {
             (try? await self.sleep(seconds: 1)) != nil
         }
         operation.signal()
-        try await self.checkExecInterval(durationInSeconds: 1) {
-            try await operation.wait(forSeconds: 2)
-        }
+        try await operation.wait(forSeconds: 5)
     }
 
     func testFinishedWait() async throws {
         let operation = TaskOperation { /* Do nothing */  }
         operation.signal()
-        try await operation.wait(forSeconds: 1)
+        try await operation.wait(forSeconds: 5)
     }
 
     func testWaitTimeout() async throws {
@@ -133,13 +131,11 @@ class TaskOperationTimeoutTests: XCTestCase {
             (try? await self.sleep(seconds: 3)) != nil
         }
         operation.signal()
-        await self.checkExecInterval(durationInSeconds: 1) {
-            do {
-                try await operation.wait(forSeconds: 1)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
+        do {
+            try await operation.wait(forSeconds: 1)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
         }
     }
 }
@@ -159,9 +155,7 @@ class TaskOperationClockTimeoutTests: XCTestCase {
             (try? await self.sleep(seconds: 1, clock: clock)) != nil
         }
         operation.signal()
-        try await self.checkExecInterval(duration: .seconds(1), clock: clock) {
-            try await operation.wait(forSeconds: 2, clock: clock)
-        }
+        try await operation.wait(forSeconds: 5, clock: clock)
     }
 
     func testFinishedWait() async throws {
@@ -173,9 +167,7 @@ class TaskOperationClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let operation = TaskOperation { /* Do nothing */  }
         operation.signal()
-        try await self.checkExecInterval(duration: .seconds(0), clock: clock) {
-            try await operation.wait(forSeconds: 2, clock: clock)
-        }
+        try await operation.wait(forSeconds: 5, clock: clock)
     }
 
     func testWaitTimeout() async throws {
@@ -189,15 +181,13 @@ class TaskOperationClockTimeoutTests: XCTestCase {
             (try? await self.sleep(seconds: 3, clock: clock)) != nil
         }
         operation.signal()
-        await self.checkExecInterval(duration: .seconds(1), clock: clock) {
-            do {
-                try await operation.wait(forSeconds: 1, clock: clock)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(
-                    type(of: error) == TimeoutError<ContinuousClock>.self
-                )
-            }
+        do {
+            try await operation.wait(forSeconds: 1, clock: clock)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(
+                type(of: error) == TimeoutError<ContinuousClock>.self
+            )
         }
     }
 }

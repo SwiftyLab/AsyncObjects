@@ -122,13 +122,11 @@ class AsyncCountdownEventTimeoutTests: XCTestCase {
         event.increment(by: 10)
         try await self.sleep(seconds: 0.001)
         self.signalCountdownEvent(event, times: 10)
-        await self.checkExecInterval(durationInSeconds: 3) {
-            do {
-                try await event.wait(forSeconds: 3)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
+        do {
+            try await event.wait(forSeconds: 3)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
         }
     }
 
@@ -137,13 +135,11 @@ class AsyncCountdownEventTimeoutTests: XCTestCase {
         event.increment(by: 10)
         try await self.sleep(seconds: 0.001)
         self.signalCountdownEvent(event, times: 10)
-        await self.checkExecInterval(durationInSeconds: 2) {
-            do {
-                try await event.wait(forSeconds: 2)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
+        do {
+            try await event.wait(forSeconds: 2)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
         }
     }
 
@@ -152,13 +148,11 @@ class AsyncCountdownEventTimeoutTests: XCTestCase {
         event.increment(by: 10)
         try await self.sleep(seconds: 0.001)
         self.signalCountdownEvent(event, times: 10)
-        await self.checkExecInterval(durationInSeconds: 3) {
-            do {
-                try await event.wait(forSeconds: 3)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
+        do {
+            try await event.wait(forSeconds: 3)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
         }
     }
 
@@ -170,13 +164,11 @@ class AsyncCountdownEventTimeoutTests: XCTestCase {
             try await self.sleep(seconds: 3)
             event.reset()
         }
-        await self.checkExecInterval(durationInSeconds: 2) {
-            do {
-                try await event.wait(forSeconds: 2)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
+        do {
+            try await event.wait(forSeconds: 2)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
         }
     }
 
@@ -189,13 +181,11 @@ class AsyncCountdownEventTimeoutTests: XCTestCase {
             event.reset(to: 6)
             self.signalCountdownEvent(event, times: 10)
         }
-        await self.checkExecInterval(durationInSeconds: 3) {
-            do {
-                try await event.wait(forSeconds: 3)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
+        do {
+            try await event.wait(forSeconds: 3)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
         }
     }
 }
@@ -215,15 +205,13 @@ class AsyncCountdownEventClockTimeoutTests: XCTestCase {
         event.increment(by: 10)
         try await self.sleep(seconds: 0.001, clock: clock)
         self.signalCountdownEvent(event, times: 10)
-        await self.checkExecInterval(duration: .seconds(3), clock: clock) {
-            do {
-                try await event.wait(forSeconds: 3, clock: clock)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(
-                    type(of: error) == TimeoutError<ContinuousClock>.self
-                )
-            }
+        do {
+            try await event.wait(forSeconds: 3, clock: clock)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(
+                type(of: error) == TimeoutError<ContinuousClock>.self
+            )
         }
     }
 
@@ -238,15 +226,13 @@ class AsyncCountdownEventClockTimeoutTests: XCTestCase {
         event.increment(by: 10)
         try await self.sleep(seconds: 0.001, clock: clock)
         self.signalCountdownEvent(event, times: 10)
-        await self.checkExecInterval(duration: .seconds(2), clock: clock) {
-            do {
-                try await event.wait(forSeconds: 2, clock: clock)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(
-                    type(of: error) == TimeoutError<ContinuousClock>.self
-                )
-            }
+        do {
+            try await event.wait(forSeconds: 2, clock: clock)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(
+                type(of: error) == TimeoutError<ContinuousClock>.self
+            )
         }
     }
 
@@ -261,15 +247,13 @@ class AsyncCountdownEventClockTimeoutTests: XCTestCase {
         event.increment(by: 10)
         try await self.sleep(seconds: 0.001, clock: clock)
         self.signalCountdownEvent(event, times: 10)
-        await self.checkExecInterval(duration: .seconds(3), clock: clock) {
-            do {
-                try await event.wait(forSeconds: 3, clock: clock)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(
-                    type(of: error) == TimeoutError<ContinuousClock>.self
-                )
-            }
+        do {
+            try await event.wait(forSeconds: 3, clock: clock)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(
+                type(of: error) == TimeoutError<ContinuousClock>.self
+            )
         }
     }
 
@@ -287,15 +271,13 @@ class AsyncCountdownEventClockTimeoutTests: XCTestCase {
             try await self.sleep(seconds: 3, clock: clock)
             event.reset()
         }
-        await self.checkExecInterval(duration: .seconds(2), clock: clock) {
-            do {
-                try await event.wait(forSeconds: 2, clock: clock)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(
-                    type(of: error) == TimeoutError<ContinuousClock>.self
-                )
-            }
+        do {
+            try await event.wait(forSeconds: 2, clock: clock)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(
+                type(of: error) == TimeoutError<ContinuousClock>.self
+            )
         }
     }
 
@@ -314,15 +296,13 @@ class AsyncCountdownEventClockTimeoutTests: XCTestCase {
             event.reset(to: 6)
             self.signalCountdownEvent(event, times: 10)
         }
-        await self.checkExecInterval(duration: .seconds(3), clock: clock) {
-            do {
-                try await event.wait(forSeconds: 3, clock: clock)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(
-                    type(of: error) == TimeoutError<ContinuousClock>.self
-                )
-            }
+        do {
+            try await event.wait(forSeconds: 3, clock: clock)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(
+                type(of: error) == TimeoutError<ContinuousClock>.self
+            )
         }
     }
 }

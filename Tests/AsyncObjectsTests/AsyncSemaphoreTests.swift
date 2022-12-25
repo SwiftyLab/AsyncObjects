@@ -133,13 +133,11 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
 
     func testMutexWaitTimeout() async throws {
         let mutex = AsyncSemaphore()
-        await self.checkExecInterval(durationInSeconds: 1) {
-            do {
-                try await mutex.wait(forSeconds: 1)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
+        do {
+            try await mutex.wait(forSeconds: 1)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
         }
     }
 
@@ -149,9 +147,7 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
             try await self.sleep(seconds: 1)
             mutex.signal()
         }
-        try await self.checkExecInterval(durationInSeconds: 1) {
-            try await mutex.wait(forSeconds: 2)
-        }
+        try await mutex.wait(forSeconds: 5)
     }
 
     func testWaitTimeoutWithTasksLessThanCount() async throws {
@@ -260,15 +256,13 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
         }
         let clock: ContinuousClock = .continuous
         let mutex = AsyncSemaphore()
-        await self.checkExecInterval(duration: .seconds(1), clock: clock) {
-            do {
-                try await mutex.wait(forSeconds: 1, clock: clock)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(
-                    type(of: error) == TimeoutError<ContinuousClock>.self
-                )
-            }
+        do {
+            try await mutex.wait(forSeconds: 1, clock: clock)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(
+                type(of: error) == TimeoutError<ContinuousClock>.self
+            )
         }
     }
 
@@ -284,9 +278,7 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
             try await self.sleep(seconds: 1, clock: clock)
             mutex.signal()
         }
-        try await self.checkExecInterval(duration: .seconds(1), clock: clock) {
-            try await mutex.wait(forSeconds: 2, clock: clock)
-        }
+        try await mutex.wait(forSeconds: 5, clock: clock)
     }
 
     func testWaitTimeoutWithTasksLessThanCount() async throws {

@@ -62,27 +62,21 @@ class AsyncEventTimeoutTests: XCTestCase {
             try await self.sleep(seconds: 1)
             event.signal()
         }
-        try await self.checkExecInterval(durationInSeconds: 1) {
-            try await event.wait(forSeconds: 2)
-        }
+        try await event.wait(forSeconds: 5)
     }
 
     func testReleasedWait() async throws {
         let event = AsyncEvent()
-        try await self.checkExecInterval(durationInSeconds: 0) {
-            try await event.wait(forSeconds: 2)
-        }
+        try await event.wait(forSeconds: 5)
     }
 
     func testWaitTimeout() async throws {
         let event = AsyncEvent(signaledInitially: false)
-        await self.checkExecInterval(durationInSeconds: 1) {
-            do {
-                try await event.wait(forSeconds: 1)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
-            }
+        do {
+            try await event.wait(forSeconds: 1)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(type(of: error) == DurationTimeoutError.self)
         }
     }
 }
@@ -103,9 +97,7 @@ class AsyncEventClockTimeoutTests: XCTestCase {
             try await self.sleep(seconds: 1, clock: clock)
             event.signal()
         }
-        try await self.checkExecInterval(duration: .seconds(1), clock: clock) {
-            try await event.wait(forSeconds: 2, clock: clock)
-        }
+        try await event.wait(forSeconds: 5, clock: clock)
     }
 
     func testReleasedWait() async throws {
@@ -116,9 +108,7 @@ class AsyncEventClockTimeoutTests: XCTestCase {
         }
         let clock: ContinuousClock = .continuous
         let event = AsyncEvent()
-        try await self.checkExecInterval(duration: .seconds(0), clock: clock) {
-            try await event.wait(forSeconds: 2, clock: clock)
-        }
+        try await event.wait(forSeconds: 5, clock: clock)
     }
 
     func testWaitTimeout() async throws {
@@ -129,15 +119,13 @@ class AsyncEventClockTimeoutTests: XCTestCase {
         }
         let clock: ContinuousClock = .continuous
         let event = AsyncEvent(signaledInitially: false)
-        await self.checkExecInterval(duration: .seconds(1), clock: clock) {
-            do {
-                try await event.wait(forSeconds: 1, clock: clock)
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(
-                    type(of: error) == TimeoutError<ContinuousClock>.self
-                )
-            }
+        do {
+            try await event.wait(forSeconds: 1, clock: clock)
+            XCTFail("Unexpected task progression")
+        } catch {
+            XCTAssertTrue(
+                type(of: error) == TimeoutError<ContinuousClock>.self
+            )
         }
     }
 }
