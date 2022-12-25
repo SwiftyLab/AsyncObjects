@@ -249,7 +249,7 @@ public actor TaskQueue: AsyncObject, LoggableActor {
         _ continuation: QueuedContinuation,
         atKey key: UUID,
         file: String, function: String, line: UInt,
-        preinit: @escaping @Sendable () -> Void
+        preinit: @Sendable () -> Void
     ) {
         preinit()
         log(

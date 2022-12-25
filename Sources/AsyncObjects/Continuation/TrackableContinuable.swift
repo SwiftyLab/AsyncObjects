@@ -77,7 +77,7 @@ where Self: Sendable, Value: Sendable & ThrowingContinuable {
         function: String = #function,
         line: UInt = #line,
         handler: @Sendable (Self) -> Void,
-        operation: (Self, @escaping @Sendable () -> Void) -> Void
+        operation: @Sendable (Self, @escaping @Sendable () -> Void) -> Void
     ) async rethrows -> Success {
         let cancellable = Self(
             with: nil, id: id,
@@ -168,7 +168,7 @@ where Self: Sendable, Value: Sendable & NonThrowingContinuable {
         function: String = #function,
         line: UInt = #line,
         handler: @Sendable (Self) -> Void,
-        operation: (Self, @escaping @Sendable () -> Void) -> Void
+        operation: @Sendable (Self, @escaping @Sendable () -> Void) -> Void
     ) async -> Success {
         let cancellable = Self(
             with: nil, id: id,
