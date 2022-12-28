@@ -27,66 +27,57 @@ class LockerTests: XCTestCase {
         XCTAssertEqual(iterations, 5)
     }
 
-    static func threadLocalValue<T>(forKey key: NSCopying) -> T? {
-        let threadDictionary = Thread.current.threadDictionary
-        return threadDictionary[key] as? T
-    }
-
     func testLockReleasedAfterError() throws {
         let lock = Locker()
-        XCTAssertFalse(Self.threadLocalValue(forKey: lock) ?? false)
+        XCTAssertFalse(lock.isNested)
         XCTAssertThrowsError(
             try lock.perform {
-                defer {
-                    XCTAssertTrue(Self.threadLocalValue(forKey: lock) ?? false)
-                }
-                XCTAssertTrue(Self.threadLocalValue(forKey: lock) ?? false)
+                defer { XCTAssertTrue(lock.isNested) }
+                XCTAssertTrue(lock.isNested)
                 throw CancellationError()
             }
         )
-        XCTAssertFalse(Self.threadLocalValue(forKey: lock) ?? false)
+        XCTAssertFalse(lock.isNested)
     }
 
     func testNestedLocking() {
         let lock = Locker()
-        XCTAssertFalse(Self.threadLocalValue(forKey: lock) ?? false)
+        XCTAssertFalse(lock.isNested)
         let _: UInt64 = lock.perform {
-            defer {
-                XCTAssertTrue(Self.threadLocalValue(forKey: lock) ?? false)
-            }
-            XCTAssertTrue(Self.threadLocalValue(forKey: lock) ?? false)
+            defer { XCTAssertTrue(lock.isNested) }
+            XCTAssertTrue(lock.isNested)
             var generator = SystemRandomNumberGenerator()
             return lock.perform {
-                defer {
-                    XCTAssertTrue(Self.threadLocalValue(forKey: lock) ?? false)
-                }
-                XCTAssertTrue(Self.threadLocalValue(forKey: lock) ?? false)
+                defer { XCTAssertTrue(lock.isNested) }
+                XCTAssertTrue(lock.isNested)
                 return generator.next()
             }
         }
-        XCTAssertFalse(Self.threadLocalValue(forKey: lock) ?? false)
+        XCTAssertFalse(lock.isNested)
     }
 
     func testLockReleasedAfterNestedError() throws {
         let lock = Locker()
-        XCTAssertFalse(Self.threadLocalValue(forKey: lock) ?? false)
+        XCTAssertFalse(lock.isNested)
         XCTAssertThrowsError(
             try lock.perform {
-                defer {
-                    XCTAssertTrue(Self.threadLocalValue(forKey: lock) ?? false)
-                }
-                XCTAssertTrue(Self.threadLocalValue(forKey: lock) ?? false)
+                defer { XCTAssertTrue(lock.isNested) }
+                XCTAssertTrue(lock.isNested)
                 return try lock.perform {
-                    defer {
-                        XCTAssertTrue(
-                            Self.threadLocalValue(forKey: lock) ?? false
-                        )
-                    }
-                    XCTAssertTrue(Self.threadLocalValue(forKey: lock) ?? false)
+                    defer { XCTAssertTrue(lock.isNested) }
+                    XCTAssertTrue(lock.isNested)
                     throw CancellationError()
                 }
             } as UInt64
         )
-        XCTAssertFalse(Self.threadLocalValue(forKey: lock) ?? false)
+        XCTAssertFalse(lock.isNested)
+    }
+}
+
+fileprivate extension Locker {
+
+    var isNested: Bool {
+        let threadDictionary = Thread.current.threadDictionary
+        return threadDictionary[self] as? Bool ?? false
     }
 }

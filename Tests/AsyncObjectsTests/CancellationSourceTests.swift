@@ -6,23 +6,19 @@ class CancellationSourceTests: XCTestCase {
 
     func testTaskCancellation() async throws {
         let source = CancellationSource()
-        let task = Task {
-            try await self.sleep(seconds: 1)
-        }
+        let task = Task { try await Task.sleep(seconds: 3) }
         source.register(task: task)
-        try await self.sleep(seconds: 0.001)
+        try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
         source.cancel()
-        try await self.sleep(seconds: 0.001)
+        try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
         XCTAssertTrue(task.isCancelled)
     }
 
     func testTaskCancellationWithTimeout() async throws {
         let source = CancellationSource(cancelAfterNanoseconds: UInt64(1E9))
-        let task = Task {
-            try await self.sleep(seconds: 2)
-        }
+        let task = Task { try await Task.sleep(seconds: 3) }
         source.register(task: task)
-        try await self.sleep(seconds: 2)
+        try await waitUntil(source, timeout: 5) { $0.registeredTasks.isEmpty }
         XCTAssertTrue(task.isCancelled)
     }
 
@@ -38,11 +34,9 @@ class CancellationSourceTests: XCTestCase {
             at: .now + .seconds(1),
             clock: ContinuousClock.continuous
         )
-        let task = Task {
-            try await self.sleep(seconds: 2, clock: clock)
-        }
+        let task = Task { try await Task.sleep(seconds: 3, clock: clock) }
         source.register(task: task)
-        try await self.sleep(seconds: 2, clock: clock)
+        try await waitUntil(source, timeout: 5) { $0.registeredTasks.isEmpty }
         XCTAssertTrue(task.isCancelled)
     }
     #endif
@@ -50,13 +44,11 @@ class CancellationSourceTests: XCTestCase {
     func testTaskCancellationWithLinkedSource() async throws {
         let parentSource = CancellationSource()
         let source = CancellationSource(linkedWith: parentSource)
-        let task = Task {
-            try await self.sleep(seconds: 1)
-        }
+        let task = Task { try await Task.sleep(seconds: 3) }
         source.register(task: task)
-        try await self.sleep(seconds: 0.001)
+        try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
         parentSource.cancel()
-        try await self.sleep(seconds: 0.001)
+        try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
         XCTAssertTrue(task.isCancelled)
     }
 
@@ -66,174 +58,120 @@ class CancellationSourceTests: XCTestCase {
         let source = CancellationSource(
             linkedWith: parentSource1, parentSource2
         )
-        let task = Task {
-            try await self.sleep(seconds: 1)
-        }
+        let task = Task { try await Task.sleep(seconds: 3) }
         source.register(task: task)
-        try await self.sleep(seconds: 0.001)
+        try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
         parentSource1.cancel()
-        try await self.sleep(seconds: 0.001)
+        try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
         XCTAssertTrue(task.isCancelled)
-    }
-
-    func testTaskCancellationWithSourcePassedOnInitialization() async throws {
-        let source = CancellationSource()
-        let task = Task(cancellationSource: source) {
-            do {
-                try await self.sleep(seconds: 1)
-                XCTFail("Unexpected task progression")
-            } catch {}
-        }
-        try await self.sleep(seconds: 0.001)
-        source.cancel()
-        try await self.sleep(seconds: 0.001)
-        XCTAssertTrue(task.isCancelled)
-    }
-
-    func testDetachedTaskCancellationWithSourcePassedOnInitialization()
-        async throws
-    {
-        let source = CancellationSource()
-        let task = Task.detached(cancellationSource: source) {
-            do {
-                try await self.sleep(seconds: 1)
-                XCTFail("Unexpected task progression")
-            } catch {}
-        }
-        try await self.sleep(seconds: 0.001)
-        source.cancel()
-        try await self.sleep(seconds: 0.001)
-        XCTAssertTrue(task.isCancelled)
-    }
-
-    func testThrowingTaskCancellationWithSourcePassedOnInitialization()
-        async throws
-    {
-        let source = CancellationSource()
-        let task = Task(cancellationSource: source) {
-            try await self.sleep(seconds: 1)
-        }
-        try await self.sleep(seconds: 0.001)
-        source.cancel()
-        try await self.sleep(seconds: 0.001)
-        XCTAssertTrue(task.isCancelled)
-    }
-
-    func testThrowingDetachedTaskCancellationWithSourcePassedOnInitialization()
-        async throws
-    {
-        let source = CancellationSource()
-        let task = Task.detached(cancellationSource: source) {
-            try await self.sleep(seconds: 1)
-        }
-        try await self.sleep(seconds: 0.001)
-        source.cancel()
-        try await self.sleep(seconds: 0.001)
-        XCTAssertTrue(task.isCancelled)
-    }
-
-    func createTaskWithCancellationSource(
-        _ source: CancellationSource
-    ) -> Task<Void, Never> {
-        return Task(cancellationSource: source) {
-            do {
-                try await self.sleep(seconds: 1)
-            } catch {
-                XCTAssertTrue(Task.isCancelled)
-            }
-        }
-    }
-
-    func testTaskCancellationWithSourcePassedOnSyncInitialization() async throws
-    {
-        let source = CancellationSource()
-        let task = createTaskWithCancellationSource(source)
-        Task {
-            try await self.sleep(seconds: 2)
-            source.cancel()
-        }
-        await task.value
-    }
-
-    func createDetachedTaskWithCancellationSource(
-        _ source: CancellationSource
-    ) -> Task<Void, Never> {
-        return Task.detached(cancellationSource: source) {
-            do {
-                try await self.sleep(seconds: 2)
-                XCTFail("Unexpected task progression")
-            } catch {}
-        }
-    }
-
-    func testDetachedTaskCancellationWithSourcePassedOnSyncInitialization()
-        async throws
-    {
-        let source = CancellationSource()
-        let task = createDetachedTaskWithCancellationSource(source)
-        Task {
-            try await self.sleep(seconds: 1)
-            source.cancel()
-        }
-        await task.value
-    }
-
-    func createThrowingTaskWithCancellationSource(
-        _ source: CancellationSource
-    ) -> Task<Void, Error> {
-        return Task(cancellationSource: source) {
-            try await self.sleep(seconds: 2)
-            XCTFail("Unexpected task progression")
-        }
-    }
-
-    func testThrowingTaskCancellationWithSourcePassedOnSyncInitialization()
-        async throws
-    {
-        let source = CancellationSource()
-        let task = createThrowingTaskWithCancellationSource(source)
-        Task {
-            try await self.sleep(seconds: 1)
-            source.cancel()
-        }
-        let value: Void? = try? await task.value
-        XCTAssertNil(value)
-    }
-
-    func createThrowingDetachedTaskWithCancellationSource(
-        _ source: CancellationSource
-    ) throws -> Task<Void, Error> {
-        return Task.detached(cancellationSource: source) {
-            try await self.sleep(seconds: 2)
-            XCTFail("Unexpected task progression")
-        }
-    }
-
-    func
-        testThrowingDetachedTaskCancellationWithSourcePassedOnSyncInitialization()
-        async throws
-    {
-        let source = CancellationSource()
-        let task = try createThrowingDetachedTaskWithCancellationSource(source)
-        Task {
-            try await self.sleep(seconds: 1)
-            source.cancel()
-        }
-        let value: Void? = try? await task.value
-        XCTAssertNil(value)
     }
 
     func testDeinit() async throws {
         let source = CancellationSource()
-        let task = try createThrowingDetachedTaskWithCancellationSource(source)
-        Task.detached {
-            try await self.sleep(seconds: 1)
-            source.cancel()
+        let task = Task.detached {
+            try await Task.sleep(seconds: 10)
+            XCTFail("Unexpected task progression")
         }
+        source.register(task: task)
+        try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
+        source.cancel()
+        try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
         try? await task.value
         self.addTeardownBlock { [weak source] in
-            try await self.sleep(seconds: 1)
-            XCTAssertNil(source)
+            XCTAssertEqual(source.retainCount(), 0)
+        }
+    }
+
+    func testAlreadyCancelledTask() async throws {
+        let source = CancellationSource()
+        let task = Task.detached {
+            try await Task.sleep(seconds: 10)
+            XCTFail("Unexpected task progression")
+        }
+        task.cancel()
+        source.register(task: task)
+        do {
+            try await waitUntil(source, timeout: 3) {
+                !$0.registeredTasks.isEmpty
+            }
+            XCTFail("Unexpected task progression")
+        } catch {}
+    }
+
+    func testTaskCompletion() async throws {
+        let source = CancellationSource()
+        let task = Task.detached { try await Task.sleep(seconds: 1) }
+        source.register(task: task)
+        try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
+        try await waitUntil(source, timeout: 5) { $0.registeredTasks.isEmpty }
+    }
+}
+
+@MainActor
+class CancellationSourceInitializationTests: XCTestCase {
+
+    func testTaskCancellation() async throws {
+        let source = CancellationSource()
+        let task = Task(cancellationSource: source) {
+            do {
+                try await Task.sleep(seconds: 10)
+                XCTFail("Unexpected task progression")
+            } catch {}
+        }
+        try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
+        source.cancel()
+        try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
+        XCTAssertTrue(task.isCancelled)
+    }
+
+    func testDetachedTaskCancellation() async throws {
+        let source = CancellationSource()
+        let task = Task.detached(cancellationSource: source) {
+            do {
+                try await Task.sleep(seconds: 10)
+                XCTFail("Unexpected task progression")
+            } catch {}
+        }
+        try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
+        source.cancel()
+        try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
+        XCTAssertTrue(task.isCancelled)
+    }
+
+    func testThrowingTaskCancellation() async throws {
+        let source = CancellationSource()
+        let task = Task(cancellationSource: source) {
+            try await Task.sleep(seconds: 10)
+        }
+        try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
+        source.cancel()
+        try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
+        XCTAssertTrue(task.isCancelled)
+    }
+
+    func testThrowingDetachedTaskCancellation() async throws {
+        let source = CancellationSource()
+        let task = Task.detached(cancellationSource: source) {
+            try await Task.sleep(seconds: 10)
+        }
+        try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
+        source.cancel()
+        try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
+        XCTAssertTrue(task.isCancelled)
+    }
+
+    func testDeinit() async throws {
+        let source = CancellationSource()
+        let task = Task.detached(cancellationSource: source) {
+            try await Task.sleep(seconds: 10)
+            XCTFail("Unexpected task progression")
+        }
+        try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
+        source.cancel()
+        try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
+        try? await task.value
+        self.addTeardownBlock { [weak source] in
+            XCTAssertEqual(source.retainCount(), 0)
         }
     }
 }

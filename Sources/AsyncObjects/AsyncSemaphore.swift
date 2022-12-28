@@ -147,7 +147,11 @@ public actor AsyncSemaphore: AsyncObject, ContinuableCollectionActor,
     ///   - line: The line signal originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func signalSemaphore(file: String, function: String, line: UInt) {
+    internal func signalSemaphore(
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         incrementCount()
         guard !continuations.isEmpty else { return }
         log("Signalling", file: file, function: function, line: line)
