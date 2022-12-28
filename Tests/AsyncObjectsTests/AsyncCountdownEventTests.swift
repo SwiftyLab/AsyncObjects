@@ -75,7 +75,7 @@ class AsyncCountdownEventTests: XCTestCase {
         Task.detached { event.signal() }
         try await event.wait(forSeconds: 3)
         self.addTeardownBlock { [weak event] in
-            XCTAssertEqual(event.retainCount(), 0)
+            event.assertReleased()
         }
     }
 

@@ -70,7 +70,7 @@ class TaskQueueTests: XCTestCase {
         await queue.exec(flags: .barrier) { /* Do nothing */  }
         await queue.exec { /* Do nothing */  }
         self.addTeardownBlock { [weak queue] in
-            XCTAssertEqual(queue.retainCount(), 0)
+            queue.assertReleased()
         }
     }
 }

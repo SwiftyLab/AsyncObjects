@@ -78,7 +78,7 @@ class CancellationSourceTests: XCTestCase {
         try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
         try? await task.value
         self.addTeardownBlock { [weak source] in
-            XCTAssertEqual(source.retainCount(), 0)
+            source.assertReleased()
         }
     }
 
@@ -171,7 +171,7 @@ class CancellationSourceInitializationTests: XCTestCase {
         try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
         try? await task.value
         self.addTeardownBlock { [weak source] in
-            XCTAssertEqual(source.retainCount(), 0)
+            source.assertReleased()
         }
     }
 }

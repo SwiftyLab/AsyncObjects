@@ -85,12 +85,20 @@ extension AsyncObject {
 #endif
 
 extension Optional where Wrapped: AnyObject {
-    func retainCount() -> Int {
+    func assertReleased(
+        file: StaticString = #filePath,
+        function: StaticString = #function,
+        line: UInt = #line
+    ) {
         switch self {
         case .none:
-            return 0
+            break
         case .some(let wrapped):
-            return CFGetRetainCount(wrapped)
+            #if canImport(Darwin)
+            XCTAssertEqual(CFGetRetainCount(wrapped), 0, file: file, line: line)
+            #else
+            XCTFail("Has some value \(wrapped)", file: file, line: line)
+            #endif
         }
     }
 }

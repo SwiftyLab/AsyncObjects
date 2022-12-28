@@ -87,7 +87,7 @@ class TaskOperationTests: XCTestCase {
         operation.signal()
         try await operation.wait(forSeconds: 3)
         self.addTeardownBlock { [weak operation] in
-            XCTAssertEqual(operation.retainCount(), 0)
+            operation.assertReleased()
         }
     }
 
@@ -235,7 +235,7 @@ class TaskOperationCancellationTests: XCTestCase {
         operation.cancel()
         try await waitUntil(operation, timeout: 3, satisfies: \.isCancelled)
         self.addTeardownBlock { [weak operation] in
-            XCTAssertEqual(operation.retainCount(), 0)
+            operation.assertReleased()
         }
     }
 }
