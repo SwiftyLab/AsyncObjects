@@ -13,14 +13,14 @@ class AsyncCountdownEventTests: XCTestCase {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
         event.signal(concurrent: 10)
-        try await event.wait(forSeconds: 3)
+        try await event.wait(forSeconds: 5)
     }
 
     func testWithOverIncrement() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
         event.signal(concurrent: 15)
-        try await event.wait(forSeconds: 3)
+        try await event.wait(forSeconds: 5)
         try await waitUntil(event, timeout: 3) { $0.currentCount == 0 }
     }
 

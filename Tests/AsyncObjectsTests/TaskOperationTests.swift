@@ -151,7 +151,7 @@ class TaskOperationCancellationTests: XCTestCase {
 
     func testCancellation() async throws {
         let operation = TaskOperation {
-            (try? await Task.sleep(seconds: 1)) != nil
+            (try? await Task.sleep(seconds: 10)) != nil
         }
         XCTAssertFalse(operation.isExecuting)
         XCTAssertFalse(operation.isFinished)
