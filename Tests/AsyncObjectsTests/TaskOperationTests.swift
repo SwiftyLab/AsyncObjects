@@ -23,7 +23,7 @@ class TaskOperationTests: XCTestCase {
             group.addTask {
                 try await waitUntil(
                     operation,
-                    timeout: 3,
+                    timeout: 5,
                     satisfies: \.isExecuting
                 )
             }
@@ -56,7 +56,7 @@ class TaskOperationTests: XCTestCase {
         #else
         operation.start()
         #endif
-        try await waitUntil(operation, timeout: 3, satisfies: \.isExecuting)
+        try await waitUntil(operation, timeout: 5, satisfies: \.isExecuting)
         await GlobalContinuation<Void, Never>.with { continuation in
             DispatchQueue.global(qos: .default).async {
                 operation.waitUntilFinished()
@@ -71,13 +71,13 @@ class TaskOperationTests: XCTestCase {
     func testAsyncWait() async throws {
         let operation = TaskOperation { /* Do nothing */  }
         operation.signal()
-        try await operation.wait(forSeconds: 3)
+        try await operation.wait(forSeconds: 5)
     }
 
     func testFinisheAsyncdWait() async throws {
         let operation = TaskOperation { /* Do nothing */  }
         operation.signal()
-        try await operation.wait(forSeconds: 3)
+        try await operation.wait(forSeconds: 5)
     }
 
     func testDeinit() async throws {
@@ -85,7 +85,7 @@ class TaskOperationTests: XCTestCase {
             try await Task.sleep(seconds: 1)
         }
         operation.signal()
-        try await operation.wait(forSeconds: 3)
+        try await operation.wait(forSeconds: 5)
         self.addTeardownBlock { [weak operation] in
             operation.assertReleased()
         }
@@ -97,7 +97,7 @@ class TaskOperationTests: XCTestCase {
                 group.addTask {
                     let operation = TaskOperation {}
                     try await withThrowingTaskGroup(of: Void.self) { g in
-                        g.addTask { try await operation.wait(forSeconds: 3) }
+                        g.addTask { try await operation.wait(forSeconds: 5) }
                         g.addTask { operation.signal() }
                         try await g.waitForAll()
                     }
@@ -117,7 +117,7 @@ class TaskOperationTimeoutTests: XCTestCase {
         }
         operation.signal()
         do {
-            try await operation.wait(forSeconds: 3)
+            try await operation.wait(forSeconds: 5)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {}
     }
@@ -139,7 +139,7 @@ class TaskOperationClockTimeoutTests: XCTestCase {
         }
         operation.signal()
         do {
-            try await operation.wait(forSeconds: 3, clock: clock)
+            try await operation.wait(forSeconds: 5, clock: clock)
             XCTFail("Unexpected task progression")
         } catch is TimeoutError<ContinuousClock> {}
     }
@@ -162,9 +162,9 @@ class TaskOperationCancellationTests: XCTestCase {
         #else
         operation.start()
         #endif
-        try await waitUntil(operation, timeout: 3, satisfies: \.isExecuting)
+        try await waitUntil(operation, timeout: 5, satisfies: \.isExecuting)
         operation.cancel()
-        try await waitUntil(operation, timeout: 3, satisfies: \.isCancelled)
+        try await waitUntil(operation, timeout: 5, satisfies: \.isCancelled)
         XCTAssertTrue(operation.isFinished)
         XCTAssertFalse(operation.isExecuting)
         switch await operation.result {
@@ -186,9 +186,9 @@ class TaskOperationCancellationTests: XCTestCase {
         #else
         operation.start()
         #endif
-        try await waitUntil(operation, timeout: 3, satisfies: \.isExecuting)
+        try await waitUntil(operation, timeout: 5, satisfies: \.isExecuting)
         operation.cancel()
-        try await waitUntil(operation, timeout: 3, satisfies: \.isCancelled)
+        try await waitUntil(operation, timeout: 5, satisfies: \.isCancelled)
         XCTAssertTrue(operation.isFinished)
         XCTAssertFalse(operation.isExecuting)
     }
@@ -198,7 +198,7 @@ class TaskOperationCancellationTests: XCTestCase {
             try await Task.sleep(seconds: 1)
         }
         let task = Task.detached {
-            try await operation.wait(forSeconds: 3)
+            try await operation.wait(forSeconds: 5)
         }
         task.cancel()
         do {
@@ -233,7 +233,7 @@ class TaskOperationCancellationTests: XCTestCase {
         }
         operation.signal()
         operation.cancel()
-        try await waitUntil(operation, timeout: 3, satisfies: \.isCancelled)
+        try await waitUntil(operation, timeout: 5, satisfies: \.isCancelled)
         self.addTeardownBlock { [weak operation] in
             operation.assertReleased()
         }
@@ -246,7 +246,7 @@ class TaskOperationTaskManagementTests: XCTestCase {
     func testOperationWithoutTrackingChildTasks() async throws {
         let operation = TaskOperation(track: false)
         operation.signal()
-        try await operation.wait(forSeconds: 3)
+        try await operation.wait(forSeconds: 5)
     }
 
     func testOperationWithTrackingChildTasks() async throws {

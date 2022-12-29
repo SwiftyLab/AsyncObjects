@@ -7,14 +7,14 @@ class AsyncSemaphoreTests: XCTestCase {
     func testWithTasksLessThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
         await semaphore.spinTasks(count: 2, duration: 10)
-        try await semaphore.wait(forSeconds: 3)
+        try await semaphore.wait(forSeconds: 5)
     }
 
     func testWithTasksEqualToCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
         await semaphore.spinTasks(count: 3, duration: 10)
         do {
-            try await semaphore.wait(forSeconds: 3)
+            try await semaphore.wait(forSeconds: 5)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {}
     }
@@ -23,7 +23,7 @@ class AsyncSemaphoreTests: XCTestCase {
         let semaphore = AsyncSemaphore(value: 3)
         await semaphore.spinTasks(count: 5, duration: 10)
         do {
-            try await semaphore.wait(forSeconds: 3)
+            try await semaphore.wait(forSeconds: 5)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {}
     }
@@ -33,7 +33,7 @@ class AsyncSemaphoreTests: XCTestCase {
         await semaphore.signalSemaphore()
         await semaphore.spinTasks(count: 4, duration: 10)
         do {
-            try await semaphore.wait(forSeconds: 3)
+            try await semaphore.wait(forSeconds: 5)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {}
     }
@@ -60,7 +60,7 @@ class AsyncSemaphoreTests: XCTestCase {
                 group.addTask {
                     let semaphore = AsyncSemaphore(value: 1)
                     try await withThrowingTaskGroup(of: Void.self) { g in
-                        g.addTask { try await semaphore.wait(forSeconds: 3) }
+                        g.addTask { try await semaphore.wait(forSeconds: 5) }
                         g.addTask { semaphore.signal() }
                         try await g.waitForAll()
                     }
@@ -72,7 +72,7 @@ class AsyncSemaphoreTests: XCTestCase {
 
     func testDeinit() async throws {
         let semaphore = AsyncSemaphore(value: 1)
-        try await semaphore.wait(forSeconds: 3)
+        try await semaphore.wait(forSeconds: 5)
         self.addTeardownBlock { [weak semaphore] in
             semaphore.assertReleased()
         }
@@ -85,19 +85,19 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
     func testMutexWaitTimeout() async throws {
         let mutex = AsyncSemaphore()
         do {
-            try await mutex.wait(forSeconds: 3)
+            try await mutex.wait(forSeconds: 5)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {}
     }
 
     func testWaitTimeoutWithTasksLessThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        try await semaphore.spinTasks(count: 3, duration: 2, timeout: 3)
+        try await semaphore.spinTasks(count: 3, duration: 2, timeout: 5)
     }
 
     func testWaitTimeoutWithTasksGreaterThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        try await semaphore.spinTasks(count: 5, duration: 5, timeout: 3)
+        try await semaphore.spinTasks(count: 5, duration: 5, timeout: 5)
     }
 
     func testWaitCancellationOnTimeoutWithTasksGreaterThanCount() async throws {
@@ -111,7 +111,7 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
                         semaphore.signal()
                     } else {
                         do {
-                            try await semaphore.wait(forSeconds: 3)
+                            try await semaphore.wait(forSeconds: 5)
                             XCTFail("Unexpected task progression")
                         } catch is DurationTimeoutError {}
                     }
@@ -135,7 +135,7 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let mutex = AsyncSemaphore()
         do {
-            try await mutex.wait(forSeconds: 3, clock: clock)
+            try await mutex.wait(forSeconds: 5, clock: clock)
             XCTFail("Unexpected task progression")
         } catch is TimeoutError<ContinuousClock> {}
     }
@@ -149,7 +149,7 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let semaphore = AsyncSemaphore(value: 3)
         try await semaphore.spinTasks(
-            count: 3, duration: 2, timeout: 3,
+            count: 3, duration: 2, timeout: 5,
             clock: clock
         )
     }
@@ -163,7 +163,7 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let semaphore = AsyncSemaphore(value: 3)
         try await semaphore.spinTasks(
-            count: 5, duration: 5, timeout: 3,
+            count: 5, duration: 5, timeout: 5,
             clock: clock
         )
     }
@@ -186,7 +186,7 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
                     } else {
                         do {
                             try await semaphore.wait(
-                                forSeconds: 3, clock: clock)
+                                forSeconds: 5, clock: clock)
                             XCTFail("Unexpected task progression")
                         } catch is TimeoutError<ContinuousClock> {}
                     }
