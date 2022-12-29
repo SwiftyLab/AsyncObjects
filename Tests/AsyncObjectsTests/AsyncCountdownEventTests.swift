@@ -6,74 +6,74 @@ class AsyncCountdownEventTests: XCTestCase {
 
     func testWithoutIncrement() async throws {
         let event = AsyncCountdownEvent()
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
     }
 
     func testWithIncrement() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
         event.signal(concurrent: 10)
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
     }
 
     func testWithOverIncrement() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
         event.signal(concurrent: 15)
-        try await event.wait(forSeconds: 5)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 0 }
+        try await event.wait(forSeconds: 3)
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 0 }
     }
 
     func testWithLimitAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3)
         event.increment(by: 10)
         event.signal(concurrent: 7)
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
     }
 
     func testWithLimitInitialCountAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3, initial: 2)
         event.increment(by: 10)
         event.signal(concurrent: 9)
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
     }
 
     func testWithIncrementAndReset() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 10 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 10 }
         event.reset()
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
     }
 
     func testWithIncrementAndResetToCount() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 10 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 10 }
         event.reset(to: 2)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 2 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 2 }
         event.signal(concurrent: 2)
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
     }
 
     func testWithConcurrentIncrementAndResetToCount() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 10 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 10 }
         Task.detached {
-            try await waitUntil(event, timeout: 5) { $0.currentCount == 6 }
+            try await waitUntil(event, timeout: 3) { $0.currentCount == 6 }
             event.reset(to: 2)
         }
         event.signal(concurrent: 4)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 2 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 2 }
         event.signal(concurrent: 2)
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
     }
 
     func testDeinit() async throws {
         let event = AsyncCountdownEvent(until: 0, initial: 1)
         Task.detached { event.signal() }
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
         self.addTeardownBlock { [weak event] in
             event.assertReleased()
         }
@@ -85,7 +85,7 @@ class AsyncCountdownEventTests: XCTestCase {
                 group.addTask {
                     let event = AsyncCountdownEvent(initial: 1)
                     try await withThrowingTaskGroup(of: Void.self) { g in
-                        g.addTask { try await event.wait(forSeconds: 5) }
+                        g.addTask { try await event.wait(forSeconds: 3) }
                         g.addTask { event.signal() }
                         try await g.waitForAll()
                     }
@@ -102,56 +102,56 @@ class AsyncCountdownEventTimeoutTests: XCTestCase {
     func testTimeoutWithIncrement() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 10 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 10 }
         event.signal(concurrent: 9)
         do {
-            try await event.wait(forSeconds: 5)
+            try await event.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {
-            try await waitUntil(event, timeout: 5) { $0.currentCount == 1 }
+            try await waitUntil(event, timeout: 3) { $0.currentCount == 1 }
         }
     }
 
     func testTimeoutWithLimitAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3)
         event.increment(by: 10)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 10 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 10 }
         event.signal(concurrent: 6)
         do {
-            try await event.wait(forSeconds: 5)
+            try await event.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {
-            try await waitUntil(event, timeout: 5) { $0.currentCount == 4 }
+            try await waitUntil(event, timeout: 3) { $0.currentCount == 4 }
         }
     }
 
     func testTimeoutWithLimitInitialCountAndIncrement() async throws {
         let event = AsyncCountdownEvent(until: 3, initial: 3)
         event.increment(by: 10)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 13 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 13 }
         event.signal(concurrent: 9)
         do {
-            try await event.wait(forSeconds: 5)
+            try await event.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {
-            try await waitUntil(event, timeout: 5) { $0.currentCount == 4 }
+            try await waitUntil(event, timeout: 3) { $0.currentCount == 4 }
         }
     }
 
     func testTimeoutWithIncrementAndResetToCount() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 10 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 10 }
         event.signal(concurrent: 8)
         Task.detached {
-            try await waitUntil(event, timeout: 5) { $0.currentCount <= 6 }
+            try await waitUntil(event, timeout: 3) { $0.currentCount <= 6 }
             event.reset(to: 6)
         }
         do {
-            try await event.wait(forSeconds: 5)
+            try await event.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {
-            try await waitUntil(event, timeout: 5) {
+            try await waitUntil(event, timeout: 3) {
                 [6, 2].contains($0.currentCount)
             }
         }
@@ -171,13 +171,13 @@ class AsyncCountdownEventClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 10 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 10 }
         event.signal(concurrent: 9)
         do {
-            try await event.wait(forSeconds: 5, clock: clock)
+            try await event.wait(forSeconds: 3, clock: clock)
             XCTFail("Unexpected task progression")
         } catch is TimeoutError<ContinuousClock> {
-            try await waitUntil(event, timeout: 5) { $0.currentCount == 1 }
+            try await waitUntil(event, timeout: 3) { $0.currentCount == 1 }
         }
     }
 
@@ -190,13 +190,13 @@ class AsyncCountdownEventClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let event = AsyncCountdownEvent(until: 3)
         event.increment(by: 10)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 10 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 10 }
         event.signal(concurrent: 6)
         do {
-            try await event.wait(forSeconds: 5, clock: clock)
+            try await event.wait(forSeconds: 3, clock: clock)
             XCTFail("Unexpected task progression")
         } catch is TimeoutError<ContinuousClock> {
-            try await waitUntil(event, timeout: 5) { $0.currentCount == 4 }
+            try await waitUntil(event, timeout: 3) { $0.currentCount == 4 }
         }
     }
 
@@ -209,13 +209,13 @@ class AsyncCountdownEventClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let event = AsyncCountdownEvent(until: 3, initial: 3)
         event.increment(by: 10)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 13 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 13 }
         event.signal(concurrent: 9)
         do {
-            try await event.wait(forSeconds: 5, clock: clock)
+            try await event.wait(forSeconds: 3, clock: clock)
             XCTFail("Unexpected task progression")
         } catch is TimeoutError<ContinuousClock> {
-            try await waitUntil(event, timeout: 5) { $0.currentCount == 4 }
+            try await waitUntil(event, timeout: 3) { $0.currentCount == 4 }
         }
     }
 
@@ -228,17 +228,17 @@ class AsyncCountdownEventClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        try await waitUntil(event, timeout: 5) { $0.currentCount == 10 }
+        try await waitUntil(event, timeout: 3) { $0.currentCount == 10 }
         event.signal(concurrent: 8)
         Task.detached {
-            try await waitUntil(event, timeout: 5) { $0.currentCount <= 6 }
+            try await waitUntil(event, timeout: 3) { $0.currentCount <= 6 }
             event.reset(to: 6)
         }
         do {
-            try await event.wait(forSeconds: 5, clock: clock)
+            try await event.wait(forSeconds: 3, clock: clock)
             XCTFail("Unexpected task progression")
         } catch is TimeoutError<ContinuousClock> {
-            try await waitUntil(event, timeout: 5) { $0.currentCount <= 6 }
+            try await waitUntil(event, timeout: 3) { $0.currentCount <= 6 }
         }
     }
 }

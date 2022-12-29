@@ -7,26 +7,26 @@ class AsyncEventTests: XCTestCase {
     func testSignal() async throws {
         let event = AsyncEvent(signaledInitially: false)
         event.signal()
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
     }
 
     func testResetSignal() async throws {
         let event = AsyncEvent()
         event.reset()
-        try await waitUntil(event, timeout: 5) { !$0.signalled }
+        try await waitUntil(event, timeout: 3) { !$0.signalled }
         event.signal()
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
     }
 
     func testSignalled() async throws {
         let event = AsyncEvent()
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
     }
 
     func testDeinit() async throws {
         let event = AsyncEvent(signaledInitially: false)
         Task.detached { event.signal() }
-        try await event.wait(forSeconds: 5)
+        try await event.wait(forSeconds: 3)
         self.addTeardownBlock { [weak event] in
             event.assertReleased()
         }
@@ -38,7 +38,7 @@ class AsyncEventTests: XCTestCase {
                 group.addTask {
                     let event = AsyncEvent(signaledInitially: false)
                     try await withThrowingTaskGroup(of: Void.self) { g in
-                        g.addTask { try await event.wait(forSeconds: 5) }
+                        g.addTask { try await event.wait(forSeconds: 3) }
                         g.addTask { event.signal() }
                         try await g.waitForAll()
                     }
@@ -55,7 +55,7 @@ class AsyncEventTimeoutTests: XCTestCase {
     func testSignal() async throws {
         let event = AsyncEvent(signaledInitially: false)
         do {
-            try await event.wait(forSeconds: 5)
+            try await event.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {}
     }
@@ -63,9 +63,9 @@ class AsyncEventTimeoutTests: XCTestCase {
     func testResetSignal() async throws {
         let event = AsyncEvent()
         event.reset()
-        try await waitUntil(event, timeout: 5) { !$0.signalled }
+        try await waitUntil(event, timeout: 3) { !$0.signalled }
         do {
-            try await event.wait(forSeconds: 5)
+            try await event.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {}
     }
@@ -84,7 +84,7 @@ class AsyncEventClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let event = AsyncEvent(signaledInitially: false)
         do {
-            try await event.wait(forSeconds: 5, clock: clock)
+            try await event.wait(forSeconds: 3, clock: clock)
             XCTFail("Unexpected task progression")
         } catch is TimeoutError<ContinuousClock> {}
     }
@@ -98,9 +98,9 @@ class AsyncEventClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let event = AsyncEvent()
         event.reset()
-        try await waitUntil(event, timeout: 5) { !$0.signalled }
+        try await waitUntil(event, timeout: 3) { !$0.signalled }
         do {
-            try await event.wait(forSeconds: 5, clock: clock)
+            try await event.wait(forSeconds: 3, clock: clock)
             XCTFail("Unexpected task progression")
         } catch is TimeoutError<ContinuousClock> {}
     }

@@ -2,6 +2,10 @@ import XCTest
 import Dispatch
 @testable import AsyncObjects
 
+func waitForResume(_ body: (UnsafeContinuation<Void, Never>) -> Void) async {
+    await withUnsafeContinuation(body)
+}
+
 func waitUntil<T>(
     _ actor: T,
     timeout: TimeInterval,

@@ -24,7 +24,7 @@ class TaskQueueTests: XCTestCase {
                 try await Task.sleep(seconds: 10)
             }
         }
-        try await waitUntil(queue, timeout: 5) { $0.blocked }
+        try await waitUntil(queue, timeout: 3) { $0.blocked }
         queue.signal()
         let blocked = await queue.blocked
         XCTAssertTrue(blocked)
@@ -62,7 +62,7 @@ class TaskQueueTests: XCTestCase {
             }
         }
         await stream.assertElements()
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testDeinit() async throws {
@@ -149,7 +149,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
             }
         }
         await stream.assertElements()
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testExecutionOfTaskBeforeOperation() async throws {
@@ -164,7 +164,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
                 c.finish()
             }
         }
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
         await stream.assertElements()
     }
 
@@ -182,7 +182,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
             }
         }
         await stream.assertElements()
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testCancellation() async throws {
@@ -192,7 +192,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
         }
         let task = Task.detached {
             await queue.exec(flags: .block) {}
-            try await queue.wait(forSeconds: 5)
+            try await queue.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
         }
         do {
@@ -214,7 +214,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
             } catch {}
             XCTAssertTrue(Task.isCancelled)
             await queue.exec(flags: .block) {}
-            try await queue.wait(forSeconds: 5)
+            try await queue.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
         }
         do {
@@ -237,7 +237,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
             // Cancels block task
             group.cancelAll()
         }
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testMultipleCancellationWithoutBlocking() async throws {
@@ -258,7 +258,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
             // Cancels block task
             group.cancelAll()
         }
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testMixedeCancellationWithoutBlocking() async throws {
@@ -284,7 +284,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
             // Cancels block task
             group.cancelAll()
         }
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 }
 
@@ -301,7 +301,7 @@ class TaskQueueBarrierOperationTests: XCTestCase {
             }
         }
         await stream.assertElements()
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testExecutionOfTaskBeforeOperation() async throws {
@@ -317,7 +317,7 @@ class TaskQueueBarrierOperationTests: XCTestCase {
                 c.finish()
             }
         }
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
         await stream.assertElements()
     }
 
@@ -335,7 +335,7 @@ class TaskQueueBarrierOperationTests: XCTestCase {
             }
         }
         await stream.assertElements()
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testCancellation() async throws {
@@ -345,7 +345,7 @@ class TaskQueueBarrierOperationTests: XCTestCase {
         }
         let task = Task.detached {
             await queue.exec(flags: .block) {}
-            try await queue.wait(forSeconds: 5)
+            try await queue.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
         }
         do {
@@ -367,7 +367,7 @@ class TaskQueueBarrierOperationTests: XCTestCase {
             } catch {}
             XCTAssertTrue(Task.isCancelled)
             await queue.exec(flags: .barrier) {}
-            try await queue.wait(forSeconds: 5)
+            try await queue.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
         }
         do {
@@ -390,7 +390,7 @@ class TaskQueueBarrierOperationTests: XCTestCase {
             // Cancels block task
             group.cancelAll()
         }
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testMultipleCancellationWithoutBlocking() async throws {
@@ -411,7 +411,7 @@ class TaskQueueBarrierOperationTests: XCTestCase {
             // Cancels block task
             group.cancelAll()
         }
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testMixedCancellationWithoutBlocking() async throws {
@@ -437,7 +437,7 @@ class TaskQueueBarrierOperationTests: XCTestCase {
             // Cancels block task
             group.cancelAll()
         }
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 }
 
@@ -458,7 +458,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
             }
         }
         await stream.assertElements()
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testExecutionOfBlockTaskAfterBarrierOperation() async throws {
@@ -475,7 +475,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
             }
         }
         await stream.assertElements()
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testLongRunningConcurrentTaskWithShortBlockTaskBeforeBarrierOperation()
@@ -496,7 +496,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
             }
         }
         await stream.assertElements()
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testLongRunningConcurrentTaskWithShortBlockTaskAfterBarrierOperation()
@@ -521,7 +521,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
             }
         }
         await stream.assertElements()
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     /// Scenario described in:
@@ -554,7 +554,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
             }
         }
         await stream.assertElements()
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 
     func testCancellableAndNonCancellableTasks() async throws {
@@ -604,7 +604,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
                     try await Task.sleep(seconds: 10)
                 }
             }
-            try await waitUntil(queue, timeout: 10) {
+            try await waitUntil(queue, timeout: 5) {
                 guard
                     let (_, (_, flags)) = $0.queue.reversed().first
                 else { return false }
@@ -640,10 +640,10 @@ class TaskQueueMixedOperationTests: XCTestCase {
                     }
                 }
             }
-            try await waitUntil(queue, timeout: 10) { $0.blocked }
+            try await waitUntil(queue, timeout: 5) { $0.blocked }
             group.cancelAll()
         }
-        try await queue.wait(forSeconds: 5)
+        try await queue.wait(forSeconds: 3)
     }
 }
 
@@ -664,7 +664,7 @@ fileprivate extension TaskQueue {
         flags: Flags = [],
         operation: @Sendable @escaping () async -> T
     ) async {
-        await GlobalContinuation<Void, Never>.with { continuation in
+        await withUnsafeContinuation { continuation in
             self.addTask(priority: priority, flags: flags) {
                 continuation.resume()
                 return await operation()
@@ -677,7 +677,7 @@ fileprivate extension TaskQueue {
         flags: Flags = [],
         operation: @Sendable @escaping () async throws -> T
     ) async {
-        await GlobalContinuation<Void, Never>.with { continuation in
+        await withUnsafeContinuation { continuation in
             self.addTask(priority: priority, flags: flags) {
                 continuation.resume()
                 return try await operation()
@@ -696,10 +696,10 @@ fileprivate extension TaskQueue {
             await addTaskAndStart(priority: option.task, flags: option.flags) {
                 try await Task.sleep(seconds: 1)
             }
-            group.addTask { try await self.wait(forSeconds: 5) }
+            group.addTask { try await self.wait(forSeconds: 3) }
             try await group.waitForAll()
         }
-        try await self.wait(forSeconds: 5)
+        try await self.wait(forSeconds: 3)
     }
 
     @MainActor
@@ -716,7 +716,7 @@ fileprivate extension TaskQueue {
             try await Task.sleep(seconds: 10)
         }
         do {
-            try await self.wait(forSeconds: 10)
+            try await self.wait(forSeconds: 5)
             XCTFail("Unexpected task progression", file: file, line: line)
         } catch is DurationTimeoutError {}
     }
@@ -738,7 +738,7 @@ fileprivate extension TaskQueue {
             try await Task.sleep(seconds: 10)
         }
         do {
-            try await self.wait(forSeconds: 10)
+            try await self.wait(forSeconds: 5)
             XCTFail("Unexpected task progression", file: file, line: line)
         } catch is DurationTimeoutError {}
     }
