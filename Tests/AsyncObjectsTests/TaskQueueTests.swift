@@ -664,8 +664,8 @@ fileprivate extension TaskQueue {
         flags: Flags = [],
         operation: @Sendable @escaping () async -> T
     ) async {
-        await withUnsafeContinuation { continuation in
-            self.addTask(priority: priority, flags: flags) {
+        await GlobalContinuation<Void, Never>.with { continuation in
+            self.addTask(priority: priority, flags: flags) { () -> T in
                 continuation.resume()
                 return await operation()
             }
@@ -677,8 +677,8 @@ fileprivate extension TaskQueue {
         flags: Flags = [],
         operation: @Sendable @escaping () async throws -> T
     ) async {
-        await withUnsafeContinuation { continuation in
-            self.addTask(priority: priority, flags: flags) {
+        await GlobalContinuation<Void, Never>.with { continuation in
+            self.addTask(priority: priority, flags: flags) { () -> T in
                 continuation.resume()
                 return try await operation()
             }
