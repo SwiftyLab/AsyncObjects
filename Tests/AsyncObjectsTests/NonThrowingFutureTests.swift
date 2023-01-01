@@ -28,7 +28,7 @@ class NonThrowingFutureTests: XCTestCase {
     func testFulfilledWithAttemptClosure() async throws {
         let future = Future<Int, Never> { promise in
             DispatchQueue.global(qos: .background)
-                .asyncAfter(deadline: .now() + 2) {
+                .asyncAfter(deadline: .now() + 0.5) {
                     promise(.success(5))
                 }
         }

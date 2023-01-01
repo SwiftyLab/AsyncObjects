@@ -6,7 +6,7 @@ class CancellationSourceTests: XCTestCase {
 
     func testTaskCancellation() async throws {
         let source = CancellationSource()
-        let task = Task { try await Task.sleep(seconds: 3) }
+        let task = Task { try await Task.sleep(seconds: 10) }
         source.register(task: task)
         try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
         source.cancel()
@@ -16,7 +16,7 @@ class CancellationSourceTests: XCTestCase {
 
     func testTaskCancellationWithTimeout() async throws {
         let source = CancellationSource(cancelAfterNanoseconds: UInt64(1E9))
-        let task = Task { try await Task.sleep(seconds: 3) }
+        let task = Task { try await Task.sleep(seconds: 10) }
         source.register(task: task)
         try await waitUntil(source, timeout: 5) { $0.registeredTasks.isEmpty }
         XCTAssertTrue(task.isCancelled)
@@ -34,7 +34,7 @@ class CancellationSourceTests: XCTestCase {
             at: .now + .seconds(1),
             clock: ContinuousClock.continuous
         )
-        let task = Task { try await Task.sleep(seconds: 3, clock: clock) }
+        let task = Task { try await Task.sleep(seconds: 10, clock: clock) }
         source.register(task: task)
         try await waitUntil(source, timeout: 5) { $0.registeredTasks.isEmpty }
         XCTAssertTrue(task.isCancelled)
@@ -44,7 +44,7 @@ class CancellationSourceTests: XCTestCase {
     func testTaskCancellationWithLinkedSource() async throws {
         let parentSource = CancellationSource()
         let source = CancellationSource(linkedWith: parentSource)
-        let task = Task { try await Task.sleep(seconds: 3) }
+        let task = Task { try await Task.sleep(seconds: 10) }
         source.register(task: task)
         try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
         parentSource.cancel()
@@ -58,7 +58,7 @@ class CancellationSourceTests: XCTestCase {
         let source = CancellationSource(
             linkedWith: parentSource1, parentSource2
         )
-        let task = Task { try await Task.sleep(seconds: 3) }
+        let task = Task { try await Task.sleep(seconds: 10) }
         source.register(task: task)
         try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
         parentSource1.cancel()

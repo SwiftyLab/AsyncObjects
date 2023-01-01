@@ -72,16 +72,16 @@ public actor CancellationSource {
 
     /// Propagate cancellation to linked cancellation sources.
     @inlinable
-    internal nonisolated func propagateCancellation() async {
+    internal func propagateCancellation() async {
         await withTaskGroup(of: Void.self) { group in
-            let linkedSources = await linkedSources
-            linkedSources.forEach { s in group.addTask { s.cancel() } }
+            linkedSources.forEach { s in group.addTask { await s.cancelAll() } }
             await group.waitForAll()
         }
     }
 
     /// Trigger cancellation event, initiate cooperative cancellation of registered tasks
     /// and propagate cancellation to linked cancellation sources.
+    @usableFromInline
     internal func cancelAll() async {
         registeredTasks.forEach { $1() }
         registeredTasks = [:]

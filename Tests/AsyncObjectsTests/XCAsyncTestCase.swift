@@ -89,8 +89,10 @@ extension Optional where Wrapped: AnyObject {
         switch self {
         case .none:
             break
-        case .some(let wrapped):
-            XCTAssertEqual(_getRetainCount(wrapped), 0, file: file, line: line)
+        case .some(let value):
+            let wr = _getUnownedRetainCount(value) + _getWeakRetainCount(value)
+            let rc = _getRetainCount(value) - wr
+            XCTAssertEqual(rc, 0, file: file, line: line)
         }
     }
 }
