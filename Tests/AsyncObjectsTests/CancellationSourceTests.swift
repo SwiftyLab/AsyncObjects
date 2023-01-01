@@ -42,26 +42,27 @@ class CancellationSourceTests: XCTestCase {
     #endif
 
     func testTaskCancellationWithLinkedSource() async throws {
-        let parentSource = CancellationSource()
-        let source = CancellationSource(linkedWith: parentSource)
+        let pSource = CancellationSource()
+        let source = CancellationSource(linkedWith: pSource)
+        try await waitUntil(pSource, timeout: 3) { !$0.linkedSources.isEmpty }
         let task = Task { try await Task.sleep(seconds: 10) }
         source.register(task: task)
         try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
-        parentSource.cancel()
+        pSource.cancel()
         try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
         XCTAssertTrue(task.isCancelled)
     }
 
     func testTaskCancellationWithMultipleLinkedSources() async throws {
-        let parentSource1 = CancellationSource()
-        let parentSource2 = CancellationSource()
-        let source = CancellationSource(
-            linkedWith: parentSource1, parentSource2
-        )
+        let pSource1 = CancellationSource()
+        let pSource2 = CancellationSource()
+        let source = CancellationSource(linkedWith: pSource1, pSource2)
+        try await waitUntil(pSource1, timeout: 3) { !$0.linkedSources.isEmpty }
+        try await waitUntil(pSource2, timeout: 3) { !$0.linkedSources.isEmpty }
         let task = Task { try await Task.sleep(seconds: 10) }
         source.register(task: task)
         try await waitUntil(source, timeout: 3) { !$0.registeredTasks.isEmpty }
-        parentSource1.cancel()
+        pSource1.cancel()
         try await waitUntil(source, timeout: 3) { $0.registeredTasks.isEmpty }
         XCTAssertTrue(task.isCancelled)
     }
