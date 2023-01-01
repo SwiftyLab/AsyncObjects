@@ -15,8 +15,8 @@ class CancellationSourceTests: XCTestCase {
     }
 
     func testTaskCancellationWithTimeout() async throws {
-        let source = CancellationSource(cancelAfterNanoseconds: UInt64(1E9))
         let task = Task { try await Task.sleep(seconds: 10) }
+        let source = CancellationSource(cancelAfterNanoseconds: UInt64(1E9))
         source.register(task: task)
         try await waitUntil(source, timeout: 5) { $0.registeredTasks.isEmpty }
         XCTAssertTrue(task.isCancelled)

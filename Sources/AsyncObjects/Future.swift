@@ -285,7 +285,7 @@ public actor Future<Output: Sendable, Failure: Error>: LoggableActor {
         continuations.forEach { key, value in
             value.resume(with: result)
             log(
-                "Fulfilled", id: key,
+                "Fulfilling", id: key,
                 file: file, function: function, line: line
             )
         }
