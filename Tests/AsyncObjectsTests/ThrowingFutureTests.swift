@@ -124,10 +124,10 @@ class ThrowingFutureCombiningAllTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = Future.all(future1, future2, future3)
+        let future = Future.all(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
             await group.addTaskAndStart {
-                let value = try await allFuture.wait(forSeconds: 3)
+                let value = try await future.wait(forSeconds: 3)
                 XCTAssertEqual(value, [1, 2, 3])
             }
             group.addTask { await future1.fulfill(producing: 1) }
@@ -141,11 +141,11 @@ class ThrowingFutureCombiningAllTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = Future.all(future1, future2, future3)
+        let future = Future.all(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
             await group.addTaskAndStart {
                 do {
-                    let _ = try await allFuture.wait(forSeconds: 3)
+                    let _ = try await future.wait(forSeconds: 3)
                     XCTFail("Future fulfillment did not fail")
                 } catch is CancellationError {}
             }
@@ -172,10 +172,10 @@ class ThrowingFutureCombiningAllSettledTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = Future.allSettled(future1, future2, future3)
+        let future = Future.allSettled(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
             await group.addTaskAndStart {
-                let values = try await allFuture.wait(forSeconds: 3)
+                let values = try await future.wait(forSeconds: 3)
                 for (index, item) in values.enumerated() {
                     switch item {
                     case .success(let value):
@@ -196,10 +196,10 @@ class ThrowingFutureCombiningAllSettledTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = Future.allSettled(future1, future2, future3)
+        let future = Future.allSettled(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
             await group.addTaskAndStart {
-                let values = try await allFuture.wait(forSeconds: 3)
+                let values = try await future.wait(forSeconds: 3)
                 for (index, item) in values.enumerated() {
                     switch item {
                     case .success(let value):
@@ -232,13 +232,14 @@ class ThrowingFutureRacingTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = Future.race(future1, future2, future3)
+        let future = Future.race(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
             await group.addTaskAndStart {
-                let value = try await allFuture.wait(forSeconds: 3)
+                let value = try await future.wait(forSeconds: 3)
                 XCTAssertEqual(value, 1)
             }
             await future1.fulfill(producing: 1)
+            try await waitUntil(future, timeout: 5) { $0.result != nil }
             await future2.fulfill(producing: 2)
             await future3.fulfill(producing: 3)
             try await group.waitForAll()
@@ -249,15 +250,16 @@ class ThrowingFutureRacingTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = Future.race(future1, future2, future3)
+        let future = Future.race(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
             await group.addTaskAndStart {
                 do {
-                    let _ = try await allFuture.wait(forSeconds: 3)
+                    let _ = try await future.wait(forSeconds: 3)
                     XCTFail("Future fulfillment did not fail")
                 } catch is CancellationError {}
             }
             await future1.fulfill(throwing: CancellationError())
+            try await waitUntil(future, timeout: 5) { $0.result != nil }
             await future2.fulfill(producing: 2)
             await future3.fulfill(producing: 3)
             try await group.waitForAll()
@@ -272,13 +274,14 @@ class ThrowingFutureSelectAnyTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = Future.any(future1, future2, future3)
+        let future = Future.any(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
             await group.addTaskAndStart {
-                let value = try await allFuture.wait(forSeconds: 3)
+                let value = try await future.wait(forSeconds: 3)
                 XCTAssertEqual(value, 1)
             }
             await future1.fulfill(producing: 1)
+            try await waitUntil(future, timeout: 5) { $0.result != nil }
             await future2.fulfill(producing: 2)
             await future3.fulfill(producing: 3)
             try await group.waitForAll()
@@ -289,14 +292,15 @@ class ThrowingFutureSelectAnyTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = Future.any(future1, future2, future3)
+        let future = Future.any(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
             await group.addTaskAndStart {
-                let value = try await allFuture.wait(forSeconds: 3)
+                let value = try await future.wait(forSeconds: 3)
                 XCTAssertEqual(value, 2)
             }
             await future1.fulfill(throwing: CancellationError())
             await future2.fulfill(producing: 2)
+            try await waitUntil(future, timeout: 5) { $0.result != nil }
             await future3.fulfill(producing: 3)
             try await group.waitForAll()
         }
@@ -306,11 +310,11 @@ class ThrowingFutureSelectAnyTests: XCTestCase {
         let future1 = Future<Int, Error>()
         let future2 = Future<Int, Error>()
         let future3 = Future<Int, Error>()
-        let allFuture = Future.any(future1, future2, future3)
+        let future = Future.any(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
             await group.addTaskAndStart {
                 do {
-                    let _ = try await allFuture.wait(forSeconds: 3)
+                    let _ = try await future.wait(forSeconds: 3)
                     XCTFail("Future fulfillment did not fail")
                 } catch is CancellationError {}
             }

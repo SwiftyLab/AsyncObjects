@@ -90,11 +90,7 @@ extension Optional where Wrapped: AnyObject {
         case .none:
             break
         case .some(let wrapped):
-            #if canImport(Darwin)
-            XCTAssertEqual(CFGetRetainCount(wrapped), 0, file: file, line: line)
-            #else
-            XCTFail("Has some value \(wrapped)", file: file, line: line)
-            #endif
+            XCTAssertEqual(_getRetainCount(wrapped), 0, file: file, line: line)
         }
     }
 }
