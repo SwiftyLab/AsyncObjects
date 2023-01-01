@@ -25,8 +25,9 @@ class AsyncEventTests: XCTestCase {
 
     func testDeinit() async throws {
         let event = AsyncEvent(signaledInitially: false)
-        Task.detached { event.signal() }
+        let task = Task.detached { event.signal() }
         try await event.wait(forSeconds: 3)
+        await task.value
         self.addTeardownBlock { [weak event] in
             event.assertReleased()
         }

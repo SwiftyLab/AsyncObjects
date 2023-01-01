@@ -62,8 +62,9 @@ class ThrowingFutureTests: XCTestCase {
 
     func testDeinit() async throws {
         let future = Future<Int, Error>()
-        Task.detached { await future.fulfill(producing: 5) }
+        let task = Task.detached { await future.fulfill(producing: 5) }
         let _ = try await future.wait(forSeconds: 3)
+        await task.value
         self.addTeardownBlock { [weak future] in
             future.assertReleased()
         }

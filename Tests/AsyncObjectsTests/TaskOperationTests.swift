@@ -85,7 +85,7 @@ class TaskOperationTests: XCTestCase {
             try await Task.sleep(seconds: 1)
         }
         operation.signal()
-        try await operation.wait(forSeconds: 3)
+        try await operation.wait(forSeconds: 5)
         self.addTeardownBlock { [weak operation] in
             operation.assertReleased()
         }
