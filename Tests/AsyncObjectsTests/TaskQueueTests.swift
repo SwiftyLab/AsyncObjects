@@ -264,7 +264,7 @@ class TaskQueueBlockOperationTests: XCTestCase {
     func testMixedeCancellationWithoutBlocking() async throws {
         let queue = TaskQueue()
         await withThrowingTaskGroup(of: Void.self) { group in
-            await group.addTaskAndStart { throw CancellationError() }
+            group.addTask { throw CancellationError() }
             group.addTask {
                 try await queue.exec(flags: .block) {
                     try await Task.sleep(seconds: 10)
@@ -532,7 +532,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
             Task.detached {
                 await withTaskGroup(of: Void.self) { group in
                     for _ in 0..<3 {
-                        await group.addTaskAndStart {
+                        group.addTask {
                             await queue.addTaskAndStart {
                                 c.yield(1)
                                 try await Task.sleep(seconds: 1)
@@ -591,7 +591,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
         try await withThrowingTaskGroup(of: Void.self) { group in
             await withTaskGroup(of: Void.self) { g in
                 for _ in 0..<3 {
-                    await g.addTaskAndStart {
+                    g.addTask {
                         await queue.addTaskAndStart {
                             try await Task.sleep(seconds: 1)
                         }
@@ -607,7 +607,7 @@ class TaskQueueMixedOperationTests: XCTestCase {
             try await waitUntil(queue, timeout: 5) {
                 guard
                     let (_, (_, flags)) = $0.queue.reversed().first
-                else { return false }
+                else { return $0.blocked }
                 return flags.contains(.barrier)
             }
             group.addTask {

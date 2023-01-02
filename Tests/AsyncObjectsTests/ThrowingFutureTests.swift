@@ -127,7 +127,7 @@ class ThrowingFutureCombiningAllTests: XCTestCase {
         let future3 = Future<Int, Error>()
         let future = Future.all(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
-            await group.addTaskAndStart {
+            group.addTask {
                 let value = try await future.wait(forSeconds: 3)
                 XCTAssertEqual(value, [1, 2, 3])
             }
@@ -144,7 +144,7 @@ class ThrowingFutureCombiningAllTests: XCTestCase {
         let future3 = Future<Int, Error>()
         let future = Future.all(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
-            await group.addTaskAndStart {
+            group.addTask {
                 do {
                     let _ = try await future.wait(forSeconds: 3)
                     XCTFail("Future fulfillment did not fail")
@@ -175,7 +175,7 @@ class ThrowingFutureCombiningAllSettledTests: XCTestCase {
         let future3 = Future<Int, Error>()
         let future = Future.allSettled(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
-            await group.addTaskAndStart {
+            group.addTask {
                 let values = try await future.wait(forSeconds: 3)
                 for (index, item) in values.enumerated() {
                     switch item {
@@ -199,7 +199,7 @@ class ThrowingFutureCombiningAllSettledTests: XCTestCase {
         let future3 = Future<Int, Error>()
         let future = Future.allSettled(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
-            await group.addTaskAndStart {
+            group.addTask {
                 let values = try await future.wait(forSeconds: 3)
                 for (index, item) in values.enumerated() {
                     switch item {
@@ -235,7 +235,7 @@ class ThrowingFutureRacingTests: XCTestCase {
         let future3 = Future<Int, Error>()
         let future = Future.race(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
-            await group.addTaskAndStart {
+            group.addTask {
                 let value = try await future.wait(forSeconds: 3)
                 XCTAssertEqual(value, 1)
             }
@@ -253,7 +253,7 @@ class ThrowingFutureRacingTests: XCTestCase {
         let future3 = Future<Int, Error>()
         let future = Future.race(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
-            await group.addTaskAndStart {
+            group.addTask {
                 do {
                     let _ = try await future.wait(forSeconds: 3)
                     XCTFail("Future fulfillment did not fail")
@@ -277,7 +277,7 @@ class ThrowingFutureSelectAnyTests: XCTestCase {
         let future3 = Future<Int, Error>()
         let future = Future.any(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
-            await group.addTaskAndStart {
+            group.addTask {
                 let value = try await future.wait(forSeconds: 3)
                 XCTAssertEqual(value, 1)
             }
@@ -295,7 +295,7 @@ class ThrowingFutureSelectAnyTests: XCTestCase {
         let future3 = Future<Int, Error>()
         let future = Future.any(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
-            await group.addTaskAndStart {
+            group.addTask {
                 let value = try await future.wait(forSeconds: 3)
                 XCTAssertEqual(value, 2)
             }
@@ -313,7 +313,7 @@ class ThrowingFutureSelectAnyTests: XCTestCase {
         let future3 = Future<Int, Error>()
         let future = Future.any(future1, future2, future3)
         try await withThrowingTaskGroup(of: Void.self) { group in
-            await group.addTaskAndStart {
+            group.addTask {
                 do {
                     let _ = try await future.wait(forSeconds: 3)
                     XCTFail("Future fulfillment did not fail")

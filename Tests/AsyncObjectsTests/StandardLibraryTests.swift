@@ -169,4 +169,20 @@ class StandardLibraryTests: XCTestCase {
         task.cancel()
         await task.value
     }
+
+    func testTaskGroupTaskStart() async throws {
+        await withTaskGroup(of: Void.self) { group in
+            let store = ArrayDataStore()
+            await group.addTaskAndStart { XCTAssertTrue(store.items.isEmpty) }
+            store.add(1)
+        }
+    }
+
+    func testThrowingTaskGroupTaskStart() async throws {
+        await withThrowingTaskGroup(of: Void.self) { group in
+            let store = ArrayDataStore()
+            await group.addTaskAndStart { XCTAssertTrue(store.items.isEmpty) }
+            store.add(1)
+        }
+    }
 }
