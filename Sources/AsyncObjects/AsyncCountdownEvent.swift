@@ -178,7 +178,9 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
     @inlinable
     internal func decrementCount(
         by number: UInt = 1,
-        file: String, function: String, line: UInt
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) {
         defer {
             resumeContinuations(file: file, function: function, line: line)
@@ -352,12 +354,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
         function: String = #function,
         line: UInt = #line
     ) {
-        Task {
-            await decrementCount(
-                by: 1,
-                file: file, function: function, line: line
-            )
-        }
+        self.signal(repeat: 1, file: file, function: function, line: line)
     }
 
     /// Registers multiple signals (decrements by provided count) with the countdown event.
