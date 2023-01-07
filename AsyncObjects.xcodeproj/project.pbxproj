@@ -21,7 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		4628E75B869ACA19AA7E5BDE /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = B2A9446673C71002FDE80C4B /* AsyncObjects.docc */; };
+		FDA4977367636DFB04A448D5 /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = 82F4B4651B56C28A0361C066 /* AsyncObjects.docc */; };
 		OBJ_122 /* AsyncCountdownEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AsyncCountdownEvent.swift */; };
 		OBJ_123 /* AsyncEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AsyncEvent.swift */; };
 		OBJ_124 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* AsyncSemaphore.swift */; };
@@ -115,7 +115,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		B2A9446673C71002FDE80C4B /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
+		82F4B4651B56C28A0361C066 /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
 		OBJ_100 /* OrderedSet+Partial SetAlgebra+Operations.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial SetAlgebra+Operations.swift"; sourceTree = "<group>"; };
 		OBJ_101 /* OrderedSet+Partial SetAlgebra+Predicates.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial SetAlgebra+Predicates.swift"; sourceTree = "<group>"; };
 		OBJ_102 /* OrderedSet+RandomAccessCollection.swift */ = {isa = PBXFileReference; path = "OrderedSet+RandomAccessCollection.swift"; sourceTree = "<group>"; };
@@ -128,7 +128,7 @@
 		OBJ_11 /* AsyncCountdownEvent.swift */ = {isa = PBXFileReference; path = AsyncCountdownEvent.swift; sourceTree = "<group>"; };
 		OBJ_110 /* RandomAccessCollection+Offsets.swift */ = {isa = PBXFileReference; path = "RandomAccessCollection+Offsets.swift"; sourceTree = "<group>"; };
 		OBJ_111 /* _UnsafeBitset.swift */ = {isa = PBXFileReference; path = _UnsafeBitset.swift; sourceTree = "<group>"; };
-		OBJ_112 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/Users/soumya.mahunt/Documents/projects/AsyncObjects/.build/checkouts/swift-collections/Package.swift"; sourceTree = "<group>"; };
+		OBJ_112 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/home/runner/work/AsyncObjects/AsyncObjects/.build/checkouts/swift-collections/Package.swift"; sourceTree = "<group>"; };
 		OBJ_12 /* AsyncEvent.swift */ = {isa = PBXFileReference; path = AsyncEvent.swift; sourceTree = "<group>"; };
 		OBJ_13 /* AsyncSemaphore.swift */ = {isa = PBXFileReference; path = AsyncSemaphore.swift; sourceTree = "<group>"; };
 		OBJ_15 /* AsyncObject+Clock.swift */ = {isa = PBXFileReference; path = "AsyncObject+Clock.swift"; sourceTree = "<group>"; };
@@ -247,7 +247,7 @@
 				OBJ_35 /* TaskOperation.swift */,
 				OBJ_36 /* TaskQueue.swift */,
 				OBJ_37 /* TaskTracker.swift */,
-				B2A9446673C71002FDE80C4B /* AsyncObjects.docc */,
+				82F4B4651B56C28A0361C066 /* AsyncObjects.docc */,
 			);
 			name = AsyncObjects;
 			path = Sources/AsyncObjects;
@@ -374,13 +374,13 @@
 		OBJ_53 /* Dependencies */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_54 /* swift-collections 1.0.3 */,
+				OBJ_54 /* swift-collections 1.0.4 */,
 			);
 			name = Dependencies;
 			path = "";
 			sourceTree = "<group>";
 		};
-		OBJ_54 /* swift-collections 1.0.3 */ = {
+		OBJ_54 /* swift-collections 1.0.4 */ = {
 			isa = PBXGroup;
 			children = (
 				OBJ_55 /* Collections */,
@@ -388,7 +388,7 @@
 				OBJ_57 /* OrderedCollections */,
 				OBJ_112 /* Package.swift */,
 			);
-			name = "swift-collections 1.0.3";
+			name = "swift-collections 1.0.4";
 			path = "";
 			sourceTree = SOURCE_ROOT;
 		};
@@ -648,7 +648,7 @@
 				OBJ_141 /* TaskOperation.swift in Sources */,
 				OBJ_142 /* TaskQueue.swift in Sources */,
 				OBJ_143 /* TaskTracker.swift in Sources */,
-				4628E75B869ACA19AA7E5BDE /* AsyncObjects.docc in Sources */,
+				FDA4977367636DFB04A448D5 /* AsyncObjects.docc in Sources */,
 			);
 		};
 		OBJ_152 /* Sources */ = {
@@ -824,7 +824,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -package-description-version 5.6.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -package-description-version 5.6.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -833,7 +833,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -package-description-version 5.6.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -package-description-version 5.6.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -864,17 +864,17 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = AsyncObjects.xcodeproj/AsyncObjectsTests_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = AsyncObjectsTests;
-				TVOS_DEPLOYMENT_TARGET = 14.0;
-				WATCHOS_DEPLOYMENT_TARGET = 7.0;
+				TVOS_DEPLOYMENT_TARGET = 13.0;
+				WATCHOS_DEPLOYMENT_TARGET = 6.0;
 			};
 			name = Debug;
 		};
@@ -892,17 +892,17 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = AsyncObjects.xcodeproj/AsyncObjectsTests_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = AsyncObjectsTests;
-				TVOS_DEPLOYMENT_TARGET = 14.0;
-				WATCHOS_DEPLOYMENT_TARGET = 7.0;
+				TVOS_DEPLOYMENT_TARGET = 13.0;
+				WATCHOS_DEPLOYMENT_TARGET = 6.0;
 			};
 			name = Release;
 		};
@@ -972,7 +972,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -package-description-version 5.3.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -package-description-version 5.5.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -981,7 +981,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -package-description-version 5.3.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -package-description-version 5.5.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

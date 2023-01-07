@@ -1,4 +1,54 @@
-## 1.0.0 (2022-08-17)
+## [2.0.0](https://github.com/SwiftyLab/AsyncObjects/compare/v1.0.0...v2.0.0) (2023-01-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* **`AsyncObject`:** propagate cancellation error instead of swallowing (#8)
+* **`TaskOperation`:** use platform lock primitive instead of `DispatchQueue` for synchronization
+
+### 🛠 Build System
+
+* resolve concurrency check warnings ([c66bb81](https://github.com/SwiftyLab/AsyncObjects/commit/c66bb81b9d38faef7b88f1cbd11e26f2db53929e))
+
+
+### 🐎 Performance Improvements
+
+* **`TaskOperation`:** use platform lock primitive instead of `DispatchQueue` for synchronization ([f28ee66](https://github.com/SwiftyLab/AsyncObjects/commit/f28ee669d1685468f00eac9164f2bbc9158e7718))
+
+
+### 🐛 Fixes
+
+* fix data race with task cancellation ([bca8299](https://github.com/SwiftyLab/AsyncObjects/commit/bca8299ec67a9af96805af2e55a18f9a69dd9275))
+* fix potential data race handling actor reentrancy ([63fed91](https://github.com/SwiftyLab/AsyncObjects/commit/63fed91f4da960e73346f1bd4a6b280e9d72fa34))
+
+
+### 🚀 Features
+
+* **`TaskOperation`:** allow customizing priority of task ([6650693](https://github.com/SwiftyLab/AsyncObjects/commit/6650693730334657ec87c7e35ca53963cf30bf06))
+* **`TaskOperation`:** allow executing as detached task ([#7](https://github.com/SwiftyLab/AsyncObjects/issues/7)) ([e3dcfeb](https://github.com/SwiftyLab/AsyncObjects/commit/e3dcfeb8487b3d85fd7d68c7a56a382082125919))
+* **`TaskOperation`:** allow tracking child tasks completion ([571419d](https://github.com/SwiftyLab/AsyncObjects/commit/571419d25b6bd89d944612b873e404f8bc31417d))
+* **`TaskQueue`:** allow adding task to queue wihout waiting for completion ([d8ee18a](https://github.com/SwiftyLab/AsyncObjects/commit/d8ee18abc5b5abef9af572c267ca0a201602e2a1))
+* add logging option ([#10](https://github.com/SwiftyLab/AsyncObjects/issues/10)) ([bdd688b](https://github.com/SwiftyLab/AsyncObjects/commit/bdd688b867e6c65b1060c88e5956e0676d31a610))
+* add scheduling with Clock API support ([#9](https://github.com/SwiftyLab/AsyncObjects/issues/9)) ([d1c5531](https://github.com/SwiftyLab/AsyncObjects/commit/d1c55312d32de6e7caf863c685ecbac19f6d2a95))
+
+
+### 🔥 Refactorings
+
+* **`AsyncObject`:** propagate cancellation error instead of swallowing ([#8](https://github.com/SwiftyLab/AsyncObjects/issues/8)) ([9f7f243](https://github.com/SwiftyLab/AsyncObjects/commit/9f7f243cb0dd7fd64771207ef4ae51d4e9a077d2))
+* fix actor isolation bug with protocol conformance on older swift versions ([#11](https://github.com/SwiftyLab/AsyncObjects/issues/11)) ([c1ce0e2](https://github.com/SwiftyLab/AsyncObjects/commit/c1ce0e2f48c20d3149a3d2b84ff25d445109bda4))
+
+
+### 💄 Styles
+
+* **`TaskOperation`:** add separate error for retrieving result without starting ([9a852d9](https://github.com/SwiftyLab/AsyncObjects/commit/9a852d9ebf57f71383f7c55bdf9b44405a7b2215))
+* add swift package index documentation support ([3ae2525](https://github.com/SwiftyLab/AsyncObjects/commit/3ae2525d1e5b28e5a0a6e44ab99eac3a24bdce26))
+
+
+### ✅ Tests
+
+* improve async tests correctness ([#14](https://github.com/SwiftyLab/AsyncObjects/issues/14)) ([19405e3](https://github.com/SwiftyLab/AsyncObjects/commit/19405e3415726a2f8d18c0195c6412a3a8c83cfa))
+
+## [1.0.0](https://github.com/SwiftyLab/AsyncObjects/compare/fbd6b6537060cbc6dd261b4a0f0b97b64542209d...v1.0.0) (2022-08-17)
 
 
 ### 💄 Styles
