@@ -249,7 +249,7 @@ public actor TaskQueue: AsyncObject, LoggableActor {
         _ continuation: QueuedContinuation,
         atKey key: UUID,
         file: String, function: String, line: UInt,
-        preinit: @escaping @Sendable () -> Void
+        preinit: @Sendable () -> Void
     ) {
         preinit()
         log(
@@ -407,7 +407,7 @@ public actor TaskQueue: AsyncObject, LoggableActor {
     ///
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    internal nonisolated func withPromisedContinuation(
+    internal func withPromisedContinuation(
         flags: Flags = [],
         withKey key: UUID,
         file: String, function: String, line: UInt
@@ -585,12 +585,6 @@ public actor TaskQueue: AsyncObject, LoggableActor {
             "Waiting", flags: flags, id: key,
             file: file, function: function, line: line
         )
-        defer {
-            log(
-                "Executed", flags: flags, id: key,
-                file: file, function: function, line: line
-            )
-        }
 
         do {
             try await withPromisedContinuation(
@@ -601,6 +595,12 @@ public actor TaskQueue: AsyncObject, LoggableActor {
             try cancellation(error)
         }
 
+        defer {
+            log(
+                "Executed", flags: flags, id: key,
+                file: file, function: function, line: line
+            )
+        }
         return try await runTask(withKey: key, operation)
     }
 

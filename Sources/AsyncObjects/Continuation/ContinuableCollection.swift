@@ -85,7 +85,7 @@ where
     /// - Returns: The value continuation is resumed with.
     /// - Throws: If `resume(throwing:)` is called on the continuation, this function throws that error.
     @inlinable
-    nonisolated func withPromisedContinuation(
+    func withPromisedContinuation(
         withKey key: Key,
         file: String, function: String, line: UInt
     ) async rethrows -> Continuation.Success {

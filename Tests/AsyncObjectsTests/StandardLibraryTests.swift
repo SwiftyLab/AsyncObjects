@@ -6,7 +6,7 @@ class StandardLibraryTests: XCTestCase {
 
     func testTaskValueFetchingCancelation() async throws {
         let task = Task { () -> Int in
-            try await Self.sleep(seconds: 1)
+            try await Task.sleep(seconds: 1)
             return 5
         }
 
@@ -32,7 +32,7 @@ class StandardLibraryTests: XCTestCase {
         let time = DispatchTime.now()
         async let val: Void = Task {
             do {
-                try await Self.sleep(seconds: 1)
+                try await Task.sleep(seconds: 1)
                 print("\(#function): Async task completed")
             } catch {
                 XCTFail("Unrecognized task cancellation")
@@ -156,7 +156,7 @@ class StandardLibraryTests: XCTestCase {
     func testCancellationHandlerFromAlreadyCancelledTask() async throws {
         let task = Task {
             do {
-                try await Self.sleep(seconds: 5)
+                try await Task.sleep(seconds: 1)
             } catch {
                 await withTaskCancellationHandler {
                     XCTAssertTrue(Task.isCancelled)
@@ -168,5 +168,21 @@ class StandardLibraryTests: XCTestCase {
         }
         task.cancel()
         await task.value
+    }
+
+    func testTaskGroupTaskStart() async throws {
+        await withTaskGroup(of: Void.self) { group in
+            let store = ArrayDataStore()
+            await group.addTaskAndStart { XCTAssertTrue(store.items.isEmpty) }
+            store.add(1)
+        }
+    }
+
+    func testThrowingTaskGroupTaskStart() async throws {
+        await withThrowingTaskGroup(of: Void.self) { group in
+            let store = ArrayDataStore()
+            await group.addTaskAndStart { XCTAssertTrue(store.items.isEmpty) }
+            store.add(1)
+        }
     }
 }

@@ -21,7 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		286654AE55C95B05A5086634 /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = 64070662BE047028E995157C /* AsyncObjects.docc */; };
+		4628E75B869ACA19AA7E5BDE /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = B2A9446673C71002FDE80C4B /* AsyncObjects.docc */; };
 		OBJ_122 /* AsyncCountdownEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AsyncCountdownEvent.swift */; };
 		OBJ_123 /* AsyncEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AsyncEvent.swift */; };
 		OBJ_124 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* AsyncSemaphore.swift */; };
@@ -58,7 +58,7 @@
 		OBJ_173 /* TaskQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_49 /* TaskQueueTests.swift */; };
 		OBJ_174 /* ThrowingFutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* ThrowingFutureTests.swift */; };
 		OBJ_175 /* TrackedContinuationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* TrackedContinuationTests.swift */; };
-		OBJ_176 /* XCTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_52 /* XCTestCase.swift */; };
+		OBJ_176 /* XCAsyncTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_52 /* XCAsyncTestCase.swift */; };
 		OBJ_178 /* AsyncObjects.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = asyncobjects::AsyncObjects::Product /* AsyncObjects.framework */; };
 		OBJ_179 /* OrderedCollections.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = swift-collections::OrderedCollections::Product /* OrderedCollections.framework */; };
 		OBJ_186 /* _HashTable+Bucket.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_59 /* _HashTable+Bucket.swift */; };
@@ -115,7 +115,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		64070662BE047028E995157C /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
+		B2A9446673C71002FDE80C4B /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
 		OBJ_100 /* OrderedSet+Partial SetAlgebra+Operations.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial SetAlgebra+Operations.swift"; sourceTree = "<group>"; };
 		OBJ_101 /* OrderedSet+Partial SetAlgebra+Predicates.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial SetAlgebra+Predicates.swift"; sourceTree = "<group>"; };
 		OBJ_102 /* OrderedSet+RandomAccessCollection.swift */ = {isa = PBXFileReference; path = "OrderedSet+RandomAccessCollection.swift"; sourceTree = "<group>"; };
@@ -162,7 +162,7 @@
 		OBJ_49 /* TaskQueueTests.swift */ = {isa = PBXFileReference; path = TaskQueueTests.swift; sourceTree = "<group>"; };
 		OBJ_50 /* ThrowingFutureTests.swift */ = {isa = PBXFileReference; path = ThrowingFutureTests.swift; sourceTree = "<group>"; };
 		OBJ_51 /* TrackedContinuationTests.swift */ = {isa = PBXFileReference; path = TrackedContinuationTests.swift; sourceTree = "<group>"; };
-		OBJ_52 /* XCTestCase.swift */ = {isa = PBXFileReference; path = XCTestCase.swift; sourceTree = "<group>"; };
+		OBJ_52 /* XCAsyncTestCase.swift */ = {isa = PBXFileReference; path = XCAsyncTestCase.swift; sourceTree = "<group>"; };
 		OBJ_59 /* _HashTable+Bucket.swift */ = {isa = PBXFileReference; path = "_HashTable+Bucket.swift"; sourceTree = "<group>"; };
 		OBJ_6 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		OBJ_60 /* _HashTable+BucketIterator.swift */ = {isa = PBXFileReference; path = "_HashTable+BucketIterator.swift"; sourceTree = "<group>"; };
@@ -247,7 +247,7 @@
 				OBJ_35 /* TaskOperation.swift */,
 				OBJ_36 /* TaskQueue.swift */,
 				OBJ_37 /* TaskTracker.swift */,
-				64070662BE047028E995157C /* AsyncObjects.docc */,
+				B2A9446673C71002FDE80C4B /* AsyncObjects.docc */,
 			);
 			name = AsyncObjects;
 			path = Sources/AsyncObjects;
@@ -352,7 +352,7 @@
 				OBJ_49 /* TaskQueueTests.swift */,
 				OBJ_50 /* ThrowingFutureTests.swift */,
 				OBJ_51 /* TrackedContinuationTests.swift */,
-				OBJ_52 /* XCTestCase.swift */,
+				OBJ_52 /* XCAsyncTestCase.swift */,
 			);
 			name = AsyncObjectsTests;
 			path = Tests/AsyncObjectsTests;
@@ -648,7 +648,7 @@
 				OBJ_141 /* TaskOperation.swift in Sources */,
 				OBJ_142 /* TaskQueue.swift in Sources */,
 				OBJ_143 /* TaskTracker.swift in Sources */,
-				286654AE55C95B05A5086634 /* AsyncObjects.docc in Sources */,
+				4628E75B869ACA19AA7E5BDE /* AsyncObjects.docc in Sources */,
 			);
 		};
 		OBJ_152 /* Sources */ = {
@@ -672,7 +672,7 @@
 				OBJ_173 /* TaskQueueTests.swift in Sources */,
 				OBJ_174 /* ThrowingFutureTests.swift in Sources */,
 				OBJ_175 /* TrackedContinuationTests.swift in Sources */,
-				OBJ_176 /* XCTestCase.swift in Sources */,
+				OBJ_176 /* XCAsyncTestCase.swift in Sources */,
 			);
 		};
 		OBJ_185 /* Sources */ = {
@@ -824,7 +824,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.0.sdk -package-description-version 5.6.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -package-description-version 5.6.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -833,7 +833,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.0.sdk -package-description-version 5.6.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -package-description-version 5.6.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -972,7 +972,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.0.sdk -package-description-version 5.3.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -package-description-version 5.3.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -981,7 +981,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				LD = /usr/bin/true;
-				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.0.sdk -package-description-version 5.3.0";
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/ManifestAPI -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk -package-description-version 5.3.0";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

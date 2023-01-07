@@ -71,7 +71,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
     /// Indicates whether countdown event current count is within ``limit``.
     ///
     /// Queued tasks are resumed from suspension when event is set and until current count exceeds limit.
-    public var isSet: Bool { currentCount >= 0 && currentCount <= limit }
+    public var isSet: Bool { currentCount <= limit }
 
     // MARK: Internal
 
@@ -178,11 +178,11 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
     @inlinable
     internal func decrementCount(
         by number: UInt = 1,
-        file: String, function: String, line: UInt
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
     ) {
-        defer {
-            resumeContinuations(file: file, function: function, line: line)
-        }
+        defer { resume(file: file, function: function, line: line) }
 
         guard currentCount > 0 else {
             log("Least count", file: file, function: function, line: line)
@@ -203,9 +203,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
     ///   - line: The line resume originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
     @inlinable
-    internal func resumeContinuations(
-        file: String, function: String, line: UInt
-    ) {
+    internal func resume(file: String, function: String, line: UInt) {
         while !continuations.isEmpty && isSet {
             let (key, continuation) = continuations.removeFirst()
             resumeContinuation(continuation)
@@ -247,10 +245,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
         to count: UInt?,
         file: String, function: String, line: UInt
     ) {
-        defer {
-            resumeContinuations(file: file, function: function, line: line)
-        }
-
+        defer { resume(file: file, function: function, line: line) }
         let count = count ?? initialCount
         initialCount = count
         self.currentCount = count
@@ -352,12 +347,7 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
         function: String = #function,
         line: UInt = #line
     ) {
-        Task {
-            await decrementCount(
-                by: 1,
-                file: file, function: function, line: line
-            )
-        }
+        self.signal(repeat: 1, file: file, function: function, line: line)
     }
 
     /// Registers multiple signals (decrements by provided count) with the countdown event.

@@ -30,7 +30,7 @@
 ///
 /// - Warning: Cancellation sources propagate cancellation event to other linked cancellation sources.
 ///            In case of circular dependency between cancellation sources, app will go into infinite recursion.
-public actor CancellationSource {
+public actor CancellationSource: LoggableActor {
     /// All the registered tasks for cooperative cancellation.
     @usableFromInline
     internal private(set) var registeredTasks: [AnyHashable: () -> Void] = [:]
@@ -47,45 +47,92 @@ public actor CancellationSource {
 
     /// Add task to registered cooperative cancellation tasks list.
     ///
-    /// - Parameter task: The task to register.
+    /// - Parameters:
+    ///   - task: The task to register.
+    ///   - file: The file registration request originates from.
+    ///   - function: The function registration request originates from.
+    ///   - line: The line registration request originates from.
     @inlinable
-    internal func add<Success, Failure>(task: Task<Success, Failure>) {
-        guard !task.isCancelled else { return }
+    internal func add<Success, Failure>(
+        task: Task<Success, Failure>,
+        file: String, function: String, line: UInt
+    ) {
+        guard !task.isCancelled else {
+            log("Already cancelled", file: file, function: function, line: line)
+            return
+        }
+
         registeredTasks[task] = { task.cancel() }
+        log("Registered", file: file, function: function, line: line)
     }
 
     /// Remove task from registered cooperative cancellation tasks list.
     ///
-    /// - Parameter task: The task to remove.
+    /// - Parameters:
+    ///   - task: The task to remove.
+    ///   - file: The file remove request originates from.
+    ///   - function: The function remove request originates from.
+    ///   - line: The line remove request originates from.
     @inlinable
-    internal func remove<Success, Failure>(task: Task<Success, Failure>) {
+    internal func remove<Success, Failure>(
+        task: Task<Success, Failure>,
+        file: String, function: String, line: UInt
+    ) {
         registeredTasks.removeValue(forKey: task)
+        log("Removed", file: file, function: function, line: line)
     }
 
     /// Add cancellation source to linked cancellation sources list to propagate cancellation event.
     ///
-    /// - Parameter task: The source to link.
+    /// - Parameters:
+    ///   - source: The source to link.
+    ///   - file: The file link request originates from.
+    ///   - function: The function link request originates from.
+    ///   - line: The line link request originates from.
     @inlinable
-    internal func addSource(_ source: CancellationSource) {
+    internal func addSource(
+        _ source: CancellationSource,
+        file: String, function: String, line: UInt
+    ) {
         linkedSources.append(source)
+        log("Added", file: file, function: function, line: line)
     }
 
     /// Propagate cancellation to linked cancellation sources.
+    ///
+    /// - Parameters:
+    ///   - file: The file cancel request originates from.
+    ///   - function: The function cancel request originates from.
+    ///   - line: The line cancel request originates from.
     @inlinable
-    internal nonisolated func propagateCancellation() async {
+    internal func propagateCancellation(
+        file: String, function: String, line: UInt
+    ) async {
         await withTaskGroup(of: Void.self) { group in
-            let linkedSources = await linkedSources
-            linkedSources.forEach { s in group.addTask { s.cancel() } }
+            linkedSources.forEach { s in
+                group.addTask {
+                    await s.cancelAll(
+                        file: file, function: function, line: line
+                    )
+                }
+            }
             await group.waitForAll()
         }
     }
 
     /// Trigger cancellation event, initiate cooperative cancellation of registered tasks
     /// and propagate cancellation to linked cancellation sources.
-    internal func cancelAll() async {
+    ///
+    /// - Parameters:
+    ///   - file: The file cancel request originates from.
+    ///   - function: The function cancel request originates from.
+    ///   - line: The line cancel request originates from.
+    @usableFromInline
+    internal func cancelAll(file: String, function: String, line: UInt) async {
         registeredTasks.forEach { $1() }
         registeredTasks = [:]
-        await propagateCancellation()
+        await propagateCancellation(file: file, function: function, line: line)
+        log("Cancelled", file: file, function: function, line: line)
     }
 
     // MARK: Public
@@ -101,15 +148,32 @@ public actor CancellationSource {
     /// Initiating cancellation in any of the provided cancellation sources
     /// will ensure newly created cancellation source receive cancellation event.
     ///
-    /// - Parameter sources: The cancellation sources the newly created object will be linked to.
+    /// - Parameters:
+    ///   - sources: The cancellation sources the newly created object will be linked to.
+    ///   - file: The file link request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function link request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line link request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: The newly created cancellation source.
-    public init(linkedWith sources: [CancellationSource]) {
+    public init(
+        linkedWith sources: [CancellationSource],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         self.init()
         Task {
             await withTaskGroup(of: Void.self) { group in
                 sources.forEach { source in
-                    group.addTask { await source.addSource(self) }
+                    group.addTask {
+                        await source.addSource(
+                            self,
+                            file: file, function: function, line: line
+                        )
+                    }
                 }
                 await group.waitForAll()
             }
@@ -121,11 +185,26 @@ public actor CancellationSource {
     /// Initiating cancellation in any of the provided cancellation sources
     /// will ensure newly created cancellation source receive cancellation event.
     ///
-    /// - Parameter sources: The cancellation sources the newly created object will be linked to.
+    /// - Parameters:
+    ///   - sources: The cancellation sources the newly created object will be linked to.
+    ///   - file: The file link request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function link request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line link request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: The newly created cancellation source.
-    public init(linkedWith sources: CancellationSource...) {
-        self.init(linkedWith: sources)
+    public init(
+        linkedWith sources: CancellationSource...,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        self.init(
+            linkedWith: sources,
+            file: file, function: function, line: line
+        )
     }
 
     /// Creates a new cancellation source object
@@ -151,9 +230,7 @@ public actor CancellationSource {
         Task { [weak self] in
             try await self?.cancel(
                 afterNanoseconds: nanoseconds,
-                file: file,
-                function: function,
-                line: line
+                file: file, function: function, line: line
             )
         }
     }
@@ -195,15 +272,32 @@ public actor CancellationSource {
     /// Initiating cancellation in any of the provided cancellation sources
     /// will ensure newly created cancellation source receive cancellation event.
     ///
-    /// - Parameter sources: The cancellation sources the newly created object will be linked to.
+    /// - Parameters:
+    ///   - sources: The cancellation sources the newly created object will be linked to.
+    ///   - file: The file link request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function link request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line link request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: The newly created cancellation source.
-    public convenience init(linkedWith sources: [CancellationSource]) {
+    public convenience init(
+        linkedWith sources: [CancellationSource],
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         self.init()
         Task {
             await withTaskGroup(of: Void.self) { group in
                 sources.forEach { source in
-                    group.addTask { await source.addSource(self) }
+                    group.addTask {
+                        await source.addSource(
+                            self,
+                            file: file, function: function, line: line
+                        )
+                    }
                 }
                 await group.waitForAll()
             }
@@ -215,11 +309,26 @@ public actor CancellationSource {
     /// Initiating cancellation in any of the provided cancellation sources
     /// will ensure newly created cancellation source receive cancellation event.
     ///
-    /// - Parameter sources: The cancellation sources the newly created object will be linked to.
+    /// - Parameters:
+    ///   - sources: The cancellation sources the newly created object will be linked to.
+    ///   - file: The file link request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function link request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line link request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: The newly created cancellation source.
-    public convenience init(linkedWith sources: CancellationSource...) {
-        self.init(linkedWith: sources)
+    public convenience init(
+        linkedWith sources: CancellationSource...,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        self.init(
+            linkedWith: sources,
+            file: file, function: function, line: line
+        )
     }
 
     /// Creates a new cancellation source object
@@ -245,9 +354,7 @@ public actor CancellationSource {
         Task { [weak self] in
             try await self?.cancel(
                 afterNanoseconds: nanoseconds,
-                file: file,
-                function: function,
-                line: line
+                file: file, function: function, line: line
             )
         }
     }
@@ -273,9 +380,16 @@ public actor CancellationSource {
         line: UInt = #line
     ) {
         Task { [weak self] in
-            await self?.add(task: task)
+            await self?.add(
+                task: task,
+                file: file, function: function, line: line
+            )
+
             let _ = await task.result
-            await self?.remove(task: task)
+            await self?.remove(
+                task: task,
+                file: file, function: function, line: line
+            )
         }
     }
 
@@ -295,7 +409,7 @@ public actor CancellationSource {
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { await cancelAll() }
+        Task { await cancelAll(file: file, function: function, line: line) }
     }
 
     /// Trigger cancellation event after provided delay.
@@ -321,7 +435,7 @@ public actor CancellationSource {
         line: UInt = #line
     ) async throws {
         try await Task.sleep(nanoseconds: nanoseconds)
-        await cancelAll()
+        await cancelAll(file: file, function: function, line: line)
     }
 
     #if swift(>=5.7)
@@ -352,7 +466,7 @@ public actor CancellationSource {
         line: UInt = #line
     ) async throws {
         try await Task.sleep(until: deadline, clock: clock)
-        await cancelAll()
+        await cancelAll(file: file, function: function, line: line)
     }
     #endif
 }
@@ -500,3 +614,19 @@ public extension Task {
         return task
     }
 }
+
+#if canImport(Logging)
+import Logging
+
+extension CancellationSource {
+    /// Type specific metadata to attach to all log messages.
+    @usableFromInline
+    var metadata: Logger.Metadata {
+        return [
+            "obj": "\(self)(\(Unmanaged.passUnretained(self).toOpaque()))",
+            "linked_sources": "\(linkedSources.count)",
+            "registered_tasks": "\(registeredTasks.count)",
+        ]
+    }
+}
+#endif

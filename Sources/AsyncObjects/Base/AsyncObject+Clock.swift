@@ -230,27 +230,28 @@ public func waitForAny<C: Clock>(
 ///               pass it explicitly as it defaults to `#function`).
 ///   - line: The line task passed from (there's usually no need to pass it
 ///           explicitly as it defaults to `#line`).
-///   - task: The task to execute and wait for completion.
+///   - task: The action to execute and wait for completion result.
 ///
+/// - Returns: The result of the action provided.
 /// - Throws: `CancellationError` if cancelled
 ///           or `TimeoutError<C>` if timed out.
 @available(swift 5.7)
 @available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
 @Sendable
-public func waitForTaskCompletion<C: Clock>(
+public func waitForTaskCompletion<C: Clock, T: Sendable>(
     until deadline: C.Instant,
     tolerance: C.Instant.Duration? = nil,
     clock: C,
     file: String = #fileID,
     function: String = #function,
     line: UInt = #line,
-    _ task: @escaping @Sendable () async throws -> Void
-) async throws {
-    try await withThrowingTaskGroup(of: Void.self) { group in
+    _ task: @escaping @Sendable () async throws -> T
+) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
         await GlobalContinuation<Void, Never>.with { continuation in
             group.addTask {
                 continuation.resume()
-                try await task()
+                return try await task()
             }
         }
         group.addTask {
@@ -263,7 +264,10 @@ public func waitForTaskCompletion<C: Clock>(
             throw TimeoutError<C>(until: deadline, tolerance: tolerance)
         }
         defer { group.cancelAll() }
-        try await group.next()
+        guard
+            let result = try await group.next()
+        else { throw CancellationError() }
+        return result
     }
 }
 

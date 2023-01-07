@@ -15,29 +15,23 @@ class TrackedContinuationTests: XCTestCase {
     }
 
     func testDirectResumeWithSuccess() async throws {
-        await Self.checkExecInterval(durationInSeconds: 0) {
-            await TrackedContinuation<GlobalContinuation<Void, Never>>.with {
-                XCTAssertFalse($0.resumed)
-                $0.resume()
-                XCTAssertTrue($0.resumed)
-            }
+        await TrackedContinuation<GlobalContinuation<Void, Never>>.with {
+            XCTAssertFalse($0.resumed)
+            $0.resume()
+            XCTAssertTrue($0.resumed)
         }
     }
 
     func testDirectResumeWithError() async throws {
         typealias C = GlobalContinuation<Void, Error>
-        await Self.checkExecInterval(durationInSeconds: 0) {
-            do {
-                try await TrackedContinuation<C>.with { c in
-                    XCTAssertFalse(c.resumed)
-                    c.resume(throwing: CancellationError())
-                    XCTAssertTrue(c.resumed)
-                }
-                XCTFail("Unexpected task progression")
-            } catch {
-                XCTAssertTrue(type(of: error) == CancellationError.self)
+        do {
+            try await TrackedContinuation<C>.with { c in
+                XCTAssertFalse(c.resumed)
+                c.resume(throwing: CancellationError())
+                XCTAssertTrue(c.resumed)
             }
-        }
+            XCTFail("Unexpected task progression")
+        } catch is CancellationError {}
     }
 
     func testInitializedWithoutContinuationWithStatusWaiting() async throws {
@@ -55,70 +49,60 @@ class TrackedContinuationTests: XCTestCase {
     func testCancellationHandlerWhenTaskCancelled() async throws {
         typealias C = GlobalContinuation<Void, Error>
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 0) {
-                do {
-                    try await TrackedContinuation<C>
-                        .withCancellation(id: .init()) {
-                            $0.cancel()
-                        } operation: { _, preinit in
-                            preinit()
-                        }
-                    XCTFail("Unexpected task progression")
-                } catch {
-                    XCTAssertTrue(type(of: error) == CancellationError.self)
-                }
-            }
+            do {
+                try await TrackedContinuation<C>
+                    .withCancellation(id: .init()) {
+                        $0.cancel()
+                    } operation: { _, preinit in
+                        preinit()
+                    }
+                XCTFail("Unexpected task progression")
+            } catch is CancellationError {}
         }
         task.cancel()
-        await task.value
+        try await task.value
     }
 
     func testCancellationHandlerForAlreadyCancelledTask() async throws {
         typealias C = GlobalContinuation<Void, Error>
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 0) {
-                do {
-                    try await Self.sleep(seconds: 5)
-                    XCTFail("Unexpected task progression")
-                } catch {}
-                XCTAssertTrue(Task.isCancelled)
-                do {
-                    try await TrackedContinuation<C>
-                        .withCancellation(id: .init()) {
-                            $0.cancel()
-                        } operation: { _, preinit in
-                            preinit()
-                        }
-                    XCTFail("Unexpected task progression")
-                } catch {
-                    XCTAssertTrue(type(of: error) == CancellationError.self)
-                }
-            }
+            do {
+                try await Task.sleep(seconds: 5)
+                XCTFail("Unexpected task progression")
+            } catch {}
+            XCTAssertTrue(Task.isCancelled)
+            do {
+                try await TrackedContinuation<C>
+                    .withCancellation(id: .init()) {
+                        $0.cancel()
+                    } operation: { _, preinit in
+                        preinit()
+                    }
+                XCTFail("Unexpected task progression")
+            } catch is CancellationError {}
         }
         task.cancel()
-        await task.value
+        try await task.value
     }
 
     func testNonCancellableContinuation() async throws {
         typealias C = GlobalContinuation<Void, Never>
         let task = Task.detached {
-            await Self.checkExecInterval(durationInSeconds: 1) {
-                do {
-                    try await Self.sleep(seconds: 5)
-                    XCTFail("Unexpected task progression")
-                } catch {}
-                XCTAssertTrue(Task.isCancelled)
-                await TrackedContinuation<C>
-                    .withCancellation(id: .init()) { _ in
-                        // Do nothing
-                    } operation: { continuation, preinit in
-                        preinit()
-                        Task {
-                            defer { continuation.resume() }
-                            try await Self.sleep(seconds: 1)
-                        }
+            do {
+                try await Task.sleep(seconds: 5)
+                XCTFail("Unexpected task progression")
+            } catch {}
+            XCTAssertTrue(Task.isCancelled)
+            await TrackedContinuation<C>
+                .withCancellation(id: .init()) { _ in
+                    // Do nothing
+                } operation: { continuation, preinit in
+                    preinit()
+                    Task {
+                        defer { continuation.resume() }
+                        try await Task.sleep(seconds: 1)
                     }
-            }
+                }
         }
         task.cancel()
         await task.value

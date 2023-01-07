@@ -187,23 +187,24 @@ public func waitForAny(
 ///               pass it explicitly as it defaults to `#function`).
 ///   - line: The line task passed from (there's usually no need to pass it
 ///           explicitly as it defaults to `#line`).
-///   - task: The task to execute and wait for completion.
+///   - task: The action to execute and wait for completion result.
 ///
+/// - Returns: The result of the action provided.
 /// - Throws: `CancellationError` if cancelled
 ///           or `DurationTimeoutError` if timed out.
 @Sendable
-public func waitForTaskCompletion(
+public func waitForTaskCompletion<T: Sendable>(
     withTimeoutInNanoseconds timeout: UInt64,
     file: String = #fileID,
     function: String = #function,
     line: UInt = #line,
-    _ task: @escaping @Sendable () async throws -> Void
-) async throws {
-    try await withThrowingTaskGroup(of: Void.self) { group in
+    _ task: @escaping @Sendable () async throws -> T
+) async throws -> T {
+    return try await withThrowingTaskGroup(of: T.self) { group in
         await GlobalContinuation<Void, Never>.with { continuation in
             group.addTask {
                 continuation.resume()
-                try await task()
+                return try await task()
             }
         }
         group.addTask {
@@ -212,7 +213,10 @@ public func waitForTaskCompletion(
             throw DurationTimeoutError(for: timeout, tolerance: 1_000)
         }
         defer { group.cancelAll() }
-        try await group.next()
+        guard
+            let result = try await group.next()
+        else { throw CancellationError() }
+        return result
     }
 }
 
