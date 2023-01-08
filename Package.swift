@@ -51,9 +51,6 @@ var settings: [SwiftSetting] = {
     return settings
 }()
 
-let github = "https://github.com"
-let appleGitHub = "\(github)/apple"
-
 let package = Package(
     name: "AsyncObjects",
     platforms: [
@@ -66,10 +63,10 @@ let package = Package(
         .library(name: "AsyncObjects", targets: ["AsyncObjects"]),
     ],
     dependencies: [
-        .package(url: "\(appleGitHub)/swift-collections.git", from: "1.0.0"),
-        .package(url: "\(appleGitHub)/swift-docc-plugin", from: "1.0.0"),
-        .package(url: "\(appleGitHub)/swift-format", from: "0.50700.0"),
-        .package(url: "\(appleGitHub)/swift-log.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-format", from: "0.50700.0"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
     ],
     targets: [
         .target(name: "AsyncObjects", dependencies: dependencies, swiftSettings: settings),
