@@ -30,57 +30,37 @@
 ///
 /// - Warning: Cancellation sources propagate cancellation event to other linked cancellation sources.
 ///            In case of circular dependency between cancellation sources, app will go into infinite recursion.
-public actor CancellationSource: LoggableActor {
-    /// All the registered tasks for cooperative cancellation.
+public final class CancellationSource: AsyncObject, Loggable, @unchecked Sendable {
+    /// The continuation type controlling task group lifetime.
     @usableFromInline
-    internal private(set) var registeredTasks: [AnyHashable: () -> Void] = [:]
-    /// All the linked cancellation sources that cancellation event will be propagated.
-    ///
-    /// - TODO: Store weak reference for cancellation sources.
-    /// ```swift
-    /// private var linkedSources: NSHashTable<CancellationSource> = .weakObjects()
-    /// ```
+    internal typealias Continuation = GlobalContinuation<Void, Error>
+
+    /// The initialization task that initializes task registration group and continuation.
     @usableFromInline
-    internal private(set) var linkedSources: [CancellationSource] = []
+    var initializationTask: Task<Void, Never>!
+    /// The TaskGroup that handles cancellation of tasks.
+    @usableFromInline
+    var registration: ThrowingTaskGroup<Void, Error>!
+    /// The initial continuation added to task group to control its lifetime.
+    @usableFromInline
+    var continuation: Continuation!
+
+    /// A textual representation of this instance,
+    /// suitable for debugging.
+    @usableFromInline
+    var debugDescription: String {
+        return "\(self)(\(Unmanaged.passUnretained(self).toOpaque()))"
+    }
+
+    /// Whether cancellation is already invoked on the source.
+    public var isCancelled: Bool {
+        get async {
+            await initializationTask.value
+            return registration.isCancelled
+        }
+    }
 
     // MARK: Internal
-
-    /// Add task to registered cooperative cancellation tasks list.
-    ///
-    /// - Parameters:
-    ///   - task: The task to register.
-    ///   - file: The file registration request originates from.
-    ///   - function: The function registration request originates from.
-    ///   - line: The line registration request originates from.
-    @inlinable
-    internal func add<Success, Failure>(
-        task: Task<Success, Failure>,
-        file: String, function: String, line: UInt
-    ) {
-        guard !task.isCancelled else {
-            log("Already cancelled", file: file, function: function, line: line)
-            return
-        }
-
-        registeredTasks[task] = { task.cancel() }
-        log("Registered", file: file, function: function, line: line)
-    }
-
-    /// Remove task from registered cooperative cancellation tasks list.
-    ///
-    /// - Parameters:
-    ///   - task: The task to remove.
-    ///   - file: The file remove request originates from.
-    ///   - function: The function remove request originates from.
-    ///   - line: The line remove request originates from.
-    @inlinable
-    internal func remove<Success, Failure>(
-        task: Task<Success, Failure>,
-        file: String, function: String, line: UInt
-    ) {
-        registeredTasks.removeValue(forKey: task)
-        log("Removed", file: file, function: function, line: line)
-    }
 
     /// Add cancellation source to linked cancellation sources list to propagate cancellation event.
     ///
@@ -93,30 +73,18 @@ public actor CancellationSource: LoggableActor {
     internal func addSource(
         _ source: CancellationSource,
         file: String, function: String, line: UInt
-    ) {
-        linkedSources.append(source)
-        log("Added", file: file, function: function, line: line)
-    }
-
-    /// Propagate cancellation to linked cancellation sources.
-    ///
-    /// - Parameters:
-    ///   - file: The file cancel request originates from.
-    ///   - function: The function cancel request originates from.
-    ///   - line: The line cancel request originates from.
-    @inlinable
-    internal func propagateCancellation(
-        file: String, function: String, line: UInt
     ) async {
-        await withTaskGroup(of: Void.self) { group in
-            linkedSources.forEach { s in
-                group.addTask {
-                    await s.cancelAll(
-                        file: file, function: function, line: line
-                    )
-                }
+        await initializationTask.value
+        registration.addTask {
+            self.log(
+                "Adding \(source.debugDescription)",
+                file: file, function: function, line: line
+            )
+            await withTaskCancellationHandler {
+                await source.wait(file: file, function: function, line: line)
+            } onCancel: { [weak source] in
+                source?.cancel(file: file, function: function, line: line)
             }
-            await group.waitForAll()
         }
     }
 
@@ -129,9 +97,10 @@ public actor CancellationSource: LoggableActor {
     ///   - line: The line cancel request originates from.
     @usableFromInline
     internal func cancelAll(file: String, function: String, line: UInt) async {
-        registeredTasks.forEach { $1() }
-        registeredTasks = [:]
-        await propagateCancellation(file: file, function: function, line: line)
+        await initializationTask.value
+        guard !registration.isCancelled else { return }
+        continuation.resume(throwing: CancellationError())
+        registration.cancelAll()
         log("Cancelled", file: file, function: function, line: line)
     }
 
@@ -140,133 +109,25 @@ public actor CancellationSource: LoggableActor {
     /// Creates a new cancellation source object.
     ///
     /// - Returns: The newly created cancellation source.
-    public init() {}
-
-    #if swift(>=5.7)
-    /// Creates a new cancellation source object linking to all the provided cancellation sources.
-    ///
-    /// Initiating cancellation in any of the provided cancellation sources
-    /// will ensure newly created cancellation source receive cancellation event.
-    ///
-    /// - Parameters:
-    ///   - sources: The cancellation sources the newly created object will be linked to.
-    ///   - file: The file link request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function link request originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line link request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    ///
-    /// - Returns: The newly created cancellation source.
-    public init(
-        linkedWith sources: [CancellationSource],
-        file: String = #fileID,
-        function: String = #function,
-        line: UInt = #line
-    ) {
-        self.init()
-        Task {
-            await withTaskGroup(of: Void.self) { group in
-                sources.forEach { source in
-                    group.addTask {
-                        await source.addSource(
-                            self,
-                            file: file, function: function, line: line
-                        )
+    public init() {
+        self.initializationTask = Task {
+            await withUnsafeContinuation { (c: UnsafeContinuation<Void, Never>) in
+                Task {
+                    try await withThrowingTaskGroup(of: Void.self) { group in
+                        self.registration = group
+                        group.addTask {
+                            try await Continuation.with { u in
+                                defer { c.resume() }
+                                self.continuation = u
+                            }
+                        }
+                        for try await _ in group { }
                     }
                 }
-                await group.waitForAll()
             }
         }
     }
 
-    /// Creates a new cancellation source object linking to all the provided cancellation sources.
-    ///
-    /// Initiating cancellation in any of the provided cancellation sources
-    /// will ensure newly created cancellation source receive cancellation event.
-    ///
-    /// - Parameters:
-    ///   - sources: The cancellation sources the newly created object will be linked to.
-    ///   - file: The file link request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function link request originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line link request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    ///
-    /// - Returns: The newly created cancellation source.
-    public init(
-        linkedWith sources: CancellationSource...,
-        file: String = #fileID,
-        function: String = #function,
-        line: UInt = #line
-    ) {
-        self.init(
-            linkedWith: sources,
-            file: file, function: function, line: line
-        )
-    }
-
-    /// Creates a new cancellation source object
-    /// and triggers cancellation event on this object after specified timeout.
-    ///
-    /// - Parameters:
-    ///   - nanoseconds: The delay after which cancellation event triggered.
-    ///   - file: The file cancel request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function cancel request originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line cancel request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    ///
-    /// - Returns: The newly created cancellation source.
-    public init(
-        cancelAfterNanoseconds nanoseconds: UInt64,
-        file: String = #fileID,
-        function: String = #function,
-        line: UInt = #line
-    ) {
-        self.init()
-        Task { [weak self] in
-            try await self?.cancel(
-                afterNanoseconds: nanoseconds,
-                file: file, function: function, line: line
-            )
-        }
-    }
-
-    /// Creates a new cancellation source object
-    /// and triggers cancellation event on this object at specified deadline.
-    ///
-    /// - Parameters:
-    ///   - deadline: The instant in the provided clock at which cancellation event triggered.
-    ///   - clock: The clock for which cancellation deadline provided.
-    ///   - file: The file cancel request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function cancel request originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line cancel request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    ///
-    /// - Returns: The newly created cancellation source.
-    @available(swift 5.7)
-    @available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
-    public init<C: Clock>(
-        at deadline: C.Instant,
-        clock: C,
-        file: String = #fileID,
-        function: String = #function,
-        line: UInt = #line
-    ) {
-        self.init()
-        Task { [weak self] in
-            try await self?.cancel(
-                at: deadline, clock: clock,
-                file: file, function: function, line: line
-            )
-        }
-    }
-    #else
     /// Creates a new cancellation source object linking to all the provided cancellation sources.
     ///
     /// Initiating cancellation in any of the provided cancellation sources
@@ -351,14 +212,13 @@ public actor CancellationSource: LoggableActor {
         line: UInt = #line
     ) {
         self.init()
-        Task { [weak self] in
-            try await self?.cancel(
+        Task {
+            try await self.cancel(
                 afterNanoseconds: nanoseconds,
                 file: file, function: function, line: line
             )
         }
     }
-    #endif
 
     /// Register task for cooperative cancellation when cancellation event received on cancellation source.
     ///
@@ -373,23 +233,21 @@ public actor CancellationSource: LoggableActor {
     ///   - line: The line task registration originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
     @Sendable
-    public nonisolated func register<Success, Failure>(
+    public func register<Success, Failure>(
         task: Task<Success, Failure>,
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
     ) {
-        Task { [weak self] in
-            await self?.add(
-                task: task,
-                file: file, function: function, line: line
-            )
-
-            let _ = await task.result
-            await self?.remove(
-                task: task,
-                file: file, function: function, line: line
-            )
+        Task {
+            await initializationTask.value
+            registration.addTask {
+                await withTaskCancellationHandler {
+                    let _ = await task.result
+                } onCancel: {
+                    task.cancel()
+                }
+            }
         }
     }
 
@@ -404,7 +262,8 @@ public actor CancellationSource: LoggableActor {
     ///   - line: The line cancel request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
     @Sendable
-    public nonisolated func cancel(
+    @_implements(AsyncObject, signal(file:function:line:))
+    public func cancel(
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
@@ -438,38 +297,91 @@ public actor CancellationSource: LoggableActor {
         await cancelAll(file: file, function: function, line: line)
     }
 
-    #if swift(>=5.7)
-    /// Trigger cancellation event at provided deadline.
+    /// Waits until cancellation event triggered.
     ///
-    /// Initiate cooperative cancellation of registered tasks
-    /// and propagate cancellation to linked cancellation sources.
+    /// After ``cancel(file:function:line:)`` is invoked, the wait completes.
     ///
     /// - Parameters:
-    ///   - deadline: The instant in the provided clock at which cancellation event triggered.
-    ///   - clock: The clock for which cancellation deadline provided.
-    ///   - file: The file cancel request originates from (there's usually no need to pass it
+    ///   - file: The file wait request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function cancel request originates from (there's usually no need to
+    ///   - function: The function wait request originates from (there's usually no need to
     ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line cancel request originates from (there's usually no need to pass it
+    ///   - line: The line wait request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
-    ///
-    /// - Throws: `CancellationError` if cancelled.
-    @available(swift 5.7)
-    @available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
     @Sendable
-    public func cancel<C: Clock>(
-        at deadline: C.Instant,
-        clock: C,
+    public func wait(
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
-    ) async throws {
-        try await Task.sleep(until: deadline, clock: clock)
-        await cancelAll(file: file, function: function, line: line)
+    ) async {
+        await initializationTask.value
+        try? await registration.waitForAll()
     }
-    #endif
 }
+
+#if swift(>=5.7)
+@available(swift 5.7)
+@available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
+public extension CancellationSource {
+/// Creates a new cancellation source object
+/// and triggers cancellation event on this object at specified deadline.
+///
+/// - Parameters:
+///   - deadline: The instant in the provided clock at which cancellation event triggered.
+///   - clock: The clock for which cancellation deadline provided.
+///   - file: The file cancel request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#fileID`).
+///   - function: The function cancel request originates from (there's usually no need to
+///               pass it explicitly as it defaults to `#function`).
+///   - line: The line cancel request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#line`).
+///
+/// - Returns: The newly created cancellation source.
+convenience init<C: Clock>(
+    at deadline: C.Instant,
+    clock: C,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
+) {
+    self.init()
+    Task {
+        try await self.cancel(
+            at: deadline, clock: clock,
+            file: file, function: function, line: line
+        )
+    }
+}
+
+/// Trigger cancellation event at provided deadline.
+///
+/// Initiate cooperative cancellation of registered tasks
+/// and propagate cancellation to linked cancellation sources.
+///
+/// - Parameters:
+///   - deadline: The instant in the provided clock at which cancellation event triggered.
+///   - clock: The clock for which cancellation deadline provided.
+///   - file: The file cancel request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#fileID`).
+///   - function: The function cancel request originates from (there's usually no need to
+///               pass it explicitly as it defaults to `#function`).
+///   - line: The line cancel request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#line`).
+///
+/// - Throws: `CancellationError` if cancelled.
+@Sendable
+func cancel<C: Clock>(
+    at deadline: C.Instant,
+    clock: C,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
+) async throws {
+    try await Task.sleep(until: deadline, clock: clock)
+    await cancelAll(file: file, function: function, line: line)
+}
+}
+#endif
 
 public extension Task {
     /// Runs the given non-throwing operation asynchronously as part of a new top-level task on behalf of the current actor,
@@ -623,9 +535,7 @@ extension CancellationSource {
     @usableFromInline
     var metadata: Logger.Metadata {
         return [
-            "obj": "\(self)(\(Unmanaged.passUnretained(self).toOpaque()))",
-            "linked_sources": "\(linkedSources.count)",
-            "registered_tasks": "\(registeredTasks.count)",
+            "obj": "\(debugDescription)",
         ]
     }
 }
