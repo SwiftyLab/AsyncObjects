@@ -56,7 +56,7 @@ class CancellationSourceTests: XCTestCase {
         try await waitUntil(task, timeout: 5) { $0.isCancelled }
     }
 
-//    func testDeinit() async throws {
+    func testDeinit() async throws {
 //        let source = CancellationSource()
 //        let task = Task.detached {
 //            try await Task.sleep(seconds: 10)
@@ -65,10 +65,11 @@ class CancellationSourceTests: XCTestCase {
 //        source.register(task: task)
 //        source.cancel()
 //        try? await task.value
+//        try await Task.sleep(seconds: 5)
 //        self.addTeardownBlock { [weak source] in
 //            source.assertReleased()
 //        }
-//    }
+    }
 
     func testAlreadyCancelledTask() async throws {
         let source = CancellationSource()
@@ -139,7 +140,7 @@ class CancellationSourceInitializationTests: XCTestCase {
         try await waitUntil(task, timeout: 5) { $0.isCancelled }
     }
 
-//    func testDeinit() async throws {
+    func testDeinit() async throws {
 //        let source = CancellationSource()
 //        let task = Task.detached(cancellationSource: source) {
 //            try await Task.sleep(seconds: 10)
@@ -148,8 +149,9 @@ class CancellationSourceInitializationTests: XCTestCase {
 //        source.cancel()
 //        try await waitUntil(task, timeout: 5) { $0.isCancelled }
 //        try? await task.value
+//        try await Task.sleep(seconds: 5)
 //        self.addTeardownBlock { [weak source] in
 //            source.assertReleased()
 //        }
-//    }
+    }
 }

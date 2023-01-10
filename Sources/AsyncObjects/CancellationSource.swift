@@ -30,7 +30,9 @@
 ///
 /// - Warning: Cancellation sources propagate cancellation event to other linked cancellation sources.
 ///            In case of circular dependency between cancellation sources, app will go into infinite recursion.
-public final class CancellationSource: AsyncObject, Loggable, @unchecked Sendable {
+public final class CancellationSource: AsyncObject, Loggable,
+    @unchecked Sendable
+{
     /// The continuation type controlling task group lifetime.
     @usableFromInline
     internal typealias Continuation = GlobalContinuation<Void, Error>
@@ -43,7 +45,7 @@ public final class CancellationSource: AsyncObject, Loggable, @unchecked Sendabl
     var registration: ThrowingTaskGroup<Void, Error>!
     /// The initial continuation added to task group to control its lifetime.
     @usableFromInline
-    var continuation: Continuation!
+    var lifetime: Continuation!
 
     /// A textual representation of this instance,
     /// suitable for debugging.
@@ -99,7 +101,7 @@ public final class CancellationSource: AsyncObject, Loggable, @unchecked Sendabl
     internal func cancelAll(file: String, function: String, line: UInt) async {
         await initializationTask.value
         guard !registration.isCancelled else { return }
-        continuation.resume(throwing: CancellationError())
+        lifetime.cancel()
         registration.cancelAll()
         log("Cancelled", file: file, function: function, line: line)
     }
@@ -111,17 +113,17 @@ public final class CancellationSource: AsyncObject, Loggable, @unchecked Sendabl
     /// - Returns: The newly created cancellation source.
     public init() {
         self.initializationTask = Task {
-            await withUnsafeContinuation { (c: UnsafeContinuation<Void, Never>) in
+            try! await Continuation.with { initialization in
                 Task {
                     try await withThrowingTaskGroup(of: Void.self) { group in
                         self.registration = group
                         group.addTask {
-                            try await Continuation.with { u in
-                                defer { c.resume() }
-                                self.continuation = u
+                            try await Continuation.with { lifetime in
+                                defer { initialization.resume() }
+                                self.lifetime = lifetime
                             }
                         }
-                        for try await _ in group { }
+                        for try await _ in group {}
                     }
                 }
             }
@@ -262,7 +264,7 @@ public final class CancellationSource: AsyncObject, Loggable, @unchecked Sendabl
     ///   - line: The line cancel request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
     @Sendable
-    @_implements(AsyncObject, signal(file:function:line:))
+    @_implements(AsyncObject,signal(file:function:line:))
     public func cancel(
         file: String = #fileID,
         function: String = #function,
@@ -323,63 +325,63 @@ public final class CancellationSource: AsyncObject, Loggable, @unchecked Sendabl
 @available(swift 5.7)
 @available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
 public extension CancellationSource {
-/// Creates a new cancellation source object
-/// and triggers cancellation event on this object at specified deadline.
-///
-/// - Parameters:
-///   - deadline: The instant in the provided clock at which cancellation event triggered.
-///   - clock: The clock for which cancellation deadline provided.
-///   - file: The file cancel request originates from (there's usually no need to pass it
-///           explicitly as it defaults to `#fileID`).
-///   - function: The function cancel request originates from (there's usually no need to
-///               pass it explicitly as it defaults to `#function`).
-///   - line: The line cancel request originates from (there's usually no need to pass it
-///           explicitly as it defaults to `#line`).
-///
-/// - Returns: The newly created cancellation source.
-convenience init<C: Clock>(
-    at deadline: C.Instant,
-    clock: C,
-    file: String = #fileID,
-    function: String = #function,
-    line: UInt = #line
-) {
-    self.init()
-    Task {
-        try await self.cancel(
-            at: deadline, clock: clock,
-            file: file, function: function, line: line
-        )
+    /// Creates a new cancellation source object
+    /// and triggers cancellation event on this object at specified deadline.
+    ///
+    /// - Parameters:
+    ///   - deadline: The instant in the provided clock at which cancellation event triggered.
+    ///   - clock: The clock for which cancellation deadline provided.
+    ///   - file: The file cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function cancel request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
+    /// - Returns: The newly created cancellation source.
+    convenience init<C: Clock>(
+        at deadline: C.Instant,
+        clock: C,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        self.init()
+        Task {
+            try await self.cancel(
+                at: deadline, clock: clock,
+                file: file, function: function, line: line
+            )
+        }
     }
-}
 
-/// Trigger cancellation event at provided deadline.
-///
-/// Initiate cooperative cancellation of registered tasks
-/// and propagate cancellation to linked cancellation sources.
-///
-/// - Parameters:
-///   - deadline: The instant in the provided clock at which cancellation event triggered.
-///   - clock: The clock for which cancellation deadline provided.
-///   - file: The file cancel request originates from (there's usually no need to pass it
-///           explicitly as it defaults to `#fileID`).
-///   - function: The function cancel request originates from (there's usually no need to
-///               pass it explicitly as it defaults to `#function`).
-///   - line: The line cancel request originates from (there's usually no need to pass it
-///           explicitly as it defaults to `#line`).
-///
-/// - Throws: `CancellationError` if cancelled.
-@Sendable
-func cancel<C: Clock>(
-    at deadline: C.Instant,
-    clock: C,
-    file: String = #fileID,
-    function: String = #function,
-    line: UInt = #line
-) async throws {
-    try await Task.sleep(until: deadline, clock: clock)
-    await cancelAll(file: file, function: function, line: line)
-}
+    /// Trigger cancellation event at provided deadline.
+    ///
+    /// Initiate cooperative cancellation of registered tasks
+    /// and propagate cancellation to linked cancellation sources.
+    ///
+    /// - Parameters:
+    ///   - deadline: The instant in the provided clock at which cancellation event triggered.
+    ///   - clock: The clock for which cancellation deadline provided.
+    ///   - file: The file cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function cancel request originates from (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line cancel request originates from (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
+    ///
+    /// - Throws: `CancellationError` if cancelled.
+    @Sendable
+    func cancel<C: Clock>(
+        at deadline: C.Instant,
+        clock: C,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) async throws {
+        try await Task.sleep(until: deadline, clock: clock)
+        await cancelAll(file: file, function: function, line: line)
+    }
 }
 #endif
 
@@ -535,7 +537,7 @@ extension CancellationSource {
     @usableFromInline
     var metadata: Logger.Metadata {
         return [
-            "obj": "\(debugDescription)",
+            "obj": "\(debugDescription)"
         ]
     }
 }
