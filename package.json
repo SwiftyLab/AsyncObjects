@@ -21,7 +21,7 @@
   "scripts": {
     "build": "npm exec --package=swiftylab-ci -- build.js",
     "xcodebuild": "npm exec --package=swiftylab-ci -- xcodebuild.js",
-    "test": "ASYNCOBJECTS_ENABLE_LOGGING_LEVEL=info npm exec --package=swiftylab-ci -- test.js --parallel",
+    "test": "cross-env ASYNCOBJECTS_ENABLE_LOGGING_LEVEL=info npm exec --package=swiftylab-ci -- test.js --parallel",
     "archive": "npm exec --package=swiftylab-ci -- archive.js",
     "pod-lint": "npm exec --package=swiftylab-ci -- pod-lint.js",
     "generate": "npm exec --package=swiftylab-ci -- generate.js",
