@@ -12,7 +12,7 @@ protocol Loggable {
 
 /// An actor type that emits log messages with specific metadata.
 @usableFromInline
-protocol LoggableActor: Actor {
+protocol LoggableActor: Actor, CustomStringConvertible {
     /// Metadata to attach to all log messages for this type.
     var metadata: Logger.Metadata { get }
 }
@@ -108,7 +108,7 @@ protocol Loggable {}
 
 /// An actor type that emits log messages with specific metadata.
 @usableFromInline
-protocol LoggableActor: Actor {}
+protocol LoggableActor: Actor, CustomStringConvertible {}
 
 extension Loggable {
     /// Log a message attaching the default type specific metadata
@@ -164,3 +164,12 @@ extension LoggableActor {
     ) { /* Do nothing */  }
 }
 #endif
+
+extension LoggableActor {
+    /// A textual representation of this instance.,
+    /// suitable for logging debugging.
+    public nonisolated var description: String {
+        return "\(String(reflecting: type(of: self)))"
+            + "(\(Unmanaged.passUnretained(self).toOpaque()))"
+    }
+}

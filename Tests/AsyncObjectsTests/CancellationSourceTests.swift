@@ -57,18 +57,18 @@ class CancellationSourceTests: XCTestCase {
     }
 
     func testDeinit() async throws {
-//        let source = CancellationSource()
-//        let task = Task.detached {
-//            try await Task.sleep(seconds: 10)
-//            XCTFail("Unexpected task progression")
-//        }
-//        source.register(task: task)
-//        source.cancel()
-//        try? await task.value
-//        try await Task.sleep(seconds: 5)
-//        self.addTeardownBlock { [weak source] in
-//            source.assertReleased()
-//        }
+        let source = CancellationSource()
+        let task = Task.detached {
+            try await Task.sleep(seconds: 10)
+            XCTFail("Unexpected task progression")
+        }
+        source.register(task: task)
+        source.cancel()
+        try? await task.value
+        try await Task.sleep(seconds: 5)
+        self.addTeardownBlock { [weak source] in
+            source.assertReleased()
+        }
     }
 
     func testAlreadyCancelledTask() async throws {
@@ -141,17 +141,17 @@ class CancellationSourceInitializationTests: XCTestCase {
     }
 
     func testDeinit() async throws {
-//        let source = CancellationSource()
-//        let task = Task.detached(cancellationSource: source) {
-//            try await Task.sleep(seconds: 10)
-//            XCTFail("Unexpected task progression")
-//        }
-//        source.cancel()
-//        try await waitUntil(task, timeout: 5) { $0.isCancelled }
-//        try? await task.value
-//        try await Task.sleep(seconds: 5)
-//        self.addTeardownBlock { [weak source] in
-//            source.assertReleased()
-//        }
+        let source = CancellationSource()
+        let task = Task.detached(cancellationSource: source) {
+            try await Task.sleep(seconds: 10)
+            XCTFail("Unexpected task progression")
+        }
+        source.cancel()
+        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try? await task.value
+        try await Task.sleep(seconds: 5)
+        self.addTeardownBlock { [weak source] in
+            source.assertReleased()
+        }
     }
 }

@@ -1091,7 +1091,7 @@ extension Future {
     @usableFromInline
     var metadata: Logger.Metadata {
         return [
-            "obj": "\(self)(\(Unmanaged.passUnretained(self).toOpaque()))",
+            "obj": "\(self)",
             "result": "\(result != nil ? "\(result!)" : "nil")",
         ]
     }

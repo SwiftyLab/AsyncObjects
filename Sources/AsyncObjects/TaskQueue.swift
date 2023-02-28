@@ -806,7 +806,7 @@ extension TaskQueue {
     @usableFromInline
     var metadata: Logger.Metadata {
         return [
-            "obj": "\(self)(\(Unmanaged.passUnretained(self).toOpaque()))",
+            "obj": "\(self)",
             "blocked": "\(blocked)",
             "current_running": "\(currentRunning)",
             "priority": "\(priority != nil ? "\(priority!)" : "nil")",
