@@ -136,13 +136,7 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
     func initialize(resume initialization: Continuation) {
         self.lifetime = Task {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                var stream: AsyncStream<WorkItem>!
-                try! await Continuation.with { initialization in
-                    stream = AsyncStream { continuation in
-                        self.pipe = continuation
-                        initialization.resume()
-                    }
-                }
+                let stream = AsyncStream<WorkItem> { self.pipe = $0 }
                 group.addTask {
                     try await Continuation.with { token in
                         Task {
