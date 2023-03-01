@@ -107,7 +107,7 @@ public extension CancellationSource {
     ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: The newly created cancellation source.
-    public convenience init(
+    convenience init(
         linkedWith sources: [CancellationSource],
         file: String = #fileID,
         function: String = #function,
@@ -144,7 +144,7 @@ public extension CancellationSource {
     ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: The newly created cancellation source.
-    public convenience init(
+    convenience init(
         linkedWith sources: CancellationSource...,
         file: String = #fileID,
         function: String = #function,
@@ -169,7 +169,7 @@ public extension CancellationSource {
     ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: The newly created cancellation source.
-    public convenience init(
+    convenience init(
         cancelAfterNanoseconds nanoseconds: UInt64,
         file: String = #fileID,
         function: String = #function,
