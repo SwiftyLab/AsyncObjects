@@ -124,15 +124,6 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
         self.token = token
     }
 
-    /// Creates a stream for cancellable work
-    /// items to be submitted for cancellation.
-    ///
-    /// - Returns: The stream of cancellable work items.
-    @usableFromInline
-    func initializePipe() -> AsyncStream<WorkItem> {
-        return AsyncStream<WorkItem> { self.pipe = $0 }
-    }
-
     /// Initialize all stored properties required for cacellable work registration
     /// and cancellation event trigger.
     ///
@@ -142,7 +133,7 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
     func initialize(resume initialization: Continuation) {
         self.lifetime = Task {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                let stream = self.initializePipe()
+                let stream = AsyncStream<WorkItem> { self.pipe = $0 }
                 group.addTask {
                     try await Continuation.with { token in
                         Task {
