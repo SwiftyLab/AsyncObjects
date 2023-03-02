@@ -34,12 +34,9 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
     /// The continuation type controlling task group lifetime.
     @usableFromInline
     internal typealias Continuation = GlobalContinuation<Void, Error>
-    /// The function invocation context type for logging.
-    @usableFromInline
-    internal typealias LogContext = (file: String, function: String, line: UInt)
     /// The cancellable work with invocation context.
     @usableFromInline
-    internal typealias WorkItem = (Cancellable, LogContext)
+    internal typealias WorkItem = (Cancellable, file: String, function: String, line: UInt)
 
     /// The initialization task that initializes task registration
     /// group and continuation.
@@ -84,7 +81,7 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
         file: String, function: String, line: UInt
     ) async {
         await initializationTask.value
-        let result = pipe.yield((work, (file, function, line)))
+        let result = pipe.yield((work, file, function, line))
         switch result {
         case .enqueued:
             log(
@@ -123,8 +120,17 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
     /// - Parameter token: The continuation to use
     ///                    to trigger cancellation event.
     @usableFromInline
-    func initialize(token: Continuation) {
+    func initializeToken(_ token: Continuation) {
         self.token = token
+    }
+
+    /// Creates a stream for cancellable work
+    /// items to be submitted for cancellation.
+    ///
+    /// - Returns: The stream of cancellable work items.
+    @usableFromInline
+    func initializePipe() -> AsyncStream<WorkItem> {
+        return AsyncStream<WorkItem> { self.pipe = $0 }
     }
 
     /// Initialize all stored properties required for cacellable work registration
@@ -136,17 +142,17 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
     func initialize(resume initialization: Continuation) {
         self.lifetime = Task {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                let stream = AsyncStream<WorkItem> { self.pipe = $0 }
+                let stream = self.initializePipe()
                 group.addTask {
                     try await Continuation.with { token in
                         Task {
-                            await self.initialize(token: token)
+                            await self.initializeToken(token)
                             initialization.resume()
                         }
                     }
                 }
 
-                for await (work, (file, function, line)) in stream {
+                for await (work, file, function, line) in stream {
                     group.addTask {
                         try? await withTaskCancellationHandler {
                             try await work.wait(
