@@ -152,23 +152,24 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
                     }
                 }
 
-                for await (work, file, function, line) in stream {
+                for await item in stream {
                     group.addTask {
                         try? await withTaskCancellationHandler {
-                            try await work.wait(
-                                file: file,
-                                function: function,
-                                line: line
+                            try await item.0.wait(
+                                file: item.file,
+                                function: item.function,
+                                line: item.line
                             )
                         } onCancel: {
-                            work.cancel(
-                                file: file,
-                                function: function,
-                                line: line
+                            item.0.cancel(
+                                file: item.file,
+                                function: item.function,
+                                line: item.line
                             )
                         }
                     }
                 }
+
                 for try await _ in group {}
             }
         }
