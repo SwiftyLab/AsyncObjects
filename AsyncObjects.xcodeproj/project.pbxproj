@@ -21,7 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		3EDAD67A17112BE3703FE6D9 /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = 6A5F980CD61CC3B4548CECCE /* AsyncObjects.docc */; };
+		2F26FEA977A3A75AA23FA1BB /* AsyncObjects.docc in Sources */ = {isa = PBXBuildFile; fileRef = 8D2D57DEE49A8FE17487AC31 /* AsyncObjects.docc */; };
 		OBJ_127 /* AsyncCountdownEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AsyncCountdownEvent.swift */; };
 		OBJ_128 /* AsyncEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AsyncEvent.swift */; };
 		OBJ_129 /* AsyncSemaphore.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* AsyncSemaphore.swift */; };
@@ -29,9 +29,9 @@
 		OBJ_131 /* AsyncObject+Duration.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* AsyncObject+Duration.swift */; };
 		OBJ_132 /* AsyncObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* AsyncObject.swift */; };
 		OBJ_133 /* Cancellable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_19 /* Cancellable.swift */; };
-		OBJ_134 /* CancellationSource+Clock.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* CancellationSource+Clock.swift */; };
-		OBJ_135 /* CancellationSource+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* CancellationSource+Helpers.swift */; };
-		OBJ_136 /* CancellationSource+Task.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* CancellationSource+Task.swift */; };
+		OBJ_134 /* CancellationSource+Linking.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* CancellationSource+Linking.swift */; };
+		OBJ_135 /* CancellationSource+Task.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* CancellationSource+Task.swift */; };
+		OBJ_136 /* CancellationSource+Timeout.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* CancellationSource+Timeout.swift */; };
 		OBJ_137 /* CancellationSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_23 /* CancellationSource.swift */; };
 		OBJ_138 /* Continuable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_25 /* Continuable.swift */; };
 		OBJ_139 /* ContinuableCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* ContinuableCollection.swift */; };
@@ -119,7 +119,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		6A5F980CD61CC3B4548CECCE /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
+		8D2D57DEE49A8FE17487AC31 /* AsyncObjects.docc */ = {isa = PBXFileReference; includeInIndex = 1; path = AsyncObjects.docc; sourceTree = "<group>"; };
 		OBJ_100 /* OrderedSet+Insertions.swift */ = {isa = PBXFileReference; path = "OrderedSet+Insertions.swift"; sourceTree = "<group>"; };
 		OBJ_101 /* OrderedSet+Invariants.swift */ = {isa = PBXFileReference; path = "OrderedSet+Invariants.swift"; sourceTree = "<group>"; };
 		OBJ_102 /* OrderedSet+Partial MutableCollection.swift */ = {isa = PBXFileReference; path = "OrderedSet+Partial MutableCollection.swift"; sourceTree = "<group>"; };
@@ -144,9 +144,9 @@
 		OBJ_16 /* AsyncObject+Duration.swift */ = {isa = PBXFileReference; path = "AsyncObject+Duration.swift"; sourceTree = "<group>"; };
 		OBJ_17 /* AsyncObject.swift */ = {isa = PBXFileReference; path = AsyncObject.swift; sourceTree = "<group>"; };
 		OBJ_19 /* Cancellable.swift */ = {isa = PBXFileReference; path = Cancellable.swift; sourceTree = "<group>"; };
-		OBJ_20 /* CancellationSource+Clock.swift */ = {isa = PBXFileReference; path = "CancellationSource+Clock.swift"; sourceTree = "<group>"; };
-		OBJ_21 /* CancellationSource+Helpers.swift */ = {isa = PBXFileReference; path = "CancellationSource+Helpers.swift"; sourceTree = "<group>"; };
-		OBJ_22 /* CancellationSource+Task.swift */ = {isa = PBXFileReference; path = "CancellationSource+Task.swift"; sourceTree = "<group>"; };
+		OBJ_20 /* CancellationSource+Linking.swift */ = {isa = PBXFileReference; path = "CancellationSource+Linking.swift"; sourceTree = "<group>"; };
+		OBJ_21 /* CancellationSource+Task.swift */ = {isa = PBXFileReference; path = "CancellationSource+Task.swift"; sourceTree = "<group>"; };
+		OBJ_22 /* CancellationSource+Timeout.swift */ = {isa = PBXFileReference; path = "CancellationSource+Timeout.swift"; sourceTree = "<group>"; };
 		OBJ_23 /* CancellationSource.swift */ = {isa = PBXFileReference; path = CancellationSource.swift; sourceTree = "<group>"; };
 		OBJ_25 /* Continuable.swift */ = {isa = PBXFileReference; path = Continuable.swift; sourceTree = "<group>"; };
 		OBJ_26 /* ContinuableCollection.swift */ = {isa = PBXFileReference; path = ContinuableCollection.swift; sourceTree = "<group>"; };
@@ -255,7 +255,7 @@
 				OBJ_40 /* TaskOperation.swift */,
 				OBJ_41 /* TaskQueue.swift */,
 				OBJ_42 /* TaskTracker.swift */,
-				6A5F980CD61CC3B4548CECCE /* AsyncObjects.docc */,
+				8D2D57DEE49A8FE17487AC31 /* AsyncObjects.docc */,
 			);
 			name = AsyncObjects;
 			path = Sources/AsyncObjects;
@@ -297,9 +297,9 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_19 /* Cancellable.swift */,
-				OBJ_20 /* CancellationSource+Clock.swift */,
-				OBJ_21 /* CancellationSource+Helpers.swift */,
-				OBJ_22 /* CancellationSource+Task.swift */,
+				OBJ_20 /* CancellationSource+Linking.swift */,
+				OBJ_21 /* CancellationSource+Task.swift */,
+				OBJ_22 /* CancellationSource+Timeout.swift */,
 				OBJ_23 /* CancellationSource.swift */,
 			);
 			name = CancellationSource;
@@ -654,9 +654,9 @@
 				OBJ_131 /* AsyncObject+Duration.swift in Sources */,
 				OBJ_132 /* AsyncObject.swift in Sources */,
 				OBJ_133 /* Cancellable.swift in Sources */,
-				OBJ_134 /* CancellationSource+Clock.swift in Sources */,
-				OBJ_135 /* CancellationSource+Helpers.swift in Sources */,
-				OBJ_136 /* CancellationSource+Task.swift in Sources */,
+				OBJ_134 /* CancellationSource+Linking.swift in Sources */,
+				OBJ_135 /* CancellationSource+Task.swift in Sources */,
+				OBJ_136 /* CancellationSource+Timeout.swift in Sources */,
 				OBJ_137 /* CancellationSource.swift in Sources */,
 				OBJ_138 /* Continuable.swift in Sources */,
 				OBJ_139 /* ContinuableCollection.swift in Sources */,
@@ -673,7 +673,7 @@
 				OBJ_150 /* TaskOperation.swift in Sources */,
 				OBJ_151 /* TaskQueue.swift in Sources */,
 				OBJ_152 /* TaskTracker.swift in Sources */,
-				3EDAD67A17112BE3703FE6D9 /* AsyncObjects.docc in Sources */,
+				2F26FEA977A3A75AA23FA1BB /* AsyncObjects.docc in Sources */,
 			);
 		};
 		OBJ_161 /* Sources */ = {

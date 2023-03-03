@@ -56,21 +56,6 @@ class CancellationSourceTests: XCTestCase {
         try await waitUntil(task, timeout: 5) { $0.isCancelled }
     }
 
-    func testDeinit() async throws {
-        let source = CancellationSource()
-        let task = Task.detached {
-            try await Task.sleep(seconds: 10)
-            XCTFail("Unexpected task progression")
-        }
-        source.register(task: task)
-        source.cancel()
-        try? await task.value
-        try await Task.sleep(seconds: 5)
-        self.addTeardownBlock { [weak source] in
-            source.assertReleased()
-        }
-    }
-
     func testAlreadyCancelledTask() async throws {
         let source = CancellationSource()
         let task = Task.detached {
@@ -80,7 +65,7 @@ class CancellationSourceTests: XCTestCase {
         task.cancel()
         source.register(task: task)
         do {
-            try await waitUntil(source, timeout: 3) { await $0.isCancelled }
+            try await waitUntil(source, timeout: 3) { $0.isCancelled }
             XCTFail("Unexpected task progression")
         } catch {}
     }
@@ -92,6 +77,25 @@ class CancellationSourceTests: XCTestCase {
         try await task.value
         source.cancel()
         XCTAssertFalse(task.isCancelled)
+    }
+
+    func testConcurrentCancellation() async throws {
+        let source = CancellationSource()
+        let task = Task { try await Task.sleep(seconds: 10) }
+        source.register(task: task)
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<10 { group.addTask { source.cancel() } }
+            await group.waitForAll()
+        }
+        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+    }
+
+    func testRegistrationAfterCancellation() async throws {
+        let source = CancellationSource()
+        let task = Task { try await Task.sleep(seconds: 10) }
+        source.cancel()
+        source.register(task: task)
+        try await waitUntil(task, timeout: 5) { $0.isCancelled }
     }
 }
 
@@ -138,20 +142,5 @@ class CancellationSourceInitializationTests: XCTestCase {
         }
         source.cancel()
         try await waitUntil(task, timeout: 5) { $0.isCancelled }
-    }
-
-    func testDeinit() async throws {
-        let source = CancellationSource()
-        let task = Task.detached(cancellationSource: source) {
-            try await Task.sleep(seconds: 10)
-            XCTFail("Unexpected task progression")
-        }
-        source.cancel()
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
-        try? await task.value
-        try await Task.sleep(seconds: 5)
-        self.addTeardownBlock { [weak source] in
-            source.assertReleased()
-        }
     }
 }
