@@ -97,6 +97,20 @@ class CancellationSourceTests: XCTestCase {
         source.register(task: task)
         try await waitUntil(task, timeout: 5) { $0.isCancelled }
     }
+
+    func testMultipleTaskCancellation() async throws {
+        let source = CancellationSource()
+        let task1 = Task { try await Task.sleep(seconds: 10) }
+        let task2 = Task { try await Task.sleep(seconds: 10) }
+        let task3 = Task { try await Task.sleep(seconds: 10) }
+        source.register(task: task1)
+        source.register(task: task2)
+        source.register(task: task3)
+        source.cancel()
+        try await waitUntil(task1, timeout: 5) { $0.isCancelled }
+        try await waitUntil(task2, timeout: 5) { $0.isCancelled }
+        try await waitUntil(task3, timeout: 5) { $0.isCancelled }
+    }
 }
 
 @MainActor

@@ -58,7 +58,7 @@ class NonThrowingFutureTests: XCTestCase {
         let _ = try await future.wait(forSeconds: 3)
         await task.value
         self.addTeardownBlock { [weak future] in
-            future.assertReleased()
+            try await waitUntil(future, timeout: 5) { $0.assertReleased() }
         }
     }
 

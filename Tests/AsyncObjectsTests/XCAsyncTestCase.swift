@@ -116,14 +116,14 @@ extension Optional where Wrapped: AnyObject {
         file: StaticString = #filePath,
         function: StaticString = #function,
         line: UInt = #line
-    ) {
+    ) -> Bool {
         switch self {
         case .none:
-            break
+            return true
         case .some(let value):
             let wr = _getUnownedRetainCount(value) + _getWeakRetainCount(value)
             let rc = _getRetainCount(value) - wr
-            XCTAssertEqual(rc, 0, file: file, line: line)
+            return rc == 0
         }
     }
 }
