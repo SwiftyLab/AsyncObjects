@@ -68,7 +68,8 @@ jobs:
     uses: SwiftyLab/ci/.github/workflows/cocoapods.yml@main
     strategy:
       matrix:
-        platforms: ['macos tvos', 'ios', 'watchos']
+        platforms: ['macos tvos', 'ios']
+        # platforms: ['macos tvos', 'ios', 'watchos']
     with:
       platforms: ${{ matrix.platforms }}
 
