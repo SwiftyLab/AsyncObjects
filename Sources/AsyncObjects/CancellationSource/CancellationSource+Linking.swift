@@ -21,7 +21,9 @@ public extension CancellationSource {
         line: UInt = #line
     ) {
         self.init()
-        sources.forEach { $0.register(task: self) }
+        sources.forEach {
+            $0.register(task: self, file: file, function: function, line: line)
+        }
     }
 
     /// Creates a new cancellation source object linking to all the provided cancellation sources.

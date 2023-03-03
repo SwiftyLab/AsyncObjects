@@ -143,7 +143,10 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
         function: String = #function,
         line: UInt = #line
     ) {
-        guard !lifetime.isCancelled else { return }
+        guard !lifetime.isCancelled else {
+            log("Already cancelled", file: file, function: function, line: line)
+            return
+        }
         pipe.finish()
         lifetime.cancel()
         log("Cancelled", file: file, function: function, line: line)
@@ -168,7 +171,9 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
         function: String = #function,
         line: UInt = #line
     ) async {
+        log("Waiting", file: file, function: function, line: line)
         let _ = await lifetime.result
+        log("Completed", file: file, function: function, line: line)
     }
 }
 
@@ -179,9 +184,7 @@ extension CancellationSource {
     /// Type specific metadata to attach to all log messages.
     @usableFromInline
     var metadata: Logger.Metadata {
-        return [
-            "obj": "\(self)"
-        ]
+        return [:]
     }
 }
 #endif
