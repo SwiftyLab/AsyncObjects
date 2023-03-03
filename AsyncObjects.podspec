@@ -63,6 +63,6 @@ Pod::Spec.new do |s|
     ts.source_files = "Tests/#{s.name}Tests/**/*.swift"
     ts.dependency "#{s.name}/Checked"
     ts.dependency "#{s.name}/Logging"
-    ts.scheme = { :parallelizable => true }
+    ts.scheme = { :parallelizable => true, :code_coverage => true }
   end
 end
