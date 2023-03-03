@@ -46,10 +46,6 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
     /// `CancellationSource` is cancelled.
     @usableFromInline
     var lifetime: Task<Void, Error>!
-    /// The continuation cancelled when `CancellationSource` is cancelled
-    /// to trigger cooperative cancellation of registered work items.
-    @usableFromInline
-    var token: Continuation!
     /// The stream continuation used to register work items
     /// for cooperative cancellation.
     @usableFromInline
@@ -58,7 +54,7 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
     /// Whether cancellation is already invoked on the source.
     ///
     /// This property waits until `CancellationSource`
-    /// is initialized and returns whther cancellation is invoked.
+    /// is initialized and returns whether cancellation is invoked.
     public var isCancelled: Bool {
         get async {
             await initializationTask.value
@@ -110,21 +106,11 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
         await initializationTask.value
         guard !lifetime.isCancelled else { return }
         pipe.finish()
-        token.cancel()
         lifetime.cancel()
         log("Cancelled", file: file, function: function, line: line)
     }
 
-    /// Initialize `token` property to use for cancellation event trigger.
-    ///
-    /// - Parameter token: The continuation to use
-    ///                    to trigger cancellation event.
-    @usableFromInline
-    func initializeToken(_ token: Continuation) {
-        self.token = token
-    }
-
-    /// Initialize all stored properties required for cacellable work registration
+    /// Initialize all stored properties required for cancellable work registration
     /// and cancellation event trigger.
     ///
     /// - Parameter initialization: The continuation to resume
@@ -133,14 +119,9 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
     func initialize(resume initialization: Continuation) {
         self.lifetime = Task {
             try await withThrowingTaskGroup(of: Void.self) { group in
-                let stream = AsyncStream<WorkItem> { self.pipe = $0 }
-                group.addTask {
-                    try await Continuation.with { token in
-                        Task {
-                            await self.initializeToken(token)
-                            initialization.resume()
-                        }
-                    }
+                let stream = AsyncStream<WorkItem> {
+                    self.pipe = $0
+                    initialization.resume()
                 }
 
                 for await item in stream {
@@ -161,7 +142,8 @@ public actor CancellationSource: AsyncObject, Cancellable, LoggableActor {
                     }
                 }
 
-                for try await _ in group {}
+                group.cancelAll()
+                try await group.waitForAll()
             }
         }
     }
