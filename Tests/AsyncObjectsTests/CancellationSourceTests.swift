@@ -9,14 +9,18 @@ class CancellationSourceTests: XCTestCase {
         let task = Task { try await Task.sleep(seconds: 10) }
         source.register(task: task)
         source.cancel()
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task.isCancelled)
     }
 
     func testTaskCancellationWithTimeout() async throws {
         let task = Task { try await Task.sleep(seconds: 10) }
         let source = CancellationSource(cancelAfterNanoseconds: UInt64(1E9))
         source.register(task: task)
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task.isCancelled)
     }
 
     #if swift(>=5.7)
@@ -33,7 +37,9 @@ class CancellationSourceTests: XCTestCase {
         )
         let task = Task { try await Task.sleep(seconds: 10, clock: clock) }
         source.register(task: task)
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5, clock: clock)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task.isCancelled)
     }
     #endif
 
@@ -43,7 +49,9 @@ class CancellationSourceTests: XCTestCase {
         let task = Task { try await Task.sleep(seconds: 10) }
         source.register(task: task)
         pSource.cancel()
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task.isCancelled)
     }
 
     func testTaskCancellationWithMultipleLinkedSources() async throws {
@@ -53,7 +61,9 @@ class CancellationSourceTests: XCTestCase {
         let task = Task { try await Task.sleep(seconds: 10) }
         source.register(task: task)
         pSource1.cancel()
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task.isCancelled)
     }
 
     func testAlreadyCancelledTask() async throws {
@@ -76,7 +86,9 @@ class CancellationSourceTests: XCTestCase {
         source.register(task: task)
         try await task.value
         source.cancel()
-        XCTAssertFalse(task.isCancelled)
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        try await task.value
     }
 
     func testConcurrentCancellation() async throws {
@@ -87,7 +99,9 @@ class CancellationSourceTests: XCTestCase {
             for _ in 0..<10 { group.addTask { source.cancel() } }
             await group.waitForAll()
         }
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task.isCancelled)
     }
 
     func testRegistrationAfterCancellation() async throws {
@@ -95,7 +109,9 @@ class CancellationSourceTests: XCTestCase {
         let task = Task { try await Task.sleep(seconds: 10) }
         source.cancel()
         source.register(task: task)
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task.isCancelled)
     }
 
     func testMultipleTaskCancellation() async throws {
@@ -107,9 +123,11 @@ class CancellationSourceTests: XCTestCase {
         source.register(task: task2)
         source.register(task: task3)
         source.cancel()
-        try await waitUntil(task1, timeout: 5) { $0.isCancelled }
-        try await waitUntil(task2, timeout: 5) { $0.isCancelled }
-        try await waitUntil(task3, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task1.isCancelled)
+        XCTAssertTrue(task2.isCancelled)
+        XCTAssertTrue(task3.isCancelled)
     }
 }
 
@@ -125,7 +143,9 @@ class CancellationSourceInitializationTests: XCTestCase {
             } catch {}
         }
         source.cancel()
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task.isCancelled)
     }
 
     func testDetachedTaskCancellation() async throws {
@@ -137,7 +157,9 @@ class CancellationSourceInitializationTests: XCTestCase {
             } catch {}
         }
         source.cancel()
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task.isCancelled)
     }
 
     func testThrowingTaskCancellation() async throws {
@@ -146,7 +168,9 @@ class CancellationSourceInitializationTests: XCTestCase {
             try await Task.sleep(seconds: 10)
         }
         source.cancel()
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task.isCancelled)
     }
 
     func testThrowingDetachedTaskCancellation() async throws {
@@ -155,6 +179,8 @@ class CancellationSourceInitializationTests: XCTestCase {
             try await Task.sleep(seconds: 10)
         }
         source.cancel()
-        try await waitUntil(task, timeout: 5) { $0.isCancelled }
+        try await source.wait(forSeconds: 5)
+        XCTAssertTrue(source.isCancelled)
+        XCTAssertTrue(task.isCancelled)
     }
 }

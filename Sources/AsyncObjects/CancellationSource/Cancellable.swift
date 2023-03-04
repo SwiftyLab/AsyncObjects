@@ -1,3 +1,5 @@
+import Foundation
+
 /// A type representing a unit of work or task that supports cancellation.
 ///
 /// Cancellation should be initiated on invoking ``cancel(file:function:line:)``
@@ -90,5 +92,41 @@ extension Task: Cancellable {
         line: UInt = #line
     ) async throws {
         let _ = try await self.value
+    }
+}
+
+/// Waits asynchronously for the work or task to complete
+/// handling cooperative cancellation initiation.
+///
+/// - Parameters:
+///   - work: The work for which completion to wait and handle cooperative cancellation.
+///   - id: The identifier associated with work.
+///   - file: The file wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#fileID`).
+///   - function: The function wait request originates from (there's usually no need to
+///               pass it explicitly as it defaults to `#function`).
+///   - line: The line wait request originates from (there's usually no need to pass it
+///           explicitly as it defaults to `#line`).
+///
+/// - Throws: If waiting for the work completes with an error.
+@inlinable
+func waitHandlingCancelation(
+    for work: Cancellable,
+    associatedId id: UUID,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
+) async throws {
+    try await withTaskCancellationHandler {
+        defer {
+            log("Finished", id: id, file: file, function: function, line: line)
+        }
+        try await work.wait(file: file, function: function, line: line)
+    } onCancel: {
+        work.cancel(file: file, function: function, line: line)
+        log(
+            "Cancellation initiated", id: id,
+            file: file, function: function, line: line
+        )
     }
 }

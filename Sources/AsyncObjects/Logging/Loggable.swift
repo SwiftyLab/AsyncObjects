@@ -34,6 +34,36 @@ let level: Logger.Level = .debug
 let level: Logger.Level = .info
 #endif
 
+/// Log a message attaching an optional identifier.
+///
+/// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_TRACE` is set log level is set to `trace`.
+/// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_DEBUG` is set log level is set to `debug`.
+/// Otherwise log level is set to `info`.
+///
+/// - Parameters:
+///   - message: The message to be logged.
+///   - id: Optional identifier associated with message.
+///   - file: The file this log message originates from (there's usually
+///           no need to pass it explicitly as it defaults to `#fileID`).
+///   - function: The function this log message originates from (there's usually
+///               no need to pass it explicitly as it defaults to `#function`).
+///   - line: The line this log message originates from (there's usually
+///           no need to pass it explicitly as it defaults to `#line`).
+@inlinable
+func log(
+    _ message: @autoclosure () -> Logger.Message,
+    id: UUID? = nil,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
+) {
+    let metadata: Logger.Metadata = (id != nil) ? ["id": "\(id!)"] : [:]
+    logger.log(
+        level: level, message(), metadata: metadata,
+        file: file, function: function, line: line
+    )
+}
+
 extension Loggable {
     /// Log a message attaching the default type specific metadata
     /// and optional identifier.
@@ -102,6 +132,30 @@ extension LoggableActor {
     }
 }
 #else
+/// Log a message attaching an optional identifier.
+///
+/// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_TRACE` is set log level is set to `trace`.
+/// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_DEBUG` is set log level is set to `debug`.
+/// Otherwise log level is set to `info`.
+///
+/// - Parameters:
+///   - message: The message to be logged.
+///   - id: Optional identifier associated with message.
+///   - file: The file this log message originates from (there's usually
+///           no need to pass it explicitly as it defaults to `#fileID`).
+///   - function: The function this log message originates from (there's usually
+///               no need to pass it explicitly as it defaults to `#function`).
+///   - line: The line this log message originates from (there's usually
+///           no need to pass it explicitly as it defaults to `#line`).
+@inlinable
+func log(
+    _ message: @autoclosure () -> String,
+    id: UUID? = nil,
+    file: String = #fileID,
+    function: String = #function,
+    line: UInt = #line
+) { /* Do nothing */  }
+
 /// A type that emits log messages with specific metadata.
 @usableFromInline
 protocol Loggable {}
