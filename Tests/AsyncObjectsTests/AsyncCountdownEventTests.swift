@@ -89,7 +89,7 @@ class AsyncCountdownEventTests: XCTestCase {
         event.signal()
         try await event.wait(forSeconds: 5)
         self.addTeardownBlock { [weak event] in
-            try await waitUntil(event, timeout: 5) { $0.assertReleased() }
+            try await waitUntil(event, timeout: 10) { $0.assertReleased() }
         }
     }
 

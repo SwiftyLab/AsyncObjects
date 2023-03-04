@@ -1,8 +1,4 @@
-#if swift(>=5.7)
 import Foundation
-#else
-@preconcurrency import Foundation
-#endif
 
 /// An object that eventually produces a single value and then finishes or fails.
 ///

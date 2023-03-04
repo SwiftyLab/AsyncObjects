@@ -1,14 +1,12 @@
-#if swift(>=5.7)
 import Foundation
 
+#if swift(>=5.7)
 /// An actor type that manages a collection of continuations with an associated key.
 ///
 /// On `Swift 5.7` and above [actor isolation bug with protocol conformance](https://forums.swift.org/t/actor-isolation-is-broken-by-protocol-conformance/57040)
 /// is fixed, and hence original protocol can be used without any issue.
 typealias ContinuableCollectionActor = ContinuableCollection
 #else
-@preconcurrency import Foundation
-
 /// An actor type that manages a collection of continuations with an associated key.
 ///
 /// This is to avoid [actor isolation bug with protocol conformance on older `Swift` versions](https://forums.swift.org/t/actor-isolation-is-broken-by-protocol-conformance/57040).

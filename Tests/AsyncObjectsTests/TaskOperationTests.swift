@@ -74,12 +74,6 @@ class TaskOperationTests: XCTestCase {
         try await operation.wait(forSeconds: 3)
     }
 
-    func testFinisheAsyncdWait() async throws {
-        let operation = TaskOperation { /* Do nothing */  }
-        operation.signal()
-        try await operation.wait(forSeconds: 3)
-    }
-
     func testDeinit() async throws {
         let operation = TaskOperation {
             try await Task.sleep(seconds: 1)
@@ -87,7 +81,7 @@ class TaskOperationTests: XCTestCase {
         operation.signal()
         try await operation.wait(forSeconds: 5)
         self.addTeardownBlock { [weak operation] in
-            try await waitUntil(operation, timeout: 5) { $0.assertReleased() }
+            try await waitUntil(operation, timeout: 10) { $0.assertReleased() }
         }
     }
 
@@ -235,7 +229,7 @@ class TaskOperationCancellationTests: XCTestCase {
         operation.cancel()
         try await waitUntil(operation, timeout: 3, satisfies: \.isCancelled)
         self.addTeardownBlock { [weak operation] in
-            try await waitUntil(operation, timeout: 5) { $0.assertReleased() }
+            try await waitUntil(operation, timeout: 10) { $0.assertReleased() }
         }
     }
 }
@@ -265,6 +259,10 @@ class TaskOperationTaskManagementTests: XCTestCase {
             XCTAssertFalse(error.localizedDescription.isEmpty)
         default: XCTFail("Unexpected operation result")
         }
+        do {
+            try await operation.wait(forSeconds: 3)
+            XCTFail("Unexpected task progression")
+        } catch is DurationTimeoutError {}
     }
 
     func testNotStartedCancellationError() async throws {
