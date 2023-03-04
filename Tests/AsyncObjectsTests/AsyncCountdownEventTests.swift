@@ -17,6 +17,17 @@ class AsyncCountdownEventTests: XCTestCase {
         try await event.wait(forSeconds: 5)
     }
 
+    func testWithIncrementSignalAfterSomeWait() async throws {
+        let event = AsyncCountdownEvent()
+        event.increment(by: 10)
+        try await waitUntil(event, timeout: 5) { $0.currentCount == 10 }
+        Task {
+            try await Task.sleep(seconds: 1)
+            await event.signal(concurrent: 10)
+        }
+        try await event.wait(forSeconds: 10)
+    }
+
     func testWithOverIncrement() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)

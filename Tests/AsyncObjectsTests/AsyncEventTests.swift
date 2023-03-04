@@ -10,6 +10,15 @@ class AsyncEventTests: XCTestCase {
         try await event.wait(forSeconds: 3)
     }
 
+    func testSignalAfterSomeWait() async throws {
+        let event = AsyncEvent(signaledInitially: false)
+        Task {
+            try await Task.sleep(seconds: 1)
+            event.signal()
+        }
+        try await event.wait(forSeconds: 10)
+    }
+
     func testResetSignal() async throws {
         let event = AsyncEvent()
         event.reset()
