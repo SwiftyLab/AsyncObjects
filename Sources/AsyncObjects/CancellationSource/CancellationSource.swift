@@ -1,3 +1,5 @@
+import Foundation
+
 /// An object that controls cooperative cancellation of multiple registered tasks and linked object registered tasks.
 ///
 /// You can register tasks for cancellation using the ``register(task:file:function:line:)`` method
@@ -170,9 +172,10 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
         function: String = #function,
         line: UInt = #line
     ) async {
-        log("Waiting", file: file, function: function, line: line)
+        let key = UUID()
+        log("Waiting", id: key, file: file, function: function, line: line)
         let _ = await lifetime.result
-        log("Completed", file: file, function: function, line: line)
+        log("Completed", id: key, file: file, function: function, line: line)
     }
 }
 
