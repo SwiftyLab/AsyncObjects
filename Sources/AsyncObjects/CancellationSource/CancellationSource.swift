@@ -158,14 +158,12 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line wait request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
-    ///
-    /// - Throws: `CancellationError` if  task invoking this method cancelled.
     @Sendable
     public func wait(
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
-    ) async throws {
+    ) async {
         let id = UUID()
         log("Waiting", id: id, file: file, function: function, line: line)
         let _ = await lifetime.result

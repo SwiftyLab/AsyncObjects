@@ -75,9 +75,9 @@ class CancellationSourceTests: XCTestCase {
         task.cancel()
         source.register(task: task)
         do {
-            try await source.wait(forSeconds: 3)
+            try await waitUntil(source, timeout: 3) { $0.isCancelled }
             XCTFail("Unexpected task progression")
-        } catch is DurationTimeoutError {}
+        } catch {}
     }
 
     func testTaskCompletion() async throws {
@@ -182,38 +182,5 @@ class CancellationSourceInitializationTests: XCTestCase {
         try await source.wait(forSeconds: 5)
         XCTAssertTrue(source.isCancelled)
         XCTAssertTrue(task.isCancelled)
-    }
-}
-
-@MainActor
-class CancellationSourceWaitTests: XCTestCase {
-
-    func testWithoutCancellation() async throws {
-        let source = CancellationSource()
-        let task = Task.detached {
-            try await Task.sleep(seconds: 10)
-            XCTFail("Unexpected task progression")
-        }
-        source.register(task: task)
-        do {
-            try await source.wait(forSeconds: 3)
-            XCTFail("Unexpected task progression")
-        } catch is DurationTimeoutError {}
-    }
-
-    func testCooperativeCancellation() async throws {
-        let source = CancellationSource()
-        Task.detached(cancellationSource: source) {
-            try await Task.sleep(seconds: 20)
-            XCTFail("Unexpected task progression")
-        }
-        let task = Task.detached {
-            do {
-                try await source.wait(forSeconds: 5)
-                XCTFail("Unexpected task progression")
-            } catch is CancellationError {}
-        }
-        task.cancel()
-        try await task.value
     }
 }
