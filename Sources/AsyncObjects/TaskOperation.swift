@@ -273,7 +273,9 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject, Loggable,
     ) async throws {
         let key = UUID()
         log("Waiting", id: key, file: file, function: function, line: line)
-        for await _ in event { break }
+        var iter = event.makeAsyncIterator()
+        await iter.next()
+
         do {
             try Task.checkCancellation()
         } catch {
@@ -283,10 +285,11 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject, Loggable,
             )
             throw error
         }
-        do {
-            let _ = try await execTask?.value
+
+        switch await self.result {
+        case .success:
             log("Finished", id: key, file: file, function: function, line: line)
-        } catch {
+        case .failure(let error):
             log(
                 "Finished with error: \(error)", id: key,
                 file: file, function: function, line: line
