@@ -62,7 +62,7 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
     /// - Returns: The newly created cancellation source.
     public init() {
         let stream = AsyncStream<WorkItem> { self.pipe = $0 }
-        self.lifetime = Task {
+        self.lifetime = Task.detached {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for await item in stream {
                     group.addTask {
