@@ -1,3 +1,16 @@
+## [2.1.0](https://github.com/SwiftyLab/AsyncObjects/compare/v2.0.0...v2.1.0) (2023-03-04)
+
+
+### ✅ Tests
+
+* add async signal tests for events ([#17](https://github.com/SwiftyLab/AsyncObjects/issues/17)) ([5ce6b1a](https://github.com/SwiftyLab/AsyncObjects/commit/5ce6b1a9f1322ddbbe0ae7852c10798942f5f397))
+
+
+### 🔥 Refactorings
+
+* add identifier metadata for cancellation source registered tasks ([#18](https://github.com/SwiftyLab/AsyncObjects/issues/18)) ([0ab431e](https://github.com/SwiftyLab/AsyncObjects/commit/0ab431e460463396761eb417f785922a04fe4680))
+* modify cancellation source implementation to not store tasks and linked cancellation sources ([#15](https://github.com/SwiftyLab/AsyncObjects/issues/15)) ([3c3c61b](https://github.com/SwiftyLab/AsyncObjects/commit/3c3c61b4740f728bf3a3c53a387972fd09022498))
+
 ## [2.0.0](https://github.com/SwiftyLab/AsyncObjects/compare/v1.0.0...v2.0.0) (2023-01-07)
 
 
