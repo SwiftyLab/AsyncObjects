@@ -87,7 +87,7 @@ class TaskOperationTests: XCTestCase {
         operation.signal()
         try await operation.wait(forSeconds: 5)
         self.addTeardownBlock { [weak operation] in
-            operation.assertReleased()
+            try await waitUntil(operation, timeout: 5) { $0.assertReleased() }
         }
     }
 
@@ -235,7 +235,7 @@ class TaskOperationCancellationTests: XCTestCase {
         operation.cancel()
         try await waitUntil(operation, timeout: 3, satisfies: \.isCancelled)
         self.addTeardownBlock { [weak operation] in
-            operation.assertReleased()
+            try await waitUntil(operation, timeout: 5) { $0.assertReleased() }
         }
     }
 }

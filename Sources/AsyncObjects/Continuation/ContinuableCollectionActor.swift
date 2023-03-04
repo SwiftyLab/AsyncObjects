@@ -69,7 +69,7 @@ internal protocol ContinuableCollectionActor: Actor {
 
 extension ContinuableCollectionActor
 where
-    Self: AnyObject & Sendable, Continuation: TrackableContinuable & Sendable,
+    Continuation: TrackableContinuable,
     Continuation.Value: Sendable & ThrowingContinuable, Key: Sendable,
     Key == Continuation.ID
 {

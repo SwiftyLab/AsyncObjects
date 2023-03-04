@@ -251,7 +251,7 @@ extension AsyncEvent {
     @usableFromInline
     var metadata: Logger.Metadata {
         return [
-            "obj": "\(self)(\(Unmanaged.passUnretained(self).toOpaque()))",
+            "obj": "\(self)",
             "signalled": "\(signalled)",
         ]
     }

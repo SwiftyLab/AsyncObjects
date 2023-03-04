@@ -423,7 +423,7 @@ extension AsyncCountdownEvent {
     @usableFromInline
     var metadata: Logger.Metadata {
         return [
-            "obj": "\(self)(\(Unmanaged.passUnretained(self).toOpaque()))",
+            "obj": "\(self)",
             "limit": "\(limit)",
             "current_count": "\(currentCount)",
             "initial_count": "\(initialCount)",

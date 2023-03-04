@@ -30,7 +30,7 @@ Pod::Spec.new do |s|
   s.watchos.deployment_target = '6.0'
   s.osx.deployment_target     = '10.15'
 
-  s.source_files = "Sources/#{s.name}/**/*.swift", "Sources/#{s.name}/*.docc"
+  s.source_files = "Sources/#{s.name}/**/*.*"
   s.preserve_paths = "{Sources,Tests}/#{s.name}*/**/*", "*.md"
   s.pod_target_xcconfig = {
     'CLANG_WARN_DOCUMENTATION_COMMENTS' => 'YES',
@@ -63,6 +63,6 @@ Pod::Spec.new do |s|
     ts.source_files = "Tests/#{s.name}Tests/**/*.swift"
     ts.dependency "#{s.name}/Checked"
     ts.dependency "#{s.name}/Logging"
-    ts.scheme = { :parallelizable => true }
+    ts.scheme = { :parallelizable => true, :code_coverage => true }
   end
 end
