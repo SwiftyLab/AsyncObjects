@@ -1,7 +1,5 @@
 /// An object that controls cooperative cancellation of multiple registered tasks and linked object registered tasks.
 ///
-/// An async event suspends tasks if current state is non-signaled and resumes execution when event is signalled.
-///
 /// You can register tasks for cancellation using the ``register(task:file:function:line:)`` method
 /// and link with additional sources by creating object with ``init(linkedWith:)`` method.
 /// By calling the ``cancel(file:function:line:)`` method all the registered tasks will be cancelled
@@ -28,8 +26,9 @@
 /// try await source.cancel(afterNanoseconds: 1_000_000_000)
 /// ```
 ///
-/// - Warning: Cancellation sources propagate cancellation event to other linked cancellation sources.
-///            In case of circular dependency between cancellation sources, app will go into infinite recursion.
+/// - NOTE: Once cancellation is triggered on `CancellationSource` there is no way to uncancel.
+///         Create a new `CancellationSource` to manage cancellation of newly spawned
+///         tasks in that case.
 public struct CancellationSource: AsyncObject, Cancellable, Loggable {
     /// The continuation type controlling task group lifetime.
     @usableFromInline
