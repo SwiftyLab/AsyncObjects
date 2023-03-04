@@ -176,8 +176,7 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
     ) async throws {
         let id = UUID()
         log("Waiting", id: id, file: file, function: function, line: line)
-        var iter = completion.makeAsyncIterator()
-        await iter.next()
+        for await _ in completion { break }
         do {
             try Task.checkCancellation()
             log("Completed", id: id, file: file, function: function, line: line)
