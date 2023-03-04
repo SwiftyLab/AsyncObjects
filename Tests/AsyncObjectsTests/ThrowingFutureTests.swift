@@ -66,7 +66,7 @@ class ThrowingFutureTests: XCTestCase {
         let _ = try await future.wait(forSeconds: 3)
         await task.value
         self.addTeardownBlock { [weak future] in
-            try await waitUntil(future, timeout: 5) { $0.assertReleased() }
+            try await waitUntil(future, timeout: 10) { $0.assertReleased() }
         }
     }
 

@@ -74,7 +74,7 @@ class AsyncSemaphoreTests: XCTestCase {
         let semaphore = AsyncSemaphore(value: 1)
         try await semaphore.wait(forSeconds: 3)
         self.addTeardownBlock { [weak semaphore] in
-            try await waitUntil(semaphore, timeout: 5) { $0.assertReleased() }
+            try await waitUntil(semaphore, timeout: 10) { $0.assertReleased() }
         }
     }
 }

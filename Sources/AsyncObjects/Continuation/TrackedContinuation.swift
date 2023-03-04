@@ -1,8 +1,4 @@
-#if swift(>=5.7)
 import Foundation
-#else
-@preconcurrency import Foundation
-#endif
 
 /// A mechanism to interface between synchronous and asynchronous code,
 /// with tracking state data.
