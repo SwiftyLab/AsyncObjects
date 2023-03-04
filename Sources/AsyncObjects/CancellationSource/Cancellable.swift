@@ -110,8 +110,8 @@ extension Task: Cancellable {
 ///
 /// - Throws: If waiting for the work completes with an error.
 @inlinable
-func waitHandlingCancelation<C: Cancellable>(
-    for work: C,
+func waitHandlingCancelation(
+    for work: Cancellable,
     associatedId id: UUID,
     file: String = #fileID,
     function: String = #function,
