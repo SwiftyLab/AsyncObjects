@@ -37,9 +37,12 @@ public final class AsyncEvent: AsyncObject, Loggable {
     /// - Parameter signalled: The signal state for event.
     /// - Returns: The newly created event.
     public init(signaledInitially signalled: Bool = true) {
-        var continuation: AsyncStream<Bool>.Continuation!
-        let stream = AsyncStream<Bool> { continuation = $0 }
         let channel = AsyncChannel<Void>()
+        var continuation: AsyncStream<Bool>.Continuation!
+        let stream = AsyncStream<Bool>(
+            bufferingPolicy: .bufferingNewest(1)
+        ) { continuation = $0 }
+
         self.transmitter = continuation
         self.waiter = channel
 
