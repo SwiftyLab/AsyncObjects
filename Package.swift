@@ -5,7 +5,8 @@ import class Foundation.ProcessInfo
 
 var dependencies: [Target.Dependency] = {
     var dependencies: [Target.Dependency] = [
-        .product(name: "OrderedCollections", package: "swift-collections")
+        .product(name: "OrderedCollections", package: "swift-collections"),
+        .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
     ]
 
     if ProcessInfo.processInfo.environment["ASYNCOBJECTS_ENABLE_LOGGING_LEVEL"] != nil {
@@ -64,6 +65,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-format", from: "0.50700.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
