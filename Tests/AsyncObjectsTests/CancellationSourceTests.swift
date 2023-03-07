@@ -184,3 +184,39 @@ class CancellationSourceInitializationTests: XCTestCase {
         XCTAssertTrue(task.isCancelled)
     }
 }
+
+@MainActor
+class CancellationSourceWaitTests: XCTestCase {
+
+    func testWithoutCancellation() async throws {
+        let source = CancellationSource()
+        let task = Task.detached {
+            try await Task.sleep(seconds: 10)
+            XCTFail("Unexpected task progression")
+        }
+        source.register(task: task)
+        do {
+            try await source.wait(forSeconds: 3)
+            XCTFail("Unexpected task progression")
+        } catch is DurationTimeoutError {}
+        XCTAssertFalse(source.isCancelled)
+        XCTAssertFalse(task.isCancelled)
+    }
+
+    func testCooperativeCancellation() async throws {
+        let source = CancellationSource()
+        Task.detached(cancellationSource: source) {
+            try await Task.sleep(seconds: 20)
+            XCTFail("Unexpected task progression")
+        }
+        let task = Task.detached {
+            do {
+                try await source.wait(forSeconds: 5)
+                XCTFail("Unexpected task progression")
+            } catch is CancellationError {}
+        }
+        task.cancel()
+        try await task.value
+        XCTAssertFalse(source.isCancelled)
+    }
+}
