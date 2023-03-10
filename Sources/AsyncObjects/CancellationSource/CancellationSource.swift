@@ -1,4 +1,5 @@
 import Foundation
+import AsyncAlgorithms
 
 /// An object that controls cooperative cancellation of multiple registered tasks and linked object registered tasks.
 ///
@@ -36,16 +37,19 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
     internal typealias Continuation = GlobalContinuation<Void, Error>
     /// The cancellable work with invocation context.
     internal typealias WorkItem = (
-        Cancellable, id: UUID, file: String, function: String, line: UInt
+        any Cancellable, id: UUID, file: String, function: String, line: UInt
     )
 
     /// The lifetime task that is cancelled when
     /// `CancellationSource` is cancelled.
     @usableFromInline
-    var lifetime: Task<Void, Error>!
+    let lifetime: Task<Void, Error>
     /// The stream continuation used to register work items
     /// for cooperative cancellation.
-    var pipe: AsyncStream<WorkItem>.Continuation!
+    let pipe: AsyncStream<WorkItem>.Continuation
+    /// The channel that controls waiting on the `CancellationSource`.
+    /// Once `CancellationSource` is cancelled, channel finishes.
+    let waiter: AsyncChannel<Void>
 
     /// A Boolean value that indicates whether cancellation is already
     /// invoked on the source.
@@ -61,24 +65,57 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
     ///
     /// - Returns: The newly created cancellation source.
     public init() {
-        let stream = AsyncStream<WorkItem> { self.pipe = $0 }
-        self.lifetime = Task.detached {
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                for await item in stream {
-                    group.addTask {
-                        try? await waitHandlingCancelation(
-                            for: item.0, associatedId: item.id,
-                            file: item.file,
-                            function: item.function,
-                            line: item.line
-                        )
-                    }
-                }
+        var continuation: AsyncStream<WorkItem>.Continuation!
+        let stream = AsyncStream<WorkItem> { continuation = $0 }
+        let channel = AsyncChannel<Void>()
+        self.pipe = continuation
+        self.waiter = channel
 
-                group.cancelAll()
-                try await group.waitForAll()
+        func lifetime() -> Task<Void, Error> {
+            return Task.detached {
+                await withThrowingTaskGroup(of: Void.self) { group in
+                    for await item in stream {
+                        group.addTask {
+                            try? await waitHandlingCancelation(
+                                for: item.0, associatedId: item.id,
+                                file: item.file,
+                                function: item.function,
+                                line: item.line
+                            )
+                        }
+                    }
+
+                    group.cancelAll()
+                }
+                channel.finish()
             }
         }
+
+        #if swift(>=5.8)
+        if #available(macOS 13.3, iOS 16.4, tvOS 16.4, watchOS 9.4, *) {
+            self.lifetime = Task.detached {
+                await withDiscardingTaskGroup { group in
+                    for await item in stream {
+                        group.addTask {
+                            try? await waitHandlingCancelation(
+                                for: item.0, associatedId: item.id,
+                                file: item.file,
+                                function: item.function,
+                                line: item.line
+                            )
+                        }
+                    }
+
+                    group.cancelAll()
+                }
+                channel.finish()
+            }
+        } else {
+            self.lifetime = lifetime()
+        }
+        #else
+        self.lifetime = lifetime()
+        #endif
     }
 
     /// Register cancellable work for cooperative cancellation
@@ -163,11 +200,17 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
-    ) async {
+    ) async throws {
         let id = UUID()
         log("Waiting", id: id, file: file, function: function, line: line)
-        let _ = await lifetime.result
-        log("Completed", id: id, file: file, function: function, line: line)
+        await waiter.send(())
+        do {
+            try Task.checkCancellation()
+            log("Completed", id: id, file: file, function: function, line: line)
+        } catch {
+            log("Cancelled", id: id, file: file, function: function, line: line)
+            throw error
+        }
     }
 }
 
