@@ -1,6 +1,5 @@
 import Foundation
-
-import OrderedCollections
+import AsyncAlgorithms
 
 /// An event object that controls access to a resource between high and low priority tasks
 /// and signals when count is within limit.
@@ -33,22 +32,38 @@ import OrderedCollections
 ///
 /// Use the ``limit`` parameter to indicate concurrent low priority usage, i.e. if limit set to zero,
 /// only one low priority usage allowed at one time.
-public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
-    LoggableActor
+public final class AsyncCountdownEvent: AsyncObject, Loggable, @unchecked
+    Sendable
 {
-    /// The suspended tasks continuation type.
+    /// A  type representing various mutation actions that
+    /// can be performed on `AsyncCountdownEvent`.
     @usableFromInline
-    internal typealias Continuation = TrackedContinuation<
-        GlobalContinuation<Void, Error>
-    >
+    internal enum Action: Sendable {
+        /// An action representing decrement of
+        /// current count in `AsyncCountdownEvent`.
+        ///
+        /// The current count is decremented by the provided count
+        /// or set to zero if provided count is greater.
+        case decrement(by: UInt)
+        /// An action representing increment of
+        /// current count in `AsyncCountdownEvent`.
+        ///
+        /// The current count is incremented by the provided count.
+        case increment(by: UInt)
+        /// An action representing reset of current count
+        /// and initial count in `AsyncCountdownEvent`.
+        ///
+        /// The current count and initial count are reset to the provided count.
+        /// If count not provided, current count is reset to initial count.
+        case reset(to: UInt? = nil)
+    }
 
-    /// The continuations stored with an associated key for all the suspended task that are waiting to be resumed.
+    /// The action performed on `AsyncCountdownEvent` context type.
     @usableFromInline
-    internal private(set) var continuations:
-        OrderedDictionary<
-            UUID,
-            Continuation
-        > = [:]
+    typealias ActionItem = (Action, UUID?, String, String, UInt)
+    /// The wait for `AsyncCountdownEvent` set context type.
+    typealias WaitItem = (UUID, String, String, UInt)
+
     /// The limit up to which the countdown counts and triggers event.
     ///
     /// By default this is set to zero and can be changed during initialization.
@@ -57,195 +72,53 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
     ///
     /// If the current count becomes less or equal to limit, queued tasks
     /// are resumed from suspension until current count exceeds limit.
-    public var currentCount: UInt
+    public private(set) var currentCount: UInt
     /// Initial count of the countdown when count started.
     ///
     /// Can be changed after initialization by using
     /// ``reset(to:file:function:line:)``
     /// method.
-    public var initialCount: UInt
+    public private(set) var initialCount: UInt
     /// Indicates whether countdown event current count is within ``limit``.
     ///
     /// Queued tasks are resumed from suspension when event is set and until current count exceeds limit.
     public var isSet: Bool { currentCount <= limit }
 
+    /// The stream continuation that updates state change
+    /// info for `AsyncCountdownEvent`.
+    @usableFromInline
+    let actor: AsyncStream<ActionItem>.Continuation
+    /// The channel that controls waiting on the `AsyncCountdownEvent`.
+    ///
+    /// The waiting completes when `AsyncCountdownEvent` is set.
+    let waiter: AsyncChannel<WaitItem>
+
     // MARK: Internal
 
-    /// Checks whether to wait for countdown to signal.
-    ///
-    /// - Returns: Whether to wait to be resumed later.
-    @inlinable
-    internal func shouldWait() -> Bool { !isSet || !continuations.isEmpty }
-
-    /// Resume provided continuation with additional changes based on the associated flags.
-    ///
-    /// - Parameter continuation: The queued continuation to resume.
-    @inlinable
-    internal func resumeContinuation(_ continuation: Continuation) {
-        currentCount += 1
-        continuation.resume()
-    }
-
-    /// Add continuation with the provided key in `continuations` map.
+    /// Updates count state according to provided action and
+    /// returns whether current count is within limit.
     ///
     /// - Parameters:
-    ///   - continuation: The `continuation` to add.
-    ///   - key: The key in the map.
-    ///   - file: The file add request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function add request originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line add request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    ///   - preinit: The pre-initialization handler to run
-    ///              in the beginning of this method.
+    ///   - item: The action context to perform to update state.
     ///
-    /// - Important: The pre-initialization handler must run
-    ///              before any logic in this method.
-    @inlinable
-    internal func addContinuation(
-        _ continuation: Continuation,
-        withKey key: UUID,
-        file: String, function: String, line: UInt,
-        preinit: @Sendable () -> Void
-    ) {
-        preinit()
-        log("Adding", id: key, file: file, function: function, line: line)
-        guard !continuation.resumed else {
-            log(
-                "Already resumed, not tracking", id: key,
-                file: file, function: function, line: line
-            )
-            return
+    /// - Returns: Whether current count is within limit.
+    func update(with item: ActionItem) -> Bool {
+        let (action, id, file, fn, line) = item
+        switch action {
+        case .decrement(by: let count):
+            currentCount = (currentCount >= count) ? (currentCount - count) : 0
+            log("Decremented", id: id, file: file, function: fn, line: line)
+        case .increment(by: let count):
+            currentCount += count
+            log("Incremented", id: id, file: file, function: fn, line: line)
+        case .reset(to: .some(let count)):
+            initialCount = count
+            fallthrough
+        case .reset(to: .none):
+            currentCount = initialCount
+            log("Reset", id: id, file: file, function: fn, line: line)
         }
-
-        guard shouldWait() else {
-            resumeContinuation(continuation)
-            log("Resumed", id: key, file: file, function: function, line: line)
-            return
-        }
-
-        continuations[key] = continuation
-        log("Tracking", id: key, file: file, function: function, line: line)
-    }
-
-    /// Remove continuation associated with provided key
-    /// from `continuations` map and resumes with `CancellationError`.
-    ///
-    /// - Parameters:
-    ///   - continuation: The continuation to remove and cancel.
-    ///   - key: The key in the map.
-    ///   - file: The file remove request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function remove request originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line remove request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    @inlinable
-    internal func removeContinuation(
-        _ continuation: Continuation,
-        withKey key: UUID,
-        file: String, function: String, line: UInt
-    ) {
-        log("Removing", id: key, file: file, function: function, line: line)
-        continuations.removeValue(forKey: key)
-        guard !continuation.resumed else {
-            log(
-                "Already resumed, not cancelling", id: key,
-                file: file, function: function, line: line
-            )
-            return
-        }
-
-        continuation.cancel()
-        log("Cancelled", id: key, file: file, function: function, line: line)
-    }
-
-    /// Decrements countdown count by the provided number.
-    ///
-    /// - Parameters:
-    ///   - number: The number to decrement count by.
-    ///   - file: The file signal originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function signal originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line signal originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    @inlinable
-    internal func decrementCount(
-        by number: UInt = 1,
-        file: String = #fileID,
-        function: String = #function,
-        line: UInt = #line
-    ) {
-        defer { resume(file: file, function: function, line: line) }
-
-        guard currentCount > 0 else {
-            log("Least count", file: file, function: function, line: line)
-            return
-        }
-
-        currentCount -= number
-        log("Decremented", file: file, function: function, line: line)
-    }
-
-    /// Resume previously waiting continuations for countdown event.
-    ///
-    /// - Parameters:
-    ///   - file: The file resume originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function resume originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line resume originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    @inlinable
-    internal func resume(file: String, function: String, line: UInt) {
-        while !continuations.isEmpty && isSet {
-            let (key, continuation) = continuations.removeFirst()
-            resumeContinuation(continuation)
-            log("Resumed", id: key, file: file, function: function, line: line)
-        }
-    }
-
-    /// Increments the countdown event current count by the specified value.
-    ///
-    /// - Parameters:
-    ///   - count: The value by which to increase ``currentCount``.
-    ///   - file: The file increment originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function increment originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line increment originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    @inlinable
-    internal func incrementCount(
-        by count: UInt = 1,
-        file: String, function: String, line: UInt
-    ) {
-        self.currentCount += count
-        log("Incremented", file: file, function: function, line: line)
-    }
-
-    /// Resets initial count and current count to specified value.
-    ///
-    /// - Parameters:
-    ///   - count: The new initial count.
-    ///   - file: The file reset originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function reset originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line reset originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    @inlinable
-    internal func resetCount(
-        to count: UInt?,
-        file: String, function: String, line: UInt
-    ) {
-        defer { resume(file: file, function: function, line: line) }
-        let count = count ?? initialCount
-        initialCount = count
-        self.currentCount = count
-        log("Reset", file: file, function: function, line: line)
+        return isSet
     }
 
     // MARK: Public
@@ -260,16 +133,69 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
     /// - Parameters:
     ///   - limit: The value to count down up to.
     ///   - initial: The initial count.
+    ///   - file: The file where initialization occurs (there's usually no need to pass it
+    ///           explicitly as it defaults to `#fileID`).
+    ///   - function: The function where initialization occurs (there's usually no need to
+    ///               pass it explicitly as it defaults to `#function`).
+    ///   - line: The line where initialization occurs (there's usually no need to pass it
+    ///           explicitly as it defaults to `#line`).
     ///
     /// - Returns: The newly created countdown event .
-    public init(until limit: UInt = 0, initial: UInt = 0) {
+    public init(
+        until limit: UInt = 0,
+        initial: UInt = 0,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
         self.limit = limit
         self.initialCount = initial
         self.currentCount = initial
+
+        let channel = AsyncChannel<WaitItem>()
+        var continuation: AsyncStream<ActionItem>.Continuation!
+        let actions = AsyncStream<ActionItem> { continuation = $0 }
+        let actor = continuation!
+        self.actor = actor
+        self.waiter = channel
+        actor.yield((.reset(), nil, file, function, line))
+
+        Task.detached { [weak self] in
+            func spin() -> (Task<Void, Never>, AsyncStream<Void>.Continuation) {
+                var continuation: AsyncStream<Void>.Continuation!
+                let store = AsyncStream<Void>(
+                    bufferingPolicy: .bufferingNewest(1)
+                ) { continuation = $0 }
+                let task = Task.detached {
+                    signal: for await _ in store {
+                        for await (id, file, fn, line) in channel {
+                            actor.yield((.increment(by: 1), id, file, fn, line))
+                            continue signal
+                        }
+                    }
+                }
+                return (task, continuation)
+            }
+
+            var (wt, signaller) = spin()
+            defer { signaller.finish(); wt.cancel() }
+            for await item in actions {
+                guard let result = self?.update(with: item) else { break }
+                if result {
+                    signaller.yield(())
+                } else {
+                    signaller.finish()
+                    wt.cancel()
+                    (wt, signaller) = spin()
+                }
+            }
+        }
     }
 
-    // TODO: Explore alternative cleanup for actor
-    // deinit { self.continuations.forEach { $1.cancel() } }
+    deinit {
+        actor.finish()
+        waiter.finish()
+    }
 
     /// Increments the countdown event current count by the specified value.
     ///
@@ -285,19 +211,14 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line increment originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
-    public nonisolated func increment(
+    @inlinable
+    @Sendable
+    public func increment(
         by count: UInt = 1,
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
-    ) {
-        Task {
-            await incrementCount(
-                by: count,
-                file: file, function: function, line: line
-            )
-        }
-    }
+    ) { actor.yield((.increment(by: count), nil, file, function, line)) }
 
     /// Resets initial count and current count to specified value.
     ///
@@ -312,19 +233,14 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line reset originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
-    public nonisolated func reset(
+    @inlinable
+    @Sendable
+    public func reset(
         to count: UInt? = nil,
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
-    ) {
-        Task {
-            await resetCount(
-                to: count,
-                file: file, function: function, line: line
-            )
-        }
-    }
+    ) { actor.yield((.reset(to: count), nil, file, function, line)) }
 
     /// Registers a signal (decrements) with the countdown event.
     ///
@@ -338,13 +254,13 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line signal originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
-    public nonisolated func signal(
+    @inlinable
+    @Sendable
+    public func signal(
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
-    ) {
-        self.signal(repeat: 1, file: file, function: function, line: line)
-    }
+    ) { self.signal(repeat: 1, file: file, function: function, line: line) }
 
     /// Registers multiple signals (decrements by provided count) with the countdown event.
     ///
@@ -359,19 +275,14 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line signal originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
-    public nonisolated func signal(
+    @inlinable
+    @Sendable
+    public func signal(
         repeat count: UInt,
         file: String = #fileID,
         function: String = #function,
         line: UInt = #line
-    ) {
-        Task {
-            await decrementCount(
-                by: count,
-                file: file, function: function, line: line
-            )
-        }
-    }
+    ) { actor.yield((.decrement(by: count), nil, file, function, line)) }
 
     /// Waits for, or increments, a countdown event.
     ///
@@ -395,19 +306,16 @@ public actor AsyncCountdownEvent: AsyncObject, ContinuableCollectionActor,
         function: String = #function,
         line: UInt = #line
     ) async throws {
-        guard shouldWait() else {
-            currentCount += 1
-            log("Acquired", file: file, function: function, line: line)
-            return
+        let id = UUID()
+        log("Waiting", id: id, file: file, function: function, line: line)
+        await waiter.send((id, file, function, line))
+        do {
+            try Task.checkCancellation()
+            log("Completed", id: id, file: file, function: function, line: line)
+        } catch {
+            log("Cancelled", id: id, file: file, function: function, line: line)
+            throw error
         }
-
-        let key = UUID()
-        log("Waiting", id: key, file: file, function: function, line: line)
-        try await withPromisedContinuation(
-            withKey: key,
-            file: file, function: function, line: line
-        )
-        log("Received", id: key, file: file, function: function, line: line)
     }
 }
 
