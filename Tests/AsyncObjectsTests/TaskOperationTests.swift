@@ -276,10 +276,6 @@ class TaskOperationTaskManagementTests: XCTestCase {
             XCTAssertFalse(error.localizedDescription.isEmpty)
         default: XCTFail("Unexpected operation result")
         }
-        do {
-            try await operation.wait(forSeconds: 3)
-            XCTFail("Unexpected task progression")
-        } catch is CancellationError {}
     }
 }
 

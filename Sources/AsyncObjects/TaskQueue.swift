@@ -1,4 +1,5 @@
 import Foundation
+
 import OrderedCollections
 
 /// An object that acts as a concurrent queue executing submitted tasks concurrently.

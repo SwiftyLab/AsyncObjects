@@ -1,5 +1,6 @@
 import Foundation
 import Dispatch
+import AsyncAlgorithms
 
 /// An object that bridges asynchronous work under structured concurrency
 /// to Grand Central Dispatch (GCD or `libdispatch`) as `Operation`.
@@ -40,12 +41,9 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject, Loggable,
     /// synchronize data access and modifications.
     @usableFromInline
     internal let locker: Locker
-    /// The stream that propagates the operation
-    /// finish event.
-    internal var event: AsyncStream<Void>!
-    /// The continuation of `stream` that controls the asynchronous wait
+    /// The channel that controls the asynchronous wait
     /// for operation completion.
-    internal var waiter: AsyncStream<Void>.Continuation!
+    internal let waiter = AsyncChannel<Void>()
 
     /// A type representing a set of behaviors for the executed
     /// task type and task completion behavior.
@@ -171,9 +169,6 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject, Loggable,
         self.flags = flags
         self.underlyingAction = operation
         super.init()
-        self.event = AsyncStream(
-            bufferingPolicy: .bufferingOldest(1)
-        ) { self.waiter = $0 }
     }
 
     deinit {
@@ -271,29 +266,15 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject, Loggable,
         function: String = #function,
         line: UInt = #line
     ) async throws {
-        let key = UUID()
-        log("Waiting", id: key, file: file, function: function, line: line)
-        var iter = event.makeAsyncIterator()
-        await iter.next()
+        let id = UUID()
+        log("Waiting", id: id, file: file, function: function, line: line)
+        await waiter.send(())
 
         do {
             try Task.checkCancellation()
+            log("Finished", id: id, file: file, function: function, line: line)
         } catch {
-            log(
-                "Cancelled", id: key,
-                file: file, function: function, line: line
-            )
-            throw error
-        }
-
-        switch await self.result {
-        case .success:
-            log("Finished", id: key, file: file, function: function, line: line)
-        case .failure(let error):
-            log(
-                "Finished with error: \(error)", id: key,
-                file: file, function: function, line: line
-            )
+            log("Cancelled", id: id, file: file, function: function, line: line)
             throw error
         }
     }
