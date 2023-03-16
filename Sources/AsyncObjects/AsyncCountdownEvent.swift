@@ -32,9 +32,7 @@ import AsyncAlgorithms
 ///
 /// Use the ``limit`` parameter to indicate concurrent low priority usage, i.e. if limit set to zero,
 /// only one low priority usage allowed at one time.
-public final class AsyncCountdownEvent: AsyncObject, Loggable, @unchecked
-    Sendable
-{
+public final class AsyncCountdownEvent: AsyncObject, Loggable {
     /// A  type representing various mutation actions that
     /// can be performed on `AsyncCountdownEvent`.
     @usableFromInline
@@ -56,6 +54,23 @@ public final class AsyncCountdownEvent: AsyncObject, Loggable, @unchecked
         /// The current count and initial count are reset to the provided count.
         /// If count not provided, current count is reset to initial count.
         case reset(to: UInt? = nil)
+        /// An action representing getter for initial count
+        /// in `AsyncCountdownEvent`.
+        ///
+        /// The continuation has to be resumed with the initial count.
+        case initial(GlobalContinuation<UInt, Never>)
+        /// An action representing getter for current count
+        /// in `AsyncCountdownEvent`.
+        ///
+        /// The continuation has to be resumed with the current count.
+        case current(GlobalContinuation<UInt, Never>)
+        /// An action representing getter for whether
+        /// `AsyncCountdownEvent` is set.
+        ///
+        /// The continuation has to be resumed with a boolean value
+        /// representing whether ` AsyncCountdownEvent` is set
+        /// or not.
+        case isSet(GlobalContinuation<Bool, Never>)
     }
 
     /// The action performed on `AsyncCountdownEvent` context type.
@@ -68,21 +83,42 @@ public final class AsyncCountdownEvent: AsyncObject, Loggable, @unchecked
     ///
     /// By default this is set to zero and can be changed during initialization.
     public let limit: UInt
+
     /// Current count of the countdown.
     ///
     /// If the current count becomes less or equal to limit, queued tasks
     /// are resumed from suspension until current count exceeds limit.
-    public private(set) var currentCount: UInt
+    public var currentCount: UInt {
+        get async {
+            return await GlobalContinuation<UInt, Never>.with {
+                actor.yield((.current($0), nil, #file, #function, #line))
+            }
+        }
+    }
+
     /// Initial count of the countdown when count started.
     ///
     /// Can be changed after initialization by using
     /// ``reset(to:file:function:line:)``
     /// method.
-    public private(set) var initialCount: UInt
+    public var initialCount: UInt {
+        get async {
+            return await GlobalContinuation<UInt, Never>.with {
+                actor.yield((.initial($0), nil, #file, #function, #line))
+            }
+        }
+    }
+
     /// Indicates whether countdown event current count is within ``limit``.
     ///
     /// Queued tasks are resumed from suspension when event is set and until current count exceeds limit.
-    public var isSet: Bool { currentCount <= limit }
+    public var isSet: Bool {
+        get async {
+            return await GlobalContinuation<Bool, Never>.with {
+                actor.yield((.isSet($0), nil, #file, #function, #line))
+            }
+        }
+    }
 
     /// The stream continuation that updates state change
     /// info for `AsyncCountdownEvent`.
@@ -92,36 +128,6 @@ public final class AsyncCountdownEvent: AsyncObject, Loggable, @unchecked
     ///
     /// The waiting completes when `AsyncCountdownEvent` is set.
     let waiter: AsyncChannel<WaitItem>
-
-    // MARK: Internal
-
-    /// Updates count state according to provided action and
-    /// returns whether current count is within limit.
-    ///
-    /// - Parameters:
-    ///   - item: The action context to perform to update state.
-    ///
-    /// - Returns: Whether current count is within limit.
-    func update(with item: ActionItem) -> Bool {
-        let (action, id, file, fn, line) = item
-        switch action {
-        case .decrement(by: let count):
-            currentCount = (currentCount >= count) ? (currentCount - count) : 0
-            log("Decremented", id: id, file: file, function: fn, line: line)
-        case .increment(by: let count):
-            currentCount += count
-            log("Incremented", id: id, file: file, function: fn, line: line)
-        case .reset(to: .some(let count)):
-            initialCount = count
-            fallthrough
-        case .reset(to: .none):
-            currentCount = initialCount
-            log("Reset", id: id, file: file, function: fn, line: line)
-        }
-        return isSet
-    }
-
-    // MARK: Public
 
     /// Creates new countdown event with the limit count down up to and an initial count.
     /// By default, both limit and initial count are zero.
@@ -149,9 +155,6 @@ public final class AsyncCountdownEvent: AsyncObject, Loggable, @unchecked
         line: UInt = #line
     ) {
         self.limit = limit
-        self.initialCount = initial
-        self.currentCount = initial
-
         let channel = AsyncChannel<WaitItem>()
         var continuation: AsyncStream<ActionItem>.Continuation!
         let actions = AsyncStream<ActionItem> { continuation = $0 }
@@ -177,17 +180,47 @@ public final class AsyncCountdownEvent: AsyncObject, Loggable, @unchecked
                 return (task, continuation)
             }
 
+            var initial = initial
+            var current = initial
             var (wt, signaller) = spin()
             defer { signaller.finish(); wt.cancel() }
-            for await item in actions {
-                guard let result = self?.update(with: item) else { break }
-                if result {
+            for await (action, id, file, function, line) in actions {
+                let msg: LogMessage
+                switch action {
+                case .current(let continuation):
+                    continuation.resume(returning: current)
+                    continue
+                case .initial(let continuation):
+                    continuation.resume(returning: initial)
+                    continue
+                case .isSet(let continuation):
+                    continuation.resume(returning: current <= limit)
+                    continue
+                case .decrement(by: let count):
+                    current = (current > count) ? (current - count) : 0
+                    msg = "Decremented"
+                case .increment(by: let count):
+                    current += count
+                    msg = "Incremented"
+                case .reset(to: .some(let count)):
+                    initial = count
+                    fallthrough
+                case .reset(to: .none):
+                    current = initial
+                    msg = "Reset"
+                }
+
+                if current <= limit {
                     signaller.yield(())
                 } else {
                     signaller.finish()
                     wt.cancel()
                     (wt, signaller) = spin()
                 }
+                self?.log(
+                    msg, id: id, initial: initial, current: current,
+                    file: file, function: function, line: line
+                )
             }
         }
     }
@@ -329,9 +362,74 @@ extension AsyncCountdownEvent {
         return [
             "obj": "\(self)",
             "limit": "\(limit)",
-            "current_count": "\(currentCount)",
-            "initial_count": "\(initialCount)",
         ]
     }
+
+    /// Log a message attaching an optional identifier, initial and current count.
+    ///
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_TRACE` is set log level is set to `trace`.
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_DEBUG` is set log level is set to `debug`.
+    /// Otherwise log level is set to `info`.
+    ///
+    /// - Parameters:
+    ///   - message: The message to be logged.
+    ///   - id: Optional identifier associated with message. 
+    ///   - initial: The initial count of the countdown when count started.
+    ///   - current: The current count of the countdown.
+    ///   - file: The file this log message originates from (there's usually
+    ///           no need to pass it explicitly as it defaults to `#fileID`).
+    ///   - function: The function this log message originates from (there's usually
+    ///               no need to pass it explicitly as it defaults to `#function`).
+    ///   - line: The line this log message originates from (there's usually
+    ///           no need to pass it explicitly as it defaults to `#line`).
+    @inlinable
+    func log(
+        _ message: @autoclosure () -> Logger.Message,
+        id: UUID? = nil,
+        initial: UInt,
+        current: UInt,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        var metadata = metadata
+        metadata["initial_count"] = "\(initial)"
+        metadata["current_count"] = "\(current)"
+        if let id = id { metadata["id"] = "\(id)" }
+        logger.log(
+            level: level, message(), metadata: metadata,
+            file: file, function: function, line: line
+        )
+    }
+}
+#else
+extension AsyncCountdownEvent {
+    /// Log a message attaching an optional identifier, initial and current count.
+    ///
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_TRACE` is set log level is set to `trace`.
+    /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_DEBUG` is set log level is set to `debug`.
+    /// Otherwise log level is set to `info`.
+    ///
+    /// - Parameters:
+    ///   - message: The message to be logged.
+    ///   - id: Optional identifier associated with message.
+    ///   - initial: The initial count of the countdown when count started.
+    ///   - current: The current count of the countdown.
+    ///   - file: The file this log message originates from (there's usually
+    ///           no need to pass it explicitly as it defaults to `#fileID`).
+    ///   - function: The function this log message originates from (there's usually
+    ///               no need to pass it explicitly as it defaults to `#function`).
+    ///   - line: The line this log message originates from (there's usually
+    ///           no need to pass it explicitly as it defaults to `#line`).
+    @inlinable
+    func log(
+        _ message: @autoclosure () -> String,
+        id: UUID? = nil,
+        initial: UInt,
+        current: UInt,
+        file: String = #fileID,
+        function: String = #function,
+        line: UInt = #line
+    ) { /* Do nothing */  }
 }
 #endif
