@@ -60,9 +60,15 @@ class AsyncCountdownEventTests: XCTestCase {
     func testWithIncrementAndReset() async throws {
         let event = AsyncCountdownEvent()
         event.increment(by: 10)
-        let count = await event.currentCount
+        var count = await event.currentCount
         XCTAssertEqual(count, 10)
         event.reset()
+        let initial = await event.initialCount
+        count = await event.currentCount
+        XCTAssertEqual(count, 0)
+        XCTAssertEqual(initial, 0)
+        let isSet = await event.isSet
+        XCTAssertTrue(isSet)
         try await event.wait(forSeconds: 5)
     }
 
@@ -72,9 +78,13 @@ class AsyncCountdownEventTests: XCTestCase {
         var count = await event.currentCount
         XCTAssertEqual(count, 10)
         event.reset(to: 2)
+        let initial = await event.initialCount
         count = await event.currentCount
         XCTAssertEqual(count, 2)
+        XCTAssertEqual(initial, 2)
         event.signal(repeat: 2)
+        let isSet = await event.isSet
+        XCTAssertTrue(isSet)
         try await event.wait(forSeconds: 5)
     }
 
