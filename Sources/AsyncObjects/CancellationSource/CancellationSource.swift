@@ -2,8 +2,8 @@ import Foundation
 
 /// An object that controls cooperative cancellation of multiple registered tasks and linked object registered tasks.
 ///
-/// You can register tasks for cancellation using the ``register(task:file:function:line:)`` method
-/// and link with additional sources by creating object with ``init(linkedWith:)`` method.
+/// You can register tasks for cancellation using the ``register(task:file:function:line:)`` method and link with
+/// additional sources by creating object with ``init(priority:linkedWith:file:function:line:)-7b9gf`` method.
 /// By calling the ``cancel(file:function:line:)`` method all the registered tasks will be cancelled
 /// and the cancellation event will be propagated to linked cancellation sources,
 /// which in turn cancels their registered tasks and further propagates cancellation.
@@ -42,10 +42,12 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
     /// The lifetime task that is cancelled when
     /// `CancellationSource` is cancelled.
     @usableFromInline
-    var lifetime: Task<Void, Error>!
+    let lifetime: Task<Void, Error>!
     /// The stream continuation used to register work items
     /// for cooperative cancellation.
-    var pipe: AsyncStream<WorkItem>.Continuation!
+    let pipe: AsyncStream<WorkItem>.Continuation!
+    /// The priority of the detached cancellation task.
+    let priority: TaskPriority
 
     /// A Boolean value that indicates whether cancellation is already
     /// invoked on the source.
@@ -59,10 +61,21 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
 
     /// Creates a new cancellation source object.
     ///
+    /// - Parameters:
+    ///   - priority: The minimum priority of task that this source is going to handle.
+    ///               By default, priority is `.background`.
+    ///
     /// - Returns: The newly created cancellation source.
-    public init() {
-        let stream = AsyncStream<WorkItem> { self.pipe = $0 }
-        self.lifetime = Task.detached {
+    ///
+    /// - NOTE: `CancellationSource` uses `Task`'s `result` and `value` APIs
+    ///         to wait for completion which has side effect of increasing `Task`'s priority.
+    ///         Hence, provide the least priority for the submitted tasks to use in cancellation task.
+    public init(priority: TaskPriority = .background) {
+        var continuation: AsyncStream<WorkItem>.Continuation!
+        let stream = AsyncStream<WorkItem> { continuation = $0 }
+        self.priority = priority
+        self.pipe = continuation
+        self.lifetime = Task.detached(priority: priority) {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for await item in stream {
                     group.addTask {
@@ -94,6 +107,10 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line work registration originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
+    ///
+    /// - Important: Do not use this method to link `CancellationSource` as it might introduce
+    ///              circular linking which will cause all the affected cancellation tasks to leak.
+    ///              Use ``init(priority:linkedWith:file:function:line:)-7b9gf`` instead.
     @Sendable
     public func register<C: Cancellable>(
         task: C,
@@ -158,6 +175,9 @@ public struct CancellationSource: AsyncObject, Cancellable, Loggable {
     ///               pass it explicitly as it defaults to `#function`).
     ///   - line: The line wait request originates from (there's usually no need to pass it
     ///           explicitly as it defaults to `#line`).
+    ///
+    /// - Important: Using this method might introduce  circular linking of`CancellationSource`
+    ///              which will cause all the affected cancellation tasks to leak.
     @Sendable
     public func wait(
         file: String = #fileID,
