@@ -3,6 +3,9 @@ import Foundation
 #if canImport(Logging)
 import Logging
 
+/// A type representing a log message’s text.
+typealias LogMessage = Logger.Message
+
 /// A type that emits log messages with specific metadata.
 @usableFromInline
 protocol Loggable {
@@ -132,6 +135,9 @@ extension LoggableActor {
     }
 }
 #else
+/// A type representing a log message’s text.
+typealias LogMessage = String
+
 /// Log a message attaching an optional identifier.
 ///
 /// If `ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_TRACE` is set log level is set to `trace`.
