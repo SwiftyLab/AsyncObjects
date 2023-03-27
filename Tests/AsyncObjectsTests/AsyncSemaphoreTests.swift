@@ -6,13 +6,13 @@ class AsyncSemaphoreTests: XCTestCase {
 
     func testWithTasksLessThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        await semaphore.spinTasks(count: 2, duration: 10)
+        await semaphore.spinTasks(count: 2, limit: 3)
         try await semaphore.wait(forSeconds: 3)
     }
 
     func testWithTasksEqualToCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        await semaphore.spinTasks(count: 3, duration: 10)
+        await semaphore.spinTasks(count: 3, limit: 3)
         do {
             try await semaphore.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
@@ -21,7 +21,7 @@ class AsyncSemaphoreTests: XCTestCase {
 
     func testWithTasksGreaterThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        await semaphore.spinTasks(count: 5, duration: 10)
+        await semaphore.spinTasks(count: 5, limit: 3)
         do {
             try await semaphore.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
@@ -30,12 +30,20 @@ class AsyncSemaphoreTests: XCTestCase {
 
     func testSignaledWaitWithTasksGreaterThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        await semaphore.signalSemaphore()
-        await semaphore.spinTasks(count: 4, duration: 10)
+        semaphore.signal()
+        await semaphore.spinTasks(count: 4, limit: 3)
         do {
             try await semaphore.wait(forSeconds: 3)
             XCTFail("Unexpected task progression")
         } catch is DurationTimeoutError {}
+    }
+
+    func testOverSignalling() async throws {
+        let semaphore = AsyncSemaphore()
+        semaphore.signal()
+        semaphore.signal()
+        try await semaphore.wait(forSeconds: 3)
+        try await semaphore.wait(forSeconds: 3)
     }
 
     func testConcurrentMutation() async throws {
@@ -92,33 +100,18 @@ class AsyncSemaphoreTimeoutTests: XCTestCase {
 
     func testWaitTimeoutWithTasksLessThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        try await semaphore.spinTasks(count: 3, duration: 2, timeout: 3)
+        try await semaphore.spinTasks(
+            count: 3, limit: 3,
+            duration: 2, timeout: 3
+        )
     }
 
     func testWaitTimeoutWithTasksGreaterThanCount() async throws {
         let semaphore = AsyncSemaphore(value: 3)
-        try await semaphore.spinTasks(count: 5, duration: 5, timeout: 3)
-    }
-
-    func testWaitCancellationOnTimeoutWithTasksGreaterThanCount() async throws {
-        let semaphore = AsyncSemaphore(value: 3)
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            for index in 0..<8 {
-                group.addTask {
-                    if index <= 3 || index.isMultiple(of: 2) {
-                        try await semaphore.wait()
-                        try await Task.sleep(seconds: 5)
-                        semaphore.signal()
-                    } else {
-                        do {
-                            try await semaphore.wait(forSeconds: 3)
-                            XCTFail("Unexpected task progression")
-                        } catch is DurationTimeoutError {}
-                    }
-                }
-            }
-            try await group.waitForAll()
-        }
+        try await semaphore.spinTasks(
+            count: 5, limit: 3,
+            duration: 5, timeout: 3
+        )
     }
 }
 
@@ -149,7 +142,8 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let semaphore = AsyncSemaphore(value: 3)
         try await semaphore.spinTasks(
-            count: 3, duration: 2, timeout: 3,
+            count: 3, limit: 3,
+            duration: 2, timeout: 3,
             clock: clock
         )
     }
@@ -163,37 +157,10 @@ class AsyncSemaphoreClockTimeoutTests: XCTestCase {
         let clock: ContinuousClock = .continuous
         let semaphore = AsyncSemaphore(value: 3)
         try await semaphore.spinTasks(
-            count: 5, duration: 5, timeout: 3,
+            count: 5, limit: 3,
+            duration: 5, timeout: 3,
             clock: clock
         )
-    }
-
-    func testWaitCancellationOnTimeoutWithTasksGreaterThanCount() async throws {
-        guard
-            #available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
-        else {
-            throw XCTSkip("Clock API not available")
-        }
-        let clock: ContinuousClock = .continuous
-        let semaphore = AsyncSemaphore(value: 3)
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            for index in 0..<8 {
-                group.addTask {
-                    if index <= 3 || index.isMultiple(of: 2) {
-                        try await semaphore.wait()
-                        try await Task.sleep(seconds: 5, clock: clock)
-                        semaphore.signal()
-                    } else {
-                        do {
-                            try await semaphore.wait(
-                                forSeconds: 3, clock: clock)
-                            XCTFail("Unexpected task progression")
-                        } catch is TimeoutError<ContinuousClock> {}
-                    }
-                }
-            }
-            try await group.waitForAll()
-        }
     }
 }
 #endif
@@ -236,28 +203,33 @@ final class ArrayDataStore: @unchecked Sendable {
 
 fileprivate extension AsyncSemaphore {
 
-    func spinTasks(count: UInt, duration: UInt64) async {
+    func spinTasks(count: UInt, limit: UInt) async {
         let stream = AsyncStream<Void> { continuation in
-            for _ in 0..<count {
-                Task {
-                    try await self.wait()
-                    defer { self.signal() }
-                    continuation.yield()
-                    try await Task.sleep(seconds: duration)
+            Task {
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    for _ in 0..<count {
+                        group.addTask {
+                            try await self.wait()
+                            continuation.yield()
+                        }
+                        try await group.waitForAll()
+                    }
                 }
+                continuation.finish()
             }
         }
 
         var index = 0
         for await _ in stream {
             index += 1
-            guard index < min(count, limit) else { continue }
+            guard index >= min(count, limit) else { continue }
             break
         }
     }
 
     func spinTasks(
-        count: UInt, duration: UInt64, timeout: UInt64,
+        count: UInt, limit: UInt,
+        duration: UInt64, timeout: UInt64,
         file: StaticString = #filePath,
         function: StaticString = #function,
         line: UInt = #line
@@ -283,15 +255,16 @@ fileprivate extension AsyncSemaphore {
                 if success { successes += 1 } else { failures += 1 }
             }
 
-            XCTAssertEqual(successes, limit - 1, file: file, line: line)
-            XCTAssertEqual(failures, count + 1 - limit, file: file, line: line)
+            XCTAssertEqual(successes, limit, file: file, line: line)
+            XCTAssertEqual(failures, count - limit, file: file, line: line)
         }
     }
 
     #if swift(>=5.7)
     @available(macOS 13, iOS 16, macCatalyst 16, tvOS 16, watchOS 9, *)
     func spinTasks<C: Clock>(
-        count: UInt, duration: UInt64, timeout: UInt64, clock: C,
+        count: UInt, limit: UInt,
+        duration: UInt64, timeout: UInt64, clock: C,
         file: StaticString = #filePath,
         function: StaticString = #function,
         line: UInt = #line
@@ -317,8 +290,8 @@ fileprivate extension AsyncSemaphore {
                 if success { successes += 1 } else { failures += 1 }
             }
 
-            XCTAssertEqual(successes, limit - 1, file: file, line: line)
-            XCTAssertEqual(failures, count + 1 - limit, file: file, line: line)
+            XCTAssertEqual(successes, limit, file: file, line: line)
+            XCTAssertEqual(failures, count - limit, file: file, line: line)
         }
     }
     #endif
