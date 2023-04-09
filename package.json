@@ -19,15 +19,15 @@
     "swiftylab-ci": "github:SwiftyLab/ci"
   },
   "scripts": {
-    "build": "npm exec --package=swiftylab-ci -- build.js",
-    "xcodebuild": "npm exec --package=swiftylab-ci -- xcodebuild.js",
-    "test": "ASYNCOBJECTS_ENABLE_LOGGING_LEVEL=info npm exec --package=swiftylab-ci -- test.js --parallel",
-    "archive": "npm exec --package=swiftylab-ci -- archive.js",
-    "pod-lint": "npm exec --package=swiftylab-ci -- pod-lint.js",
-    "generate": "npm exec --package=swiftylab-ci -- generate.js",
-    "format": "npm exec --package=swiftylab-ci -- format.js",
-    "preview-doc": "npm exec --package=swiftylab-ci -- preview-doc.js AsyncObjects",
-    "build-doc": "npm exec --package=swiftylab-ci -- build-doc.js AsyncObjects",
-    "serve-doc": "npm exec --package=swiftylab-ci -- serve-doc.js AsyncObjects"
+    "build": "cross-env ASYNCOBJECTS_ENABLE_DEV=1 SWIFTCI_CONCURRENCY_CHECKS=1 npm exec --package=swiftylab-ci -- build.js",
+    "xcodebuild": "cross-env ASYNCOBJECTS_ENABLE_DEV=1 npm exec --package=swiftylab-ci -- xcodebuild.js",
+    "test": "cross-env ASYNCOBJECTS_ENABLE_DEV=1 ASYNCOBJECTS_USE_CHECKEDCONTINUATION=1 ASYNCOBJECTS_ENABLE_LOGGING_LEVEL=info npm exec --package=swiftylab-ci -- test.js --parallel",
+    "archive": "cross-env ASYNCOBJECTS_ENABLE_DEV=1 npm exec --package=swiftylab-ci -- archive.js",
+    "pod-lint": "cross-env ASYNCOBJECTS_ENABLE_DEV=1 npm exec --package=swiftylab-ci -- pod-lint.js",
+    "generate": "cross-env ASYNCOBJECTS_ENABLE_DEV=1 npm exec --package=swiftylab-ci -- generate.js",
+    "format": "cross-env ASYNCOBJECTS_ENABLE_DEV=1 npm exec --package=swiftylab-ci -- format.js",
+    "preview-doc": "cross-env ASYNCOBJECTS_ENABLE_DEV=1 npm exec --package=swiftylab-ci -- preview-doc.js AsyncObjects",
+    "build-doc": "cross-env ASYNCOBJECTS_ENABLE_DEV=1 npm exec --package=swiftylab-ci -- build-doc.js AsyncObjects",
+    "serve-doc": "cross-env ASYNCOBJECTS_ENABLE_DEV=1 npm exec --package=swiftylab-ci -- serve-doc.js AsyncObjects"
   }
 }

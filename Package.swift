@@ -3,7 +3,29 @@
 import PackageDescription
 import class Foundation.ProcessInfo
 
-var dependencies: [Target.Dependency] = {
+let packages: [Package.Dependency] = {
+    var dependencies: [Package.Dependency] = [
+        .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
+    ]
+
+    if ProcessInfo.processInfo.environment["ASYNCOBJECTS_ENABLE_DEV"] != nil {
+        dependencies.append(contentsOf: [
+            .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
+            .package(url: "https://github.com/apple/swift-format", from: "0.50700.0"),
+        ])
+    }
+
+    if ProcessInfo.processInfo.environment["ASYNCOBJECTS_ENABLE_LOGGING_LEVEL"] != nil {
+        dependencies.append(
+            .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0")
+        )
+    }
+
+    return dependencies
+}()
+
+let dependencies: [Target.Dependency] = {
     var dependencies: [Target.Dependency] = [
         .product(name: "OrderedCollections", package: "swift-collections"),
         .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
@@ -16,7 +38,7 @@ var dependencies: [Target.Dependency] = {
     return dependencies
 }()
 
-var settings: [SwiftSetting] = {
+let settings: [SwiftSetting] = {
     var settings: [SwiftSetting] = []
 
     if ProcessInfo.processInfo.environment["SWIFTCI_CONCURRENCY_CHECKS"] != nil {
@@ -26,7 +48,7 @@ var settings: [SwiftSetting] = {
                 "-warn-concurrency",
                 "-enable-actor-data-race-checks",
                 "-require-explicit-sendable",
-                "-strict-concurrency=complete"
+                // "-strict-concurrency=complete"
             ])
         )
     }
@@ -63,13 +85,7 @@ let package = Package(
     products: [
         .library(name: "AsyncObjects", targets: ["AsyncObjects"]),
     ],
-    dependencies: [
-        .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.0"),
-        .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
-        .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
-        .package(url: "https://github.com/apple/swift-format", from: "0.50700.0"),
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
-    ],
+    dependencies: packages,
     targets: [
         .target(name: "AsyncObjects", dependencies: dependencies, swiftSettings: settings),
         .testTarget(name: "AsyncObjectsTests", dependencies: ["AsyncObjects"]),

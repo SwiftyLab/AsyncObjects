@@ -109,7 +109,6 @@ extension Task: Cancellable {
 ///           explicitly as it defaults to `#line`).
 ///
 /// - Throws: If waiting for the work completes with an error.
-@inlinable
 func waitHandlingCancelation(
     for work: Cancellable,
     associatedId id: UUID,
