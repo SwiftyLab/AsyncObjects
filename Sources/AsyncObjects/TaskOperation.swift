@@ -1,5 +1,6 @@
 import Foundation
 import Dispatch
+import AsyncAlgorithms
 
 /// An object that bridges asynchronous work under structured concurrency
 /// to Grand Central Dispatch (GCD or `libdispatch`) as `Operation`.
@@ -28,8 +29,8 @@ import Dispatch
 /// // or wait synchronously for completion
 /// operation.waitUntilFinished()
 /// ```
-public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
-    ContinuableCollection, Loggable, @unchecked Sendable
+public final class TaskOperation<R: Sendable>: Operation, AsyncObject, Loggable,
+    @unchecked Sendable
 {
     /// The asynchronous action to perform as part of the operation..
     private let underlyingAction: @Sendable () async throws -> R
@@ -40,6 +41,9 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// synchronize data access and modifications.
     @usableFromInline
     internal let locker: Locker
+    /// The channel that controls the asynchronous wait
+    /// for operation completion.
+    internal let waiter = AsyncChannel<Void>()
 
     /// A type representing a set of behaviors for the executed
     /// task type and task completion behavior.
@@ -116,9 +120,8 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
             willChangeValue(forKey: "isFinished")
             locker.perform {
                 _isFinished = newValue
-                guard newValue, !continuations.isEmpty else { return }
-                continuations.forEach { $1.resume() }
-                continuations = [:]
+                guard newValue else { return }
+                waiter.finish()
             }
             didChangeValue(forKey: "isFinished")
         }
@@ -170,7 +173,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
 
     deinit {
         execTask?.cancel()
-        locker.perform { self.continuations.forEach { $1.cancel() } }
+        waiter.finish()
     }
 
     /// Begins the execution of the operation.
@@ -222,99 +225,6 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     }
 
     // MARK: AsyncObject
-    /// The suspended tasks continuation type.
-    @usableFromInline
-    internal typealias Continuation = TrackedContinuation<
-        GlobalContinuation<Void, Error>
-    >
-    /// The continuations stored with an associated key for all the suspended task that are waiting for operation completion.
-    @usableFromInline
-    internal private(set) var continuations: [UUID: Continuation] = [:]
-
-    /// Add continuation with the provided key in `continuations` map.
-    ///
-    /// - Parameters:
-    ///   - continuation: The `continuation` to add.
-    ///   - key: The key in the map.
-    ///   - file: The file add request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function add request originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line add request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    ///   - preinit: The pre-initialization handler to run
-    ///              in the beginning of this method.
-    ///
-    /// - Important: The pre-initialization handler must run
-    ///              before any logic in this method.
-    @inlinable
-    internal func addContinuation(
-        _ continuation: Continuation,
-        withKey key: UUID,
-        file: String, function: String, line: UInt,
-        preinit: @Sendable () -> Void
-    ) {
-        locker.perform {
-            preinit()
-            log("Adding", id: key, file: file, function: function, line: line)
-            guard !continuation.resumed else {
-                log(
-                    "Already resumed, not tracking", id: key,
-                    file: file, function: function, line: line
-                )
-                return
-            }
-
-            guard !isFinished else {
-                continuation.resume()
-                log(
-                    "Resumed", id: key,
-                    file: file, function: function, line: line
-                )
-                return
-            }
-
-            continuations[key] = continuation
-            log("Tracking", id: key, file: file, function: function, line: line)
-        }
-    }
-
-    /// Remove continuation associated with provided key
-    /// from `continuations` map.
-    ///
-    /// - Parameters:
-    ///   - continuation: The continuation to remove and cancel.
-    ///   - key: The key in the map.
-    ///   - file: The file remove request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#fileID`).
-    ///   - function: The function remove request originates from (there's usually no need to
-    ///               pass it explicitly as it defaults to `#function`).
-    ///   - line: The line remove request originates from (there's usually no need to pass it
-    ///           explicitly as it defaults to `#line`).
-    @inlinable
-    internal func removeContinuation(
-        _ continuation: Continuation,
-        withKey key: UUID,
-        file: String, function: String, line: UInt
-    ) {
-        locker.perform {
-            log("Removing", id: key, file: file, function: function, line: line)
-            continuations.removeValue(forKey: key)
-            guard !continuation.resumed else {
-                log(
-                    "Already resumed, not cancelling", id: key,
-                    file: file, function: function, line: line
-                )
-                return
-            }
-
-            continuation.cancel()
-            log(
-                "Cancelled", id: key,
-                file: file, function: function, line: line
-            )
-        }
-    }
 
     /// Starts operation asynchronously
     /// as part of a new top-level task on behalf of the current actor.
@@ -356,18 +266,17 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
         function: String = #function,
         line: UInt = #line
     ) async throws {
-        guard !isFinished else {
-            log("Finished", file: file, function: function, line: line)
-            return
-        }
+        let id = UUID()
+        log("Waiting", id: id, file: file, function: function, line: line)
+        await waiter.send(())
 
-        let key = UUID()
-        log("Waiting", id: key, file: file, function: function, line: line)
-        try await withPromisedContinuation(
-            withKey: key,
-            file: file, function: function, line: line
-        )
-        log("Finished", id: key, file: file, function: function, line: line)
+        do {
+            try Task.checkCancellation()
+            log("Finished", id: id, file: file, function: function, line: line)
+        } catch {
+            log("Cancelled", id: id, file: file, function: function, line: line)
+            throw error
+        }
     }
 }
 
