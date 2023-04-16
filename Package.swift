@@ -1,7 +1,7 @@
 // swift-tools-version: 5.6
 
 import PackageDescription
-import class Foundation.ProcessInfo
+import Foundation
 
 let packages: [Package.Dependency] = {
     var dependencies: [Package.Dependency] = [
@@ -9,14 +9,14 @@ let packages: [Package.Dependency] = {
         .package(url: "https://github.com/apple/swift-async-algorithms", from: "0.1.0"),
     ]
 
-    if ProcessInfo.processInfo.environment["ASYNCOBJECTS_ENABLE_DEV"] != nil {
+    if Context.environment["ASYNCOBJECTS_ENABLE_DEV"] != nil {
         dependencies.append(contentsOf: [
             .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0"),
             .package(url: "https://github.com/apple/swift-format", from: "0.50700.0"),
         ])
     }
 
-    if ProcessInfo.processInfo.environment["ASYNCOBJECTS_ENABLE_LOGGING_LEVEL"] != nil {
+    if Context.environment["ASYNCOBJECTS_ENABLE_LOGGING_LEVEL"] != nil {
         dependencies.append(
             .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0")
         )
@@ -31,7 +31,7 @@ let dependencies: [Target.Dependency] = {
         .product(name: "AsyncAlgorithms", package: "swift-async-algorithms"),
     ]
 
-    if ProcessInfo.processInfo.environment["ASYNCOBJECTS_ENABLE_LOGGING_LEVEL"] != nil {
+    if Context.environment["ASYNCOBJECTS_ENABLE_LOGGING_LEVEL"] != nil {
         dependencies.append(.product(name: "Logging", package: "swift-log"))
     }
 
@@ -41,7 +41,7 @@ let dependencies: [Target.Dependency] = {
 let settings: [SwiftSetting] = {
     var settings: [SwiftSetting] = []
 
-    if ProcessInfo.processInfo.environment["SWIFTCI_CONCURRENCY_CHECKS"] != nil {
+    if Context.environment["SWIFTCI_CONCURRENCY_CHECKS"] != nil {
         settings.append(
             .unsafeFlags([
                 "-Xfrontend",
@@ -53,15 +53,15 @@ let settings: [SwiftSetting] = {
         )
     }
 
-    if ProcessInfo.processInfo.environment["SWIFTCI_WARNINGS_AS_ERRORS"] != nil {
+    if Context.environment["SWIFTCI_WARNINGS_AS_ERRORS"] != nil {
         settings.append(.unsafeFlags(["-warnings-as-errors"]))
     }
 
-    if ProcessInfo.processInfo.environment["ASYNCOBJECTS_USE_CHECKEDCONTINUATION"] != nil {
+    if Context.environment["ASYNCOBJECTS_USE_CHECKEDCONTINUATION"] != nil {
         settings.append(.define("ASYNCOBJECTS_USE_CHECKEDCONTINUATION"))
     }
 
-    if let level = ProcessInfo.processInfo.environment["ASYNCOBJECTS_ENABLE_LOGGING_LEVEL"] {
+    if let level = Context.environment["ASYNCOBJECTS_ENABLE_LOGGING_LEVEL"] {
         if level.caseInsensitiveCompare("TRACE") == .orderedSame {
             settings.append(.define("ASYNCOBJECTS_ENABLE_LOGGING_LEVEL_TRACE"))
         } else if level.caseInsensitiveCompare("DEBUG") == .orderedSame {
