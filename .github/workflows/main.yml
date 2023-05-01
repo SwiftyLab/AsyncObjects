@@ -41,7 +41,7 @@ jobs:
               "swift": "5.7"
             },
             {
-              "os": "macos-latest"
+              "os": "macos-latest",
               "language": "swift"
             }
           ]
