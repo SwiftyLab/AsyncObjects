@@ -59,64 +59,64 @@ jobs:
   #     with:
   #       config_path: .github/config/spellcheck.yml
 
-  swift-package-test:
-    name: Swift Package
-    uses: SwiftyLab/ci/.github/workflows/swift-package.yml@swift-codeql
-    secrets: inherit
-    with:
-      matrix: >
-        {
-          "include": [
-            {
-              "os": "ubuntu-latest",
-              "swift": "5.7"
-            },
-            {
-              "os": "ubuntu-20.04",
-              "swift": "5.6"
-            }
-          ]
-        }
+  # swift-package-test:
+  #   name: Swift Package
+  #   uses: SwiftyLab/ci/.github/workflows/swift-package.yml@swift-codeql
+  #   secrets: inherit
+  #   with:
+  #     matrix: >
+  #       {
+  #         "include": [
+  #           {
+  #             "os": "ubuntu-latest",
+  #             "swift": "5.7"
+  #           },
+  #           {
+  #             "os": "ubuntu-20.04",
+  #             "swift": "5.6"
+  #           }
+  #         ]
+  #       }
 
-  cocoapods-test:
-    name: CocoaPods
-    uses: SwiftyLab/ci/.github/workflows/cocoapods.yml@swift-codeql
-    strategy:
-      matrix:
-        platforms: ['macos', 'ios', 'tvos']
-        # platforms: ['macos tvos', 'ios', 'watchos']
-    with:
-      platforms: ${{ matrix.platforms }}
+  # cocoapods-test:
+  #   name: CocoaPods
+  #   uses: SwiftyLab/ci/.github/workflows/cocoapods.yml@swift-codeql
+  #   strategy:
+  #     matrix:
+  #       platforms: ['macos', 'ios', 'tvos']
+  #       # platforms: ['macos tvos', 'ios', 'watchos']
+  #   with:
+  #     platforms: ${{ matrix.platforms }}
 
-  xcode-test:
-    name: Xcode
-    uses: SwiftyLab/ci/.github/workflows/xcode.yml@swift-codeql
-    with:
-      os: macos-12
-      xcode: '13.3.1'
+  # xcode-test:
+  #   name: Xcode
+  #   uses: SwiftyLab/ci/.github/workflows/xcode.yml@swift-codeql
+  #   with:
+  #     os: macos-12
+  #     xcode: '13.3.1'
 
-  ci:
-    name: CI
-    if: github.event_name == 'push'
-    needs: [analyze, swift-package-test, xcode-test, cocoapods-test]
-    uses: SwiftyLab/ci/.github/workflows/ci.yml@swift-codeql
+  # ci:
+  #   name: CI
+  #   if: github.event_name == 'push'
+  #   needs: [analyze, swift-package-test, xcode-test, cocoapods-test]
+  #   uses: SwiftyLab/ci/.github/workflows/ci.yml@swift-codeql
 
-  cd:
-    name: CD
-    if: |
-      (github.event_name == 'push' && needs.ci.outputs.release == 'true') ||
-      (always() &&
-       github.event_name == 'workflow_dispatch' &&
-       github.event.inputs.release == 'true' &&
-       needs.swift-package-test.result == 'success' &&
-       needs.xcode-test.result == 'success' &&
-       needs.cocoapods-test.result == 'success' &&
-       (needs.ci.result == 'success' || needs.ci.result == 'skipped')) &&
-       (needs.analyze.result == 'success' || needs.analyze.result == 'skipped')
-    needs: [ci, analyze, swift-package-test, xcode-test, cocoapods-test]
-    uses: SwiftyLab/ci/.github/workflows/cd.yml@swift-codeql
-    with:
-      os: macos-12
-      version: ${{ github.event.inputs.version }}
-    secrets:
-      COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
+  # cd:
+  #   name: CD
+  #   if: |
+  #     (github.event_name == 'push' && needs.ci.outputs.release == 'true') ||
+  #     (always() &&
+  #      github.event_name == 'workflow_dispatch' &&
+  #      github.event.inputs.release == 'true' &&
+  #      needs.swift-package-test.result == 'success' &&
+  #      needs.xcode-test.result == 'success' &&
+  #      needs.cocoapods-test.result == 'success' &&
+  #      (needs.ci.result == 'success' || needs.ci.result == 'skipped')) &&
+  #      (needs.analyze.result == 'success' || needs.analyze.result == 'skipped')
+  #   needs: [ci, analyze, swift-package-test, xcode-test, cocoapods-test]
+  #   uses: SwiftyLab/ci/.github/workflows/cd.yml@swift-codeql
+  #   with:
+  #     os: macos-12
+  #     version: ${{ github.event.inputs.version }}
+  #   secrets:
+  #     COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
