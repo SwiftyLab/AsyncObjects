@@ -5,7 +5,7 @@
 /// Use continuations for interfacing Swift tasks with event loops, delegate methods, callbacks,
 /// and other non-async scheduling mechanisms.
 @rethrows
-public protocol Continuable<Success,Failure> {
+public protocol Continuable<Success, Failure> {
     /// The type of value to resume the continuation with in case of success.
     associatedtype Success
     /// The type of error to resume the continuation with in case of failure.

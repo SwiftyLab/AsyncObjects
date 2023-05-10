@@ -38,6 +38,7 @@ Pod::Spec.new do |s|
   }
 
   s.dependency 'OrderedCollections', '~> 1.0.0'
+  s.dependency 'AsyncAlgorithms', '~> 0.1.0'
   s.default_subspecs = :none
 
   s.subspec 'Checked' do |ss|

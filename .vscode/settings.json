@@ -5,5 +5,14 @@
         "**/.docc-build": true,
         "**/node_modules": true,
         "Package.resolved": true
+    },
+    "swift.swiftEnvironmentVariables": {
+        "ASYNCOBJECTS_ENABLE_DEV": "1",
+        "ASYNCOBJECTS_USE_CHECKEDCONTINUATION": "1",
+        "SWIFTCI_CONCURRENCY_CHECKS": "1",
+        "ASYNCOBJECTS_ENABLE_LOGGING_LEVEL": "INFO"
+    },
+    "swift.testEnvironmentVariables": {
+        "LIBDISPATCH_COOPERATIVE_POOL_STRICT": "1"
     }
 }

@@ -191,7 +191,7 @@ public final class TaskOperation<R: Sendable>: Operation, AsyncObject,
     /// as part of a new top-level task on behalf of the current actor.
     public override func main() {
         guard isExecuting, execTask == nil else { return }
-        let final = { @Sendable[weak self] in self?.finish(); return }
+        let final = { @Sendable [weak self] in self?.finish(); return }
         execTask = flags.createTask(
             priority: priority,
             operation: underlyingAction,
