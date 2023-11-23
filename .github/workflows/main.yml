@@ -82,7 +82,7 @@ jobs:
   ci:
     name: CI
     if: github.event_name == 'push'
-    needs: [swift-package-test, xcode-test, cocoapods-test]
+    needs: [swift-package-test, xcode-test, cocoapods-test, spell-check]
     # needs: [analyze, swift-package-test, xcode-test, cocoapods-test]
     uses: SwiftyLab/ci/.github/workflows/ci.yml@main
 
@@ -98,7 +98,7 @@ jobs:
        needs.cocoapods-test.result == 'success' &&
        (needs.ci.result == 'success' || needs.ci.result == 'skipped'))
     # (needs.analyze.result == 'success' || needs.analyze.result == 'skipped')
-    needs: [ci, swift-package-test, xcode-test, cocoapods-test]
+    needs: [ci, swift-package-test, xcode-test, cocoapods-test, spell-check]
     # needs: [ci, analyze, swift-package-test, xcode-test, cocoapods-test]
     uses: SwiftyLab/ci/.github/workflows/cd.yml@main
     with:
